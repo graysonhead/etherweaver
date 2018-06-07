@@ -1,0 +1,140 @@
+network:
+  vlans:
+    - 1
+    - 2:
+        description: management
+        ip_address: 10.11.12.2/24
+    - 20:
+        description: VOIP
+    - 30:
+        description: Data
+    - 35:
+        description: Public
+  interface_profiles:
+    trunk:
+      untagged_vlan: 1
+      tagged_vlans: [2, 20, 30, 35]
+      lldp:
+        enable: True
+    desk_access:
+      untagged_vlan: 30
+      tagged_vlans: 20
+      stp:
+        mode: access_port
+      lldp:
+        enable: True
+        tlv:
+          - system-name
+          - system-description
+    WAP_Uplink:
+      untagged_vlan: 35
+      tagged_vlans: [35, 30]
+      lldp:
+        enable: True
+        tlv: all
+
+
+spine1:
+  management:
+    hostname: spine1.net.testco.org
+    ip_address: 10.11.12.2/24
+    interface: vlan2
+  protocols:
+    ipv4:
+      routing:
+        default_gateway: 10.11.12.1
+    lldp:
+      tlv-med:
+        - management-address
+        - port-description
+        - port-vlan
+        - system-capabilities
+        - system-description
+        - system-name
+  interfaces:
+    10G/1-40:
+      profile: trunk
+    peerlink.4094:
+      ip: 169.254.1.1/30
+      clag:
+        peer_with: spine2
+        clag-peer-ip: 169.254.1.2
+        clag-backup-ip: 192.0.2.50
+        clag-sys-mac: '44:38:39:FF:40:94'
+    10G/41:
+      slave-of: peerlink.4094
+      connected-to: spine2.41
+    10G/42:
+      slave-of: peerlink.4094
+      connected-to: spine2.42
+
+spine2:
+  management:
+    hostname: spine2.net.testco.org
+    ip_address: 10.11.12.3/24
+    interface: vlan2
+  protocols:
+    ipv4:
+      routing:
+        default_gateway: 10.11.12.1
+    lldp:
+      tlv-med:
+        - management-address
+        - port-description
+        - port-vlan
+        - system-capabilities
+        - system-description
+        - system-name
+  interfaces:
+    10G/1-40:
+      profile: trunk
+    peerlink.4094:
+      ip: 169.254.1.2/30
+      clag:
+        peer_with: spine2
+        clag-peer-ip: 169.254.1.1
+        clag-backup-ip: 192.0.2.51
+        clag-sys-mac: '44:38:39:FF:40:94'
+    10G/41:
+      slave-of: peerlink.4094
+      connected-to: spine1.41
+    10G/42:
+      slave-of: peerlink.4094
+      connected-to: spine1.42
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       snmp:
+    cdp:
+    ipv6:
+    ip:
+      routes here maybe?
+    lacp:
+    ntp:
+    radius:
+    stp:
+    ssh:
+    telnet:
+    vrf:
+    vtp:
