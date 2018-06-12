@@ -12,9 +12,11 @@ Similar to Ansible and Salt, the goal of NetWeaver is to abstract the task of ma
    
    To this end, NetWeaver supports a plugin structure to allow the open source community to collaboratively create plugins.
 
-* #### Idempotent
+* #### Idempotent and Self-recovering
 
   To reduce the chance of NetWeaver causing momentary outages, it should always compare the current state with the desired state, and avoid making changes if they are equivelant.
+  
+  When possible, netweaver should use clever config file management and rollback functionality on network appliances to reduce the risk of a bad statement causing a permanent management disconnection.
   
 * #### Agentless
 
