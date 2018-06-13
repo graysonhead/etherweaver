@@ -12,7 +12,7 @@ class NetworkRole:
 		"""Read Yaml from file and send to parse_yaml_string"""
 		with open(yamlfile, 'r') as stream:
 			try:
-				return yaml.load(stream)
+				return yaml.safe_load(stream)
 			except yaml.YAMLError:
 				raise
 
