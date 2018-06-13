@@ -29,7 +29,7 @@ Similar to Ansible and Salt, the goal of NetWeaver is to abstract the task of ma
 ### Top Level objects
 ```yaml
 roles: # A list of all roles
-profiles: # A list of all profiles
+fabric: # A list of all fabrics
 hardware: # A list of all hardware
 ```
 
@@ -39,7 +39,7 @@ The the top level yaml generally looks like this.
 
 ```yaml
 roles: !include roles.yml
-profiles: !include profiles.yml
+fabric: !include fabric.yml
 hardware: !include hardware.yml
 
 ```
