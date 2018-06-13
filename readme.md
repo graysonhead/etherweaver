@@ -26,7 +26,7 @@ Similar to Ansible and Salt, the goal of NetWeaver is to abstract the task of ma
 
 ## Config Structure
 
-###Top Level objects
+### Top Level objects
 ```yaml
 roles: # A list of all roles
 profiles: # A list of all profiles
@@ -44,7 +44,7 @@ hardware: !include hardware.yml
 
 ```
 
-###Roles
+### Roles
 
 The base unit of NetWeaver's configuration is a Role. A Role describes the state and attributes that can describe a specific appliance, or group of appliances.
 
