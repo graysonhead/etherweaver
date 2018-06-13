@@ -23,13 +23,34 @@ Similar to Ansible and Salt, the goal of NetWeaver is to abstract the task of ma
   Closed source switching and routing platforms shouldn't be excluded from config management. Thus, NetWeaver is agentless by default. Each plugin will support a number of methods (ssh, telnet, RS232, etc.) to ensure that all networks can be maintained in an automated fashion.
   
   
-## Network Objects
 
-The base unit of NetWeaver's configuration is a Network Object.
+## Config Structure
 
-A network object does not represent any paticular item of hardware, instead it represents a desired state that can be associated with real world (or virtual) hardware.
+###Top Level objects
+```yaml
+roles: # A list of all roles
+profiles: # A list of all profiles
+hardware: # A list of all hardware
+```
 
-Here is an example of a Network Object as defined in YAML:
+NetWeaver supports includes (not a standard feature of yaml.)
+
+The the top level yaml generally looks like this.
+
+```yaml
+roles: !include roles.yml
+profiles: !include profiles.yml
+hardware: !include hardware.yml
+
+```
+
+###Roles
+
+The base unit of NetWeaver's configuration is a Role. A Role describes the state and attributes that can describe a specific appliance, or group of appliances.
+
+Roles can be defined on a per device status (for example, you may have role objects for individual switches, or you may have a single template that describes the configuration of hundreds of switches.)
+
+Here is an example of a Role Object as defined in YAML:
 ```yaml
 spine1: # The name of the object
   management: 
