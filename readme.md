@@ -83,3 +83,4 @@ spine1: # The name of the object
 
 - paramiko
 - scp
+- PyYAML
