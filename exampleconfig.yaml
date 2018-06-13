@@ -1,0 +1,6 @@
+roles:
+  spine1:
+    management:
+      hostname: spine1.net.testco.org
+    interfaces:
+      - 1G/4
