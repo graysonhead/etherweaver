@@ -33,7 +33,7 @@ fabric: # A list of all fabrics
 hardware: # A list of all hardware
 ```
 
-NetWeaver supports includes (not a standard feature of yaml.)
+NetWeaver supports includes.
 
 The the top level yaml generally looks like this.
 
@@ -53,23 +53,14 @@ Roles can be defined on a per device status (for example, you may have role obje
 Here is an example of a Role Object as defined in YAML:
 ```yaml
 spine1: # The name of the object
-  management: 
-    hostname: spine1.net.testco.org
-    ip_address: 10.11.12.2/24
-    interface: vlan2
+  hostname: spine1.net.testco.org
   protocols: # Contains sub-objects that configure Network Protocols
     ipv4: 
       routing:
         default_gateway: 10.11.12.1
-    lldp: # LLDP is a protocol withing the protocols list
-      tlv-med:
-        - management-address
-        - port-description
-        - port-vlan
-        - system-capabilities
-        - system-description
-        - system-name
   interfaces: # Interfaces defines the physical and logical topology of a network object with switching capability
+    oobm1: #represents out of band management interface
+      ip: 10.11.12.2/24
     10G/1-40:
       profile: trunk # Profiles reference meta-network objects to reduce repeated statements
     peerlink.4094:
@@ -87,4 +78,8 @@ spine1: # The name of the object
       connected-to: spine2.42
 
 ```
-  
+
+## Dependencies
+
+- paramiko
+- scp
