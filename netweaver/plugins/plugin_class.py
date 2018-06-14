@@ -1,7 +1,6 @@
-from paramiko import SSHClient, WarningPolicy, SSHException
-from scp import SCPClient
+from paramiko import SSHClient, WarningPolicy
 from enum import IntEnum
-from plugin_class_errors import *
+from netweaver.plugins.plugin_class_errors import *
 
 class NWConnType(IntEnum):
 	Telnet = 1

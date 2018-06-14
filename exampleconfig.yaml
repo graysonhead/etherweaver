@@ -2,5 +2,11 @@ roles:
   spine1:
     management:
       hostname: spine1.net.testco.org
-    interfaces:
-      - 1G/4
+
+fabrics:
+  network1:
+
+appliances:
+  0c-b3-6d-f1-11-00:
+    hostname: 10.5.5.33
+    role: spine1
