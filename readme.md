@@ -6,11 +6,11 @@ Similar to Ansible and Salt, the goal of NetWeaver is to abstract the task of ma
 
 ### Core Design Concepts
 
-* ##### Vendor Agnostic
+* ##### Universal States for Different Platforms
 
-   Network engineers shouldn't have to consider the ease of configuring the equipment they are buying. The only factors they should consider are price and supported featureset. With proper config management tools, the process of configuring individual units of network equipment should be abstracted.
-   
-   To this end, NetWeaver supports a plugin structure to allow the open source community to collaboratively create plugins.
+   A switch switches packets, and a router routes them. If they follow standards, they will perform this job identically. While the featureset may be disimilar between two platforms from different vendors, the way they implement protocols are similar, as is the end result. 
+
+   The goal of netweaver is to allow the user to create a "universal" definiation of their desired state (configuration), and disconnect the format of this configuration from the vendor-specific OS it is being applied to.
 
 * #### Idempotent and Self-recovering
 
