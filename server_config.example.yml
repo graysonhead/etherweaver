@@ -1,0 +1,2 @@
+# Netweaver will look for this at /etc/netweaver/server_config.yml
+plugin_path: /full/path/to/your/plugins

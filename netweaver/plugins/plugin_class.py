@@ -9,7 +9,7 @@ class NWConnType(IntEnum):
 
 
 class NetWeaverPlugin:
-
+	protocol = None
 	def _ssh_request(self):
 		"""Make an ssh request and parse returncode"""
 
@@ -26,3 +26,7 @@ class NetWeaverPlugin:
 		if stderr.read():
 			raise SSHCommandError(stderr.read()) #TODO For some reason this line returns empty on error when run from a child instance
 		return stdout.read().decode('utf-8')
+
+	def _generic_command(self, command):
+		if self.protocol == 2:
+			return self._ssh_command(command)
