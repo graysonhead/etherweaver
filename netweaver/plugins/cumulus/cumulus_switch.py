@@ -20,6 +20,9 @@ class CumulusSwitch(NetWeaverPlugin):
 		if self.ssh:
 			return self._ssh_command('hostname').strip('\n')
 
+	def is_plugin(self):
+		return True
+
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		if self.ssh:
 			self.ssh.close()

@@ -56,13 +56,13 @@ conf = {
 			{
 				'hostname': '10.5.5.33',
 				'role': 'spine1',
-				'type': 'CumulusSwitch'
+				'plugin_package': 'cumulus'
 			},
 			'0c-b3-6d-9c-67-00':
 				{
 					'hostname': '10.5.5.34',
 					'role': 'spine2',
-					'type': 'CumulusSwitch'
+					'plugin_package': 'cumulus'
 				}
 		}
 }
