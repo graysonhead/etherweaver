@@ -1,6 +1,6 @@
 from netweaver.core_classes.config_object import ConfigObject
 import unittest
-from server_config_loader import get_server_config
+from netweaver.server_config_loader import get_server_config
 from importlib.machinery import SourceFileLoader
 
 
