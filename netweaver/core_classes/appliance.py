@@ -10,6 +10,11 @@ class Appliance(ConfigObject):
 	def __init__(self, name, appliance_dict):
 		self.name = name
 		self.config = appliance_dict
+		self.fabric = None
+		self.role = None
+		self.plugin = None
+
+		self.load_plugin()
 
 	def load_plugin(self):
 		'''
@@ -19,7 +24,8 @@ class Appliance(ConfigObject):
 		package = SourceFileLoader('package', '{}/{}'.format(path, '__init__.py')).load_module()
 		module = SourceFileLoader('module', '{}/{}'.format(path, package.information['module_name'])).load_module()
 		plugin = getattr(module, package.information['class_name'])
-		return plugin(self.config)
+		# return plugin(self.config)
+		self.plugin = plugin(self.config)
 
 	def get_plugin_path(self):
 		return  '{}/{}'.format(get_server_config()['plugin_path'], self.config['plugin_package'])
