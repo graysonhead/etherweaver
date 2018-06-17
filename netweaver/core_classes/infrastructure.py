@@ -1,6 +1,6 @@
 from netweaver.core_classes.fabric import Fabric
 from netweaver.core_classes.appliance import Appliance
-
+from netweaver.core_classes.role import NetworkRole
 
 class Infrastructure:
 
@@ -9,11 +9,12 @@ class Infrastructure:
 		self.roles_conf = config_dict['roles']
 		self.fabrics_conf = config_dict['fabrics']
 		self.fabrics = []
-
+		self.roles = []
 		self._build_fabric()
 		self._build_appliances()
 
 	def _build_fabric(self):
+		self.fabrics = []  # Reset existing fabrics (in case this is run twice)
 		for f, fv in self.fabrics_conf.items():
 			fabobj = Fabric(f, fv)
 			self.fabrics.append(fabobj)
@@ -25,9 +26,18 @@ class Infrastructure:
 		"""
 		for fabric_object in self.fabrics:
 			for role_key, role_object in self.roles_conf.items():
+				fabric_object.appliances = []  # Reset existing list (in case this is run twice)
 				if fabric_object.name == role_object['fabric']:
 					app = Appliance(role_key, role_object)
 					fabric_object.appliances.append(app)
+
+	# def _build_roles(self): #TODO finish this
+	# 	self.roles = []  # In case this is run twice
+	# 	for role_key, role_dict in self.roles_conf.items():
+	# 		self.roles.append(NetworkRole(role_key, role_dict=role_dict))
+	# 	for f in self.fabrics:
+	# 		for app in f.appliances:
+	# 			for role in self.roles:
 
 
 conf = {

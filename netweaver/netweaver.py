@@ -1,6 +1,6 @@
 import argparse
 import yaml
-
+from netweaver.core_classes.infrastructure import Infrastructure
 
 class CLIApp:
 
@@ -29,6 +29,7 @@ class CLIApp:
 		"""
 		This builds instances of the appliance class.
 		"""
+		inf = Infrastructure(self.config)
 
 
 
