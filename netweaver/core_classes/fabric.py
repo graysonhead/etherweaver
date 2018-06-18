@@ -7,6 +7,7 @@ class Fabric(ConfigObject):
 		self.name = name
 		self.config = config
 		self.appliances = []
+		self.is_fabric = True
 
 	def __repr__(self):
 		return '<Fabric: {}>'.format(self.name)

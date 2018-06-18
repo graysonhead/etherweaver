@@ -15,6 +15,7 @@ class Infrastructure:
 		self.appliances = []
 		self.fabrics = []
 		self.roles = []
+		self.is_infrastructure = True
 
 		self._build_infrastructure()
 
@@ -98,7 +99,7 @@ conf = {
 					'password': 'CumulusLinux!'
 				}
 			}
-	},
+		},
 	'appliances':
 		{'0c-b3-6d-f1-11-00':
 			{

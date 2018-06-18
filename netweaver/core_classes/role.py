@@ -7,6 +7,7 @@ class NetworkRole(ConfigObject):
 		self.name = name
 		self.config = role_dict
 		self.appliances = []
+		self.is_role = True
 
 	def __repr__(self):
 		return '<Role: {}>'.format(self.name)

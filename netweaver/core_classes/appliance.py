@@ -13,6 +13,7 @@ class Appliance(ConfigObject):
 		self.fabric = None
 		self.role = None
 		self.plugin = None
+		self.is_appliance = True
 
 		self.load_plugin()
 
