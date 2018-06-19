@@ -12,7 +12,7 @@ class TestPluginLoader(unittest.TestCase):
 				}
 		appl = Appliance("00-00-00-00-00-00",  mock)
 		inst = appl.load_plugin()
-		self.assertEqual(appl.plugin.is_plugin(), True)
+		self.assertEqual(appl.plugin.is_plugin, True)
 
 class TestInfrastructureClass(unittest.TestCase):
 	def test_infrastructure_class(self):
@@ -57,7 +57,7 @@ class TestInfrastructureClass(unittest.TestCase):
 		self.assertEqual(inf.appliances[0].is_appliance, True)
 		self.assertEqual(inf.fabrics[0].is_fabric, True)
 		self.assertEqual(inf.appliances[0].role.is_role, True)
-		self.assertEqual(inf.appliances[0].plugin.is_plugin(), True)
+		self.assertEqual(inf.appliances[0].plugin.is_plugin, True)
 
 
 if __name__ == '__main__':

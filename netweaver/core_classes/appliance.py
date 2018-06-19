@@ -13,9 +13,6 @@ class Appliance(ConfigObject):
 		self.fabric = None
 		self.role = None
 		self.plugin = None
-		self.is_appliance = True
-
-		self.load_plugin()
 
 	def load_plugin(self):
 		'''
@@ -26,10 +23,10 @@ class Appliance(ConfigObject):
 		module = SourceFileLoader('module', '{}/{}'.format(path, package.information['module_name'])).load_module()
 		plugin = getattr(module, package.information['class_name'])
 		# return plugin(self.config)
-		self.plugin = plugin(self.config)
+		self.plugin = plugin(self.config, self.fabric.config)
 
 	def get_plugin_path(self):
-		return  '{}/{}'.format(get_server_config()['plugin_path'], self.config['plugin_package'])
+		return '{}/{}'.format(get_server_config()['plugin_path'], self.config['plugin_package'])
 
 	def __repr__(self):
 		return '<Appliance: {}>'.format(self.name)

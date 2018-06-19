@@ -77,6 +77,9 @@ class Infrastructure:
 				if app.role.config['fabric'] == fabric.name:
 					app.fabric = fabric
 					fabric.appliances.append(app)
+			app.load_plugin()
+			app.plugin.build_ssh_session()
+
 
 
 conf = {

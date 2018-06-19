@@ -19,17 +19,21 @@ class CLIApp:
 			except yaml.YAMLError:
 				raise
 
-	def run(self):
-		for name, dict in self.config['appliances'].items():
-			print(name)
-			print(dict['hostname'])
-			self._build_infrastructure_object()
-
 	def _build_infrastructure_object(self):
 		"""
 		This builds instances of the appliance class.
 		"""
-		inf = Infrastructure(self.config)
+		self.inf = Infrastructure(self.config)
+
+	def run(self):
+		self._build_infrastructure_object()
+
+	def _parse_target(self, target):
+		for a in self.inf.appliances:
+			if a.name == target:
+				return a
+
+
 
 
 
