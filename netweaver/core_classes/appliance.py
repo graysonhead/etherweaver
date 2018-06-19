@@ -2,6 +2,7 @@ from netweaver.core_classes.config_object import ConfigObject
 import unittest
 from netweaver.server_config_loader import get_server_config
 from importlib.machinery import SourceFileLoader
+from .errors import *
 
 
 
@@ -26,7 +27,10 @@ class Appliance(ConfigObject):
 		self.plugin = plugin(self.config, self.fabric.config)
 
 	def get_plugin_path(self):
-		return '{}/{}'.format(get_server_config()['plugin_path'], self.config['plugin_package'])
+		try:
+			return '{}/{}'.format(get_server_config()['plugin_path'], self.config['plugin_package'])
+		except KeyError:
+			raise NonExistantPlugin()
 
 	def __repr__(self):
 		return '<Appliance: {}>'.format(self.name)

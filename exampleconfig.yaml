@@ -16,10 +16,8 @@ appliances:
   0c-b3-6d-f1-11-00:
     hostname: 10.5.5.33
     role: spine1
-    type: CumulusSwitch
+    plugin_package: cumulus
   0c-b3-6d-9c-67-00:
     hostname: 10.5.5.34
     role: spine2
-    type: CumulusSwitch
-    username: cumulus
-    password: CumulusLinux!
+    plugin_package: cumulus

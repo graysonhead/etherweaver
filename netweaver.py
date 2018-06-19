@@ -11,6 +11,9 @@ class CLIApp:
 		if yaml:
 			self.config = self._parse_yaml_file(yaml)
 
+		self._build_infrastructure_object()
+
+
 	def _parse_yaml_file(self, yamlfile):
 		"""Read Yaml from file and send to parse_yaml_string"""
 		with open(yamlfile, 'r') as stream:
@@ -26,7 +29,7 @@ class CLIApp:
 		self.inf = Infrastructure(self.config)
 
 	def run(self):
-		self._build_infrastructure_object()
+		return self._parse_target(self.tgt).plugin.command(self.func)
 
 	def _parse_target(self, target):
 		for a in self.inf.appliances:
@@ -36,8 +39,8 @@ class CLIApp:
 
 
 
-
 if __name__ == '__main__':
+	pass
 	#TODO move this to init for the class
 	parser = argparse.ArgumentParser(
 			description='Netweaver is an application to orchestrate network configurations.')
@@ -51,9 +54,7 @@ if __name__ == '__main__':
 	)
 	args = parser.parse_args()
 	cli = CLIApp(args.target, args.func, yaml=args.yamlfile)
-	cli.run()
-
-
-
-
-
+	# target = '0c-b3-6d-f1-11-00'
+	# func = 'get.hostname'
+	# cli = CLIApp(target, func, yaml='exampleconfig.yaml')
+	print(cli.run())
