@@ -33,9 +33,19 @@ class CumulusSwitch(NetWeaverPlugin):
 		if self.ssh:
 			return self._ssh_command('hostname').strip('\n')
 
+	def set_hostname(self, hostname):
+		if self.ssh:
+			return self._ssh_command('net add hostname {}'.format(hostname))
+			self._net_commit()
+
+	def _net_commit(self):
+		if self.ssh:
+			return self._ssh_command('net commit')
+
 	def command(self, command):
 		if 'get.hostname' in command:
 			return self.get_hostname()
+
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		if self.ssh:

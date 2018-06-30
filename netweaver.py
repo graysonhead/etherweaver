@@ -13,7 +13,6 @@ class CLIApp:
 
 		self._build_infrastructure_object()
 
-
 	def _parse_yaml_file(self, yamlfile):
 		"""Read Yaml from file and send to parse_yaml_string"""
 		with open(yamlfile, 'r') as stream:
@@ -46,6 +45,7 @@ if __name__ == '__main__':
 			description='Netweaver is an application to orchestrate network configurations.')
 	parser.add_argument('target', type=str)
 	parser.add_argument('func', type=str)
+	parser.add_argument('value', type=str)
 	parser.add_argument(
 		'--yaml',
 		type=str,
