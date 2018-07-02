@@ -2,6 +2,7 @@ from netweaver.core_classes.config_object import ConfigObject
 import unittest
 from netweaver.server_config_loader import get_server_config
 from importlib.machinery import SourceFileLoader
+from .errors import *
 
 
 
@@ -10,6 +11,9 @@ class Appliance(ConfigObject):
 	def __init__(self, name, appliance_dict):
 		self.name = name
 		self.config = appliance_dict
+		self.fabric = None
+		self.role = None
+		self.plugin = None
 
 	def load_plugin(self):
 		'''
@@ -19,13 +23,23 @@ class Appliance(ConfigObject):
 		package = SourceFileLoader('package', '{}/{}'.format(path, '__init__.py')).load_module()
 		module = SourceFileLoader('module', '{}/{}'.format(path, package.information['module_name'])).load_module()
 		plugin = getattr(module, package.information['class_name'])
-		return plugin(self.config)
+		# return plugin(self.config)
+		self.plugin = plugin(self.config, self.fabric.config)
 
 	def get_plugin_path(self):
-		return  '{}/{}'.format(get_server_config()['plugin_path'], self.config['plugin_package'])
+		try:
+			return '{}/{}'.format(get_server_config()['plugin_path'], self.config['plugin_package'])
+		except KeyError:
+			raise NonExistantPlugin()
 
 	def __repr__(self):
 		return '<Appliance: {}>'.format(self.name)
+
+	def run_individual_command(self, func, value):
+		if func == 'get.hostname':
+			return self.plugin.get_hostname()
+		if func == 'set.hostname':
+			return self.plugin.set_hostname(value)
 
 
 class TestPluginLoader(unittest.TestCase):

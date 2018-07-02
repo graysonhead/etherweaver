@@ -30,3 +30,14 @@ class NetWeaverPlugin:
 	def _generic_command(self, command):
 		if self.protocol == 2:
 			return self._ssh_command(command)
+
+	def not_supported(self):
+		raise FeatureNotSupported
+
+	"""Override these functions to enable each feature"""
+
+	def get_hostname(self):
+		self.not_supported()
+
+	def set_hostname(self, hostname):
+		self.not_supported()
