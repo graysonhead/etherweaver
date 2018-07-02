@@ -4,9 +4,7 @@ from netweaver.core_classes.infrastructure import Infrastructure
 
 class CLIApp:
 
-	def __init__(self, tgt, func, yaml=None):
-		self.tgt = tgt
-		self.func = func
+	def __init__(self, yaml=None):
 		self.config = None  # This is defined by the parsers below
 		if yaml:
 			self.config = self._parse_yaml_file(yaml)
@@ -27,13 +25,10 @@ class CLIApp:
 		"""
 		self.inf = Infrastructure(self.config)
 
-	def run(self):
-		return self._parse_target(self.tgt).plugin.command(self.func)
+	def run(self, target, func, value=None):
+		return self.inf.run_command(target, func, value)
 
-	def _parse_target(self, target):
-		for a in self.inf.appliances:
-			if a.name == target:
-				return a
+
 
 
 
@@ -53,7 +48,8 @@ if __name__ == '__main__':
 		help='YAML file containing the roles, appliances, and fabric objects'
 	)
 	args = parser.parse_args()
-	cli = CLIApp(args.target, args.func, yaml=args.yamlfile)
+	cli = CLIApp(yaml=args.yamlfile)
+	cli.run(args.target, args.func, args.value)
 	# target = '0c-b3-6d-f1-11-00'
 	# func = 'get.hostname'
 	# cli = CLIApp(target, func, yaml='exampleconfig.yaml')

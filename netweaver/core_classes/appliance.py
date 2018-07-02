@@ -35,6 +35,12 @@ class Appliance(ConfigObject):
 	def __repr__(self):
 		return '<Appliance: {}>'.format(self.name)
 
+	def run_individual_command(self, func, value):
+		if func == 'get.hostname':
+			return self.plugin.get_hostname()
+		if func == 'set.hostname':
+			return self.plugin.set_hostname(value)
+
 
 class TestPluginLoader(unittest.TestCase):
 	def test_plugin_loader(self):

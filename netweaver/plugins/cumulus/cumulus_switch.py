@@ -1,5 +1,5 @@
 from netweaver.plugins.plugin_class import NetWeaverPlugin, NWConnType
-
+from functools import wraps
 
 class CumulusSwitch(NetWeaverPlugin):
 
@@ -35,8 +35,9 @@ class CumulusSwitch(NetWeaverPlugin):
 
 	def set_hostname(self, hostname):
 		if self.ssh:
-			return self._ssh_command('net add hostname {}'.format(hostname))
+			out = self._ssh_command('net add hostname {}'.format(hostname))
 			self._net_commit()
+			return out
 
 	def _net_commit(self):
 		if self.ssh:
