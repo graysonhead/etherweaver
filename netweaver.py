@@ -25,7 +25,7 @@ class CLIApp:
 		"""
 		self.inf = Infrastructure(self.config)
 
-	def run(self, target, func, value=None):
+	def run(self, target=None, func=None, value=None):
 		return self.inf.run_command(target, func, value)
 
 
@@ -40,7 +40,7 @@ if __name__ == '__main__':
 			description='Netweaver is an application to orchestrate network configurations.')
 	parser.add_argument('target', type=str)
 	parser.add_argument('func', type=str)
-	parser.add_argument('value', type=str)
+	parser.add_argument('--value', type=str, dest='value', default=None)
 	parser.add_argument(
 		'--yaml',
 		type=str,
@@ -49,8 +49,8 @@ if __name__ == '__main__':
 	)
 	args = parser.parse_args()
 	cli = CLIApp(yaml=args.yamlfile)
-	cli.run(args.target, args.func, args.value)
+	print(cli.run(target=args.target, func=args.func, value=args.value))
 	# target = '0c-b3-6d-f1-11-00'
 	# func = 'get.hostname'
 	# cli = CLIApp(target, func, yaml='exampleconfig.yaml')
-	print(cli.run())
+
