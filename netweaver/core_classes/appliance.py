@@ -15,6 +15,8 @@ class Appliance(ConfigObject):
 		self.role = None
 		self.plugin = None
 
+		self.dtree = None
+
 	def load_plugin(self):
 		'''
 		:return: plugin initialized with self.config, error otherwise (e.g. incompatible with config, plugin not found..).
@@ -25,6 +27,16 @@ class Appliance(ConfigObject):
 		plugin = getattr(module, package.information['class_name'])
 		# return plugin(self.config)
 		self.plugin = plugin(self.config, self.fabric.config)
+		self._build_dispatch_tree()
+
+	def _build_dispatch_tree(self):
+		self.dtree = {
+			'get': self.plugin.get_current_config,
+			'hostname': {
+				'set': self.plugin.set_hostname,
+				'get': self.plugin.get_hostname
+			}
+		}
 
 	def get_plugin_path(self):
 		try:
@@ -36,10 +48,22 @@ class Appliance(ConfigObject):
 		return '<Appliance: {}>'.format(self.name)
 
 	def run_individual_command(self, func, value):
-		if func == 'get.hostname':
-			return self.plugin.get_hostname()
-		if func == 'set.hostname':
-			return self.plugin.set_hostname(value)
+		# if func == 'get.hostname':
+		# 	return self.plugin.get_hostname()
+		# if func == 'set.hostname':
+		# 	return self.plugin.set_hostname(value)
+		sfunc = func.split('.')
+		"""
+		Iterate through each level of the config and stop when you get to a command (get, set, etc.)
+		"""
+		level = self.dtree
+		for com in sfunc:
+			if com == 'get':
+				return level[com]()
+			elif com == 'set':
+				return level[com](value)
+			else:
+				level = self.dtree[com]
 
 
 class TestPluginLoader(unittest.TestCase):

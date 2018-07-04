@@ -41,3 +41,6 @@ class NetWeaverPlugin:
 
 	def set_hostname(self, hostname):
 		self.not_supported()
+
+	def get_current_config(self):
+		self.not_supported()
