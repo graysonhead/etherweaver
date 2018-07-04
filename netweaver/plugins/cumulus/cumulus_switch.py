@@ -29,23 +29,27 @@ class CumulusSwitch(NetWeaverPlugin):
 		config.update({'hostname': self.get_hostname()})
 		return config
 
-	def get_hostname(self):
+	def command(self, command):
+		"""
+		This just wraps _ssh_command right now, eventually it will allow for other comm types
+		:param command:
+		:return:
+		"""
 		if self.ssh:
-			return self._ssh_command('hostname').strip('\n')
+			return self._ssh_command(command)
+
+	def get_hostname(self):
+		return self.command('hostname').strip('\n')
 
 	def set_hostname(self, hostname):
 		if self.ssh:
-			out = self._ssh_command('net add hostname {}'.format(hostname))
+			out = self.command('net add hostname {}'.format(hostname))
 			self._net_commit()
 			return out
 
 	def _net_commit(self):
 		if self.ssh:
-			return self._ssh_command('net commit')
-
-	def command(self, command):
-		if 'get.hostname' in command:
-			return self.get_hostname()
+			return self.command('net commit')
 
 
 	def __exit__(self, exc_type, exc_val, exc_tb):

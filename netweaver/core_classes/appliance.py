@@ -17,6 +17,9 @@ class Appliance(ConfigObject):
 
 		self.dtree = None
 
+	def _not_implemented(self):
+		return "Not implemented"
+
 	def load_plugin(self):
 		'''
 		:return: plugin initialized with self.config, error otherwise (e.g. incompatible with config, plugin not found..).
@@ -35,6 +38,12 @@ class Appliance(ConfigObject):
 			'hostname': {
 				'set': self.plugin.set_hostname,
 				'get': self.plugin.get_hostname
+			},
+			'interface': {
+				'1g': {
+					'get': self._not_implemented,
+					'set': self._not_implemented,
+				}
 			}
 		}
 

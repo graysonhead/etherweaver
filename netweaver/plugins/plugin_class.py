@@ -44,3 +44,6 @@ class NetWeaverPlugin:
 
 	def get_current_config(self):
 		self.not_supported()
+
+	def get_interface(self, speed, interface):
+		self.not_supported()
