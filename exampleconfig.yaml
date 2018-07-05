@@ -5,6 +5,11 @@ roles:
   spine2:
     fabric: network1
     hostname: spine2.net.testco.org
+    protocols:
+      dns:
+        nameservers:
+            - 10.5.5.115
+
 
 fabrics:
   network1:

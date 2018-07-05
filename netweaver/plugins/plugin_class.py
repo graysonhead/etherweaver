@@ -47,3 +47,15 @@ class NetWeaverPlugin:
 
 	def get_interface(self, speed, interface):
 		self.not_supported()
+
+	def get_dns_nameservers(self):
+		self.not_supported()
+
+	def set_dns_nameservers(self, nameserverjson):
+		self.not_supported()
+
+	def pull_state(self):
+		self.not_supported()
+
+	def push_state(self):
+		self.not_supported()

@@ -31,6 +31,7 @@ class Appliance(ConfigObject):
 		# return plugin(self.config)
 		self.plugin = plugin(self.config, self.fabric.config)
 		self._build_dispatch_tree()
+		self.plugin.appliance = self
 
 	def _build_dispatch_tree(self):
 		self.dtree = {
