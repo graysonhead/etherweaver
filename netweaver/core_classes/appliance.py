@@ -35,6 +35,9 @@ class Appliance(ConfigObject):
 
 	def _build_dispatch_tree(self):
 		self.dtree = {
+			'state': {
+				'apply': self.plugin.push_state
+			},
 			'get': self.plugin.get_current_config,
 			'hostname': {
 				'set': self.plugin.set_hostname,
@@ -68,7 +71,7 @@ class Appliance(ConfigObject):
 		"""
 		level = self.dtree
 		for com in sfunc:
-			if com == 'get':
+			if com == 'get' or com == 'apply':
 				return level[com]()
 			elif com == 'set':
 				return level[com](value)

@@ -53,8 +53,9 @@ class CumulusSwitch(NetWeaverPlugin):
 			return out
 
 	def _net_commit(self):
-		if self.ssh:
-			return self.command('net commit')
+		ret = self.command('net commit')
+		self.cstate = self.pull_state()
+		return ret
 
 	def net_config_parser(self):
 		pass
@@ -133,24 +134,52 @@ class CumulusSwitch(NetWeaverPlugin):
 			dstate = self.appliance.role.config
 			if 'hostname' in dstate:
 				if dstate['hostname'] != self.cstate['hostname']:
-					queue.append('net add hostname {}'.format(dstate['hostname']))
-			# Protocols
-			# elif 'protocols' in dstate:
-			# 	# DNS
-			# 	"""
-			# 	Due to the way Net works in Cumulus, we need to do a two-way check for nameservers
-			# 	We need to remove any servers that exist in cstate but not dstate, and
-			# 	"""
-			# 	if 'dns' in dstate['protocols']:
-			# 		if 'nameservers' in dstate['protocols']['dns']:
-			# 			if dstate['protocols']['dns']['nameservers'] != self.cstate['protocols']['dns']['nameservers']:
-
-
+					self.set_hostname(dstate['hostname'])
 			for com in queue:
 				self.command(com)
 			print(queue)
 			self._net_commit()
 			self.reload_state()
+
+	def add_dns_nameserver(self, ip, commit=True):
+		ip = ip_address(ip)
+		if ip._version == 4:
+			version = 'ipv4'
+		elif ip._version == 6:
+			version = 'ipv6'
+		command = 'net add dns nameserver {} {}'.format(version, ip)
+		self.command(command)
+		if commit:
+			self._net_commit()
+		return command
+
+	def set_dns_nameservers(self, nameserverjson):
+		commandqueue = []
+		try:
+			nslist = self.cstate['protocols']['dns']['nameservers']
+		except KeyError:
+			pass
+		else:
+			for ns in nslist:
+				if ns not in nameserverjson:
+					commandqueue.append(self.rm_dns_nameserver(ns))
+		for ns in nameserverjson:
+				if ns not in self.cstate['protocols']['dns']['nameservers']:
+					commandqueue.append(self.add_dns_nameserver(ns, commit=False))
+		self._net_commit()
+		return commandqueue
+
+	def rm_dns_nameserver(self, ip, commit=True):
+		ip = ip_address(ip)
+		if ip._version == 4:
+			version = 'ipv4'
+		elif ip._version == 6:
+			version = 'ipv6'
+		command = 'net del dns nameserver {} {}'.format(version, ip)
+		self.command(command)
+		if commit:
+			self._net_commit()
+		return command
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		if self.ssh:

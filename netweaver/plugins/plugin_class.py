@@ -54,6 +54,12 @@ class NetWeaverPlugin:
 	def set_dns_nameservers(self, nameserverjson):
 		self.not_supported()
 
+	def add_dns_nameserver(self, ip):
+		self.not_supported()
+
+	def rm_dns_nameserver(self, ip):
+		self.not_supported()
+
 	def pull_state(self):
 		self.not_supported()
 
