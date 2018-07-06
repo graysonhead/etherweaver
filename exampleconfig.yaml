@@ -2,6 +2,10 @@ roles:
   spine1:
     fabric: network1
     hostname: spine1.net.testco.org
+    protocols:
+      dns:
+        nameservers:
+            - 10.5.5.115
   spine2:
     fabric: network1
     hostname: spine2.net.testco.org

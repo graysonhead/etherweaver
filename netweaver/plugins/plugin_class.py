@@ -39,7 +39,7 @@ class NetWeaverPlugin:
 	def get_hostname(self):
 		self.not_supported()
 
-	def set_hostname(self, hostname):
+	def set_hostname(self, hostname, execute=True):
 		self.not_supported()
 
 	def get_current_config(self):
@@ -48,20 +48,23 @@ class NetWeaverPlugin:
 	def get_interface(self, speed, interface):
 		self.not_supported()
 
+	def get_dns(self):
+		self.not_supported()
+
 	def get_dns_nameservers(self):
 		self.not_supported()
 
-	def set_dns_nameservers(self, nameserverjson):
+	def set_dns_nameservers(self, nameserverjson, execute=True):
 		self.not_supported()
 
-	def add_dns_nameserver(self, ip):
+	def add_dns_nameserver(self, ip, execute=True):
 		self.not_supported()
 
-	def rm_dns_nameserver(self, ip):
+	def rm_dns_nameserver(self, ip, execute=True):
 		self.not_supported()
 
 	def pull_state(self):
 		self.not_supported()
 
-	def push_state(self):
+	def push_state(self, execute=True):
 		self.not_supported()

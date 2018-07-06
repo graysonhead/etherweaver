@@ -6,6 +6,7 @@ from .errors import *
 
 
 
+
 class Appliance(ConfigObject):
 
 	def __init__(self, name, appliance_dict):
@@ -35,13 +36,26 @@ class Appliance(ConfigObject):
 
 	def _build_dispatch_tree(self):
 		self.dtree = {
+			'config': {
+				'get': self.plugin.pull_state,
+			},
 			'state': {
 				'apply': self.plugin.push_state
 			},
 			'get': self.plugin.get_current_config,
 			'hostname': {
 				'set': self.plugin.set_hostname,
-				'get': self.plugin.get_hostname
+				'get': self.plugin.get_hostname,
+			},
+			'protocols': {
+				'dns': {
+					'get': self.plugin.get_dns,
+					'nameservers': {
+						'get': self.plugin.get_dns_nameservers,
+						'set': self.plugin.set_dns_nameservers,
+						'add': self.plugin.add_dns_nameserver,
+					}
+				}
 			},
 			'interface': {
 				'1g': {
@@ -73,10 +87,10 @@ class Appliance(ConfigObject):
 		for com in sfunc:
 			if com == 'get' or com == 'apply':
 				return level[com]()
-			elif com == 'set':
+			elif com == 'set' or com == 'add':
 				return level[com](value)
 			else:
-				level = self.dtree[com]
+				level = level[com]
 
 
 class TestPluginLoader(unittest.TestCase):

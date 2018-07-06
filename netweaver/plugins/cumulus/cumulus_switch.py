@@ -43,14 +43,7 @@ class CumulusSwitch(NetWeaverPlugin):
 		if self.ssh:
 			return self._ssh_command(command)
 
-	def get_hostname(self):
-		return self.command('hostname').strip('\n')
 
-	def set_hostname(self, hostname):
-		if self.ssh:
-			out = self.command('net add hostname {}'.format(hostname))
-			self._net_commit()
-			return out
 
 	def _net_commit(self):
 		ret = self.command('net commit')
@@ -61,7 +54,7 @@ class CumulusSwitch(NetWeaverPlugin):
 		pass
 
 	def get_dns_nameservers(self):
-		dnsraw = self.command('net show')
+		return self.cstate['protocols']['dns']['nameservers']
 
 	def _ifupdown_parser(text):
 		# Will parse lines with these keys as interfaces
@@ -129,31 +122,43 @@ class CumulusSwitch(NetWeaverPlugin):
 	def reload_state(self):
 		self.cstate = self.pull_state()
 
-	def push_state(self):
+	def push_state(self, execute=True):
 			queue = []
 			dstate = self.appliance.role.config
 			if 'hostname' in dstate:
 				if dstate['hostname'] != self.cstate['hostname']:
-					self.set_hostname(dstate['hostname'])
+					queue.append(self.set_hostname(dstate['hostname'], execute=False))
+			if 'protocols' in dstate:
+				if 'dns' in dstate['protocols']:
+					if 'nameservers' in dstate['protocols']['dns']:
+						if dstate['protocols']['dns']['nameservers'] != self.cstate['protocols']['dns']['nameservers']:
+							queue = queue + self.set_dns_nameservers(
+								dstate['protocols']['dns']['nameservers'],
+								execute=False)
+							
+			print(queue)
 			for com in queue:
 				self.command(com)
-			print(queue)
 			self._net_commit()
 			self.reload_state()
 
-	def add_dns_nameserver(self, ip, commit=True):
+	def add_dns_nameserver(self, ip, commit=True, execute=True):
 		ip = ip_address(ip)
 		if ip._version == 4:
 			version = 'ipv4'
 		elif ip._version == 6:
 			version = 'ipv6'
 		command = 'net add dns nameserver {} {}'.format(version, ip)
-		self.command(command)
-		if commit:
-			self._net_commit()
+		if execute:
+			self.command(command)
+			if commit:
+				self._net_commit()
 		return command
 
-	def set_dns_nameservers(self, nameserverjson):
+	def get_dns(self):
+		return self.cstate['protocols']['dns']
+
+	def set_dns_nameservers(self, nameserverjson, execute=True, commit=True):
 		commandqueue = []
 		try:
 			nslist = self.cstate['protocols']['dns']['nameservers']
@@ -162,23 +167,39 @@ class CumulusSwitch(NetWeaverPlugin):
 		else:
 			for ns in nslist:
 				if ns not in nameserverjson:
-					commandqueue.append(self.rm_dns_nameserver(ns))
+					commandqueue.append(self.rm_dns_nameserver(ns, execute=False))
 		for ns in nameserverjson:
 				if ns not in self.cstate['protocols']['dns']['nameservers']:
-					commandqueue.append(self.add_dns_nameserver(ns, commit=False))
-		self._net_commit()
+					commandqueue.append(self.add_dns_nameserver(ns, commit=False, execute=False))
+		if execute:
+			for com in commandqueue:
+				self.command(com)
+			if commit:
+				self._net_commit()
 		return commandqueue
 
-	def rm_dns_nameserver(self, ip, commit=True):
+	def rm_dns_nameserver(self, ip, commit=True, execute=True):
 		ip = ip_address(ip)
 		if ip._version == 4:
 			version = 'ipv4'
 		elif ip._version == 6:
 			version = 'ipv6'
 		command = 'net del dns nameserver {} {}'.format(version, ip)
-		self.command(command)
-		if commit:
-			self._net_commit()
+		if execute:
+			self.command(command)
+			if commit:
+				self._net_commit()
+		return command
+
+	def get_hostname(self):
+		return self.command('hostname').strip('\n')
+
+	def set_hostname(self, hostname, execute=True, commit=True):
+		command = 'net add hostname {}'.format(hostname)
+		if execute:
+			self.command(command)
+			if commit:
+				self._net_commit()
 		return command
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
