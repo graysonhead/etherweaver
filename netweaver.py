@@ -1,6 +1,9 @@
 import argparse
 import yaml
 from netweaver.core_classes.infrastructure import Infrastructure
+import pprint
+
+pp = pprint.PrettyPrinter(indent=4)
 
 class CLIApp:
 
@@ -26,8 +29,10 @@ class CLIApp:
 		self.inf = Infrastructure(self.config)
 
 	def run(self, target=None, func=None, value=None):
-		return self.inf.run_command(target, func, value)
-
+		retval = self.inf.run_command(target, func, value)
+		if type(retval) == dict or list:
+			retval = (pp.pprint(retval))
+		return retval
 
 
 

@@ -36,11 +36,9 @@ class Appliance(ConfigObject):
 
 	def _build_dispatch_tree(self):
 		self.dtree = {
-			'config': {
-				'get': self.plugin.cstate,
-			},
 			'state': {
-				'apply': self.plugin.push_state
+				'apply': self.plugin.push_state,
+				'get': self.plugin.cstate,
 			},
 			'hostname': {
 				'set': self.plugin.set_hostname,

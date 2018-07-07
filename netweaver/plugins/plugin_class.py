@@ -83,3 +83,9 @@ class NetWeaverPlugin:
 
 	def set_ntp_client_servers(self, ntpserverlist, execute=True):
 		self.not_supported()
+
+	def set_interface_config(self, interfaces, profile=None, execute=True):
+		self.not_supported()
+
+	def set_vlan_config(self, vlans, execute=True):
+		self.not_supported()

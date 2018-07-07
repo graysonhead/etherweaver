@@ -17,6 +17,7 @@ class CumulusSwitch(NetWeaverPlugin):
 
 		self.build_ssh_session()
 		self.cstate = self.pull_state()
+		self.portmap = self.pull_port_state()
 
 	def build_ssh_session(self):
 		self.conn_type = NWConnType  #TODO, make this dynamically selected based on something
@@ -135,6 +136,14 @@ class CumulusSwitch(NetWeaverPlugin):
 					if 'servers' not in conf['protocols']['ntp']['client']:
 						conf['protocols']['ntp']['client'].update({'servers': []})
 					conf['protocols']['ntp']['client']['servers'].append(line.split(' ')[5])
+			#VLANs
+			elif line.startswith('net add bridge bridge vids'):
+				if 'vlans' not in conf:
+					conf.update({'vlans': {}})
+				vidstring = line.split(' ')[5]
+				vids = self._extrapolate_list(vidstring.split(','))
+				for vid in vids:
+					conf['vlans'].update({vid: None})
 		return conf
 
 	def _check_atrib(self, atrib):
@@ -148,10 +157,12 @@ class CumulusSwitch(NetWeaverPlugin):
 				return True
 	def reload_state(self):
 		self.cstate = self.pull_state()
+		self.portmap = self.pull_port_state()
 
 	def push_state(self, execute=True):
 			queue = []
 			dstate = self.appliance.role.config
+			dpstate = self.appliance.fabric.config
 			if 'hostname' in dstate:
 				if dstate['hostname'] != self.cstate['hostname']:
 					queue.append(self.set_hostname(dstate['hostname'], execute=False))
@@ -170,6 +181,15 @@ class CumulusSwitch(NetWeaverPlugin):
 						if 'servers' in dstate['protocols']['ntp']['client']:
 							if dstate['protocols']['ntp']['client']['servers'] != self.cstate['protocols']['ntp']['client']['servers']:
 								queue = queue + (self.set_ntp_client_servers(dstate['protocols']['ntp']['client']['servers'], execute=False))
+				if 'vlans' in dpstate:
+					dvl = []
+					cvl = []
+					for k, v in dpstate['vlans'].items():
+						dvl.append(str(k))
+					for k, v in self.cstate['vlans'].items():
+						cvl.append(str(k))
+					if dvl != cvl:
+						print('No matcherino')
 			print(queue)
 			for com in queue:
 				self.command(com)
@@ -293,10 +313,62 @@ class CumulusSwitch(NetWeaverPlugin):
 		}
 		prtjson = self._get_interface_json()
 		for k, v in prtjson.items():
-			if k['mode'] == 'Mgmt':
+			if v['mode'] == 'Mgmt':
 				num = k.strip('eth')
-				id = v
+				id = k
+				body = v
+				ports['mgmt'].update({num: {'id': id, 'info': body}})
+		return ports
 
+	def set_interface_config(self, interfaces, profile=None, execute=True):
+		pass
+
+	def add_vlans(self, vlandict, execute=True, commit=True):
+		"""
+		Config objects like {1: {'description': 'Data'}}
+		:param vlans:
+		:param execute:
+		:return:
+		"""
+		commands = []
+		vlandict = self._dict_input_handler(vlandict)
+		for k, v in vlandict.items():
+			commands.append('net add bridge bridge vids {}'.format(k))
+		if execute:
+			for com in commands:
+				self.command(com)
+				if commit:
+					self._net_commit()
+
+	def rm_vlan(self, vid, execute=True, commit=True):
+		command = 'net del bridge bridge vids {}'.format(vid)
+		if execute:
+			self.command(command)
+			if commit:
+				self._net_commit()
+
+
+
+	def dict_input_handler(self, stringordict):
+		if type(stringordict) is str:
+			dic = json.loads(stringordict)
+		elif type(stringordict) is dict:
+			dic = stringordict
+		return dic
+
+	def _extrapolate_list(self, list):
+		newlist = []
+		for num in list:
+			if type(num) is str:
+				if '-' in num:
+					nums = num.split('-')
+					for n in range(int(nums[0]), int(nums[1]) + 1, 1):
+						newlist.append(str(n))
+				else:
+					newlist.append(str(num))
+			else:
+				newlist.append(str(num))
+		return newlist
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		if self.ssh:
