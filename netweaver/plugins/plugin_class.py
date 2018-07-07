@@ -34,6 +34,9 @@ class NetWeaverPlugin:
 	def not_supported(self):
 		raise FeatureNotSupported
 
+	def define_port_layout(self):
+		self.not_supported()
+
 	"""Override these functions to enable each feature"""
 
 	def get_hostname(self):

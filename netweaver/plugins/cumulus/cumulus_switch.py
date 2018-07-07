@@ -3,6 +3,7 @@ from functools import wraps
 import logging
 from ipaddress import ip_address, IPv4Address, IPv6Address
 import pytz
+import json
 
 class CumulusSwitch(NetWeaverPlugin):
 
@@ -278,6 +279,24 @@ class CumulusSwitch(NetWeaverPlugin):
 			if commit:
 				self._net_commit()
 		return commandqueue
+
+	def _get_interface_json(self):
+		return json.loads(self.command('net show interface all json'))
+
+	def pull_port_state(self):
+		ports = {
+			'1g': {},
+			'10g': {},
+			'40g': {},
+			'100g': {},
+			'mgmt': {}
+		}
+		prtjson = self._get_interface_json()
+		for k, v in prtjson.items():
+			if k['mode'] == 'Mgmt':
+				num = k.strip('eth')
+				id = v
+
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		if self.ssh:
