@@ -6,6 +6,14 @@ roles:
       dns:
         nameservers:
             - 10.5.5.115
+      ntp:
+        client:
+          timezone: America/Chicago
+          servers:
+              - pool.ntp.org
+              - 0.cumulusnetworks.pool.ntp.org
+              - 1.cumulusnetworks.pool.ntp.org
+              - 2.cumulusnetworks.pool.ntp.org
   spine2:
     fabric: network1
     hostname: spine2.net.testco.org
@@ -13,6 +21,14 @@ roles:
       dns:
         nameservers:
             - 10.5.5.115
+    ntp:
+        client:
+          timezone: America/Chicago
+          servers:
+              - pool.ntp.org
+              - 0.cumulusnetworks.pool.ntp.org
+              - 1.cumulusnetworks.pool.ntp.org
+              - 2.cumulusnetworks.pool.ntp.org
 
 
 fabrics:

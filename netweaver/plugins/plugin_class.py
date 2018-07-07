@@ -54,7 +54,7 @@ class NetWeaverPlugin:
 	def get_dns_nameservers(self):
 		self.not_supported()
 
-	def set_dns_nameservers(self, nameserverjson, execute=True):
+	def set_dns_nameservers(self, nameserverlist, execute=True):
 		self.not_supported()
 
 	def add_dns_nameserver(self, ip, execute=True):
@@ -67,4 +67,16 @@ class NetWeaverPlugin:
 		self.not_supported()
 
 	def push_state(self, execute=True):
+		self.not_supported()
+
+	def set_ntp_client_timezone(self, timezone, execute=True):
+		self.not_supported()
+
+	def add_ntp_client_server(self, ntpserver, execute=True):
+		self.not_supported()
+
+	def rm_ntp_client_server(self, ntpserver, execute=True):
+		self.not_supported()
+
+	def set_ntp_client_servers(self, ntpserverlist, execute=True):
 		self.not_supported()

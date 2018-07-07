@@ -37,23 +37,39 @@ class Appliance(ConfigObject):
 	def _build_dispatch_tree(self):
 		self.dtree = {
 			'config': {
-				'get': self.plugin.pull_state,
+				'get': self.plugin.cstate,
 			},
 			'state': {
 				'apply': self.plugin.push_state
 			},
-			'get': self.plugin.get_current_config,
 			'hostname': {
 				'set': self.plugin.set_hostname,
 				'get': self.plugin.get_hostname,
 			},
 			'protocols': {
+				'ntp': {
+					'client':
+						{
+							'timezone':{
+								'get': self.plugin.cstate['protocols']['ntp']['client']['timezone'],
+								'set': self.plugin.set_ntp_client_timezone
+							},
+							'servers':{
+								'add': self.plugin.add_ntp_client_server,
+								'get': self.plugin.cstate['protocols']['ntp']['client']['servers'],
+								'del': self.plugin.rm_ntp_client_server,
+								'set': self.plugin.set_ntp_client_servers
+							},
+							'get': self.plugin.cstate['protocols']['ntp']['client'],
+						}
+				},
 				'dns': {
-					'get': self.plugin.get_dns,
+					'get': self.plugin.cstate['protocols']['dns'],
 					'nameservers': {
-						'get': self.plugin.get_dns_nameservers,
+						'get': self.plugin.cstate['protocols']['dns']['nameservers'],
 						'set': self.plugin.set_dns_nameservers,
 						'add': self.plugin.add_dns_nameserver,
+						'del': self.plugin.rm_dns_nameserver
 					}
 				}
 			},
@@ -86,7 +102,14 @@ class Appliance(ConfigObject):
 		level = self.dtree
 		for com in sfunc:
 			if com == 'get' or com == 'apply':
-				return level[com]()
+				# TODO: Make this cleaner, the TypeError check on type-ing a string shouldn't be necesarry
+				try:
+					if type(level[com]) is dict:
+						return level[com]
+					else:
+						return level[com]()
+				except TypeError:
+					return level[com]
 			elif com == 'set' or com == 'add':
 				return level[com](value)
 			else:

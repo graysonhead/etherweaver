@@ -2,6 +2,7 @@ from netweaver.plugins.plugin_class import NetWeaverPlugin, NWConnType
 from functools import wraps
 import logging
 from ipaddress import ip_address, IPv4Address, IPv6Address
+import pytz
 
 class CumulusSwitch(NetWeaverPlugin):
 
@@ -108,6 +109,31 @@ class CumulusSwitch(NetWeaverPlugin):
 			elif line.startswith('net add hostname'):
 				ln = line.split(' ')
 				conf.update({'hostname': ln[3]})
+			# NTP - client
+			elif line.startswith('net add time'):
+				# Make sure the dict is there, and be polite about creating it
+				try:
+					conf['protocols']
+				except KeyError:
+					conf.update({'protocols': {'ntp': {'client':{}}}})
+				else:
+					try:
+						conf['protocols']['ntp']
+					except KeyError:
+						conf['protocols'].update({'ntp': {'client':{}}})
+					else:
+						try:
+							conf['protocols']['ntp']['client']
+						except KeyError:
+							conf['protocols']['ntp'].update({'client':{}})
+				# TZ
+				if line.startswith('net add time zone'):
+					conf['protocols']['ntp']['client'].update({'timezone': line.split(' ')[4]})
+				# Timeservers
+				elif line.startswith('net add time ntp server'):
+					if 'servers' not in conf['protocols']['ntp']['client']:
+						conf['protocols']['ntp']['client'].update({'servers': []})
+					conf['protocols']['ntp']['client']['servers'].append(line.split(' ')[5])
 		return conf
 
 	def _check_atrib(self, atrib):
@@ -135,7 +161,14 @@ class CumulusSwitch(NetWeaverPlugin):
 							queue = queue + self.set_dns_nameservers(
 								dstate['protocols']['dns']['nameservers'],
 								execute=False)
-							
+				if 'ntp' in dstate['protocols']:
+					if 'client' in dstate['protocols']['ntp']:
+						if 'timezone' in dstate['protocols']['ntp']['client']:
+							if dstate['protocols']['ntp']['client']['timezone'] != self.cstate['protocols']['ntp']['client']['timezone']:
+								queue.append(self.set_ntp_client_timezone(dstate['protocols']['ntp']['client']['timezone'], execute=False))
+						if 'servers' in dstate['protocols']['ntp']['client']:
+							if dstate['protocols']['ntp']['client']['servers'] != self.cstate['protocols']['ntp']['client']['servers']:
+								queue = queue + (self.set_ntp_client_servers(dstate['protocols']['ntp']['client']['servers'], execute=False))
 			print(queue)
 			for com in queue:
 				self.command(com)
@@ -158,7 +191,7 @@ class CumulusSwitch(NetWeaverPlugin):
 	def get_dns(self):
 		return self.cstate['protocols']['dns']
 
-	def set_dns_nameservers(self, nameserverjson, execute=True, commit=True):
+	def set_dns_nameservers(self, nameserverlist, execute=True, commit=True):
 		commandqueue = []
 		try:
 			nslist = self.cstate['protocols']['dns']['nameservers']
@@ -166,9 +199,9 @@ class CumulusSwitch(NetWeaverPlugin):
 			pass
 		else:
 			for ns in nslist:
-				if ns not in nameserverjson:
+				if ns not in nameserverlist:
 					commandqueue.append(self.rm_dns_nameserver(ns, execute=False))
-		for ns in nameserverjson:
+		for ns in nameserverlist:
 				if ns not in self.cstate['protocols']['dns']['nameservers']:
 					commandqueue.append(self.add_dns_nameserver(ns, commit=False, execute=False))
 		if execute:
@@ -201,6 +234,50 @@ class CumulusSwitch(NetWeaverPlugin):
 			if commit:
 				self._net_commit()
 		return command
+
+	def set_ntp_client_timezone(self, timezone, execute=True):
+		if timezone in pytz.all_timezones:
+			command = 'net add time zone {}'.format(timezone)
+		else:
+			raise ValueError("Invalid timezone string")
+		if execute:
+			self.command(command)
+			self._net_commit()
+		return command
+
+	def add_ntp_client_server(self, ntpserver, execute=True):
+		command = 'net add time ntp server {} iburst'.format(ntpserver)
+		if execute:
+			self.command(command)
+			self._net_commit()
+		return command
+
+	def rm_ntp_client_server(self, ntpserver, execute=True):
+		command = 'net del time ntp server {}'.format(ntpserver)
+		if execute:
+			self.command(command)
+			self._net_commit()
+		return command
+
+	def set_ntp_client_servers(self, ntpserverlist, execute=True, commit=True):
+		commandqueue = []
+		try:
+			slist = self.cstate['protocols']['ntp']['client']['servers']
+		except KeyError:
+			pass
+		else:
+			for serv in slist:
+				if serv not in ntpserverlist:
+					commandqueue.append(self.rm_ntp_client_server(serv, execute=False))
+		for serv in ntpserverlist:
+			if serv not in self.cstate['protocols']['ntp']['client']['servers']:
+				commandqueue.append(self.add_ntp_client_server(serv, execute=False))
+		if execute:
+			for com in commandqueue:
+				self.command(com)
+			if commit:
+				self._net_commit()
+		return commandqueue
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		if self.ssh:
