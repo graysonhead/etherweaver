@@ -47,7 +47,7 @@ fabrics:
         description: Data
       30:
         description: Public
-      999:
+      999-1200:
 
 appliances:
   0c-b3-6d-f1-11-00:

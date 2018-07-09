@@ -87,5 +87,11 @@ class NetWeaverPlugin:
 	def set_interface_config(self, interfaces, profile=None, execute=True):
 		self.not_supported()
 
-	def set_vlan_config(self, vlans, execute=True):
+	def set_vlans(self, vlans, execute=True):
+		self.not_supported()
+
+	def add_vlan(self, vlan, execute=True):
+		self.not_supported()
+
+	def rm_vlan(self, vlan, execute=True):
 		self.not_supported()

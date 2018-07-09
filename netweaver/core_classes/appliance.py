@@ -61,6 +61,11 @@ class Appliance(ConfigObject):
 							'get': self.plugin.cstate['protocols']['ntp']['client'],
 						}
 				},
+				'vlans':{
+					'get': self.plugin.cstate['vlans'],
+					'set': self.plugin.set_vlans,
+					'add': self.plugin.add_vlan
+				},
 				'dns': {
 					'get': self.plugin.cstate['protocols']['dns'],
 					'nameservers': {
@@ -101,13 +106,13 @@ class Appliance(ConfigObject):
 		for com in sfunc:
 			if com == 'get' or com == 'apply':
 				# TODO: Make this cleaner, the TypeError check on type-ing a string shouldn't be necesarry
-				try:
+				# try:
 					if type(level[com]) is dict:
 						return level[com]
 					else:
 						return level[com]()
-				except TypeError:
-					return level[com]
+				# except TypeError:
+				# 	return level[com]
 			elif com == 'set' or com == 'add':
 				return level[com](value)
 			else:

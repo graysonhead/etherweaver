@@ -4,6 +4,7 @@ import logging
 from ipaddress import ip_address, IPv4Address, IPv6Address
 import pytz
 import json
+from netweaver.core_classes.utils import extrapolate_list, extrapolate_dict, compare_dict_keys
 
 class CumulusSwitch(NetWeaverPlugin):
 
@@ -141,7 +142,7 @@ class CumulusSwitch(NetWeaverPlugin):
 				if 'vlans' not in conf:
 					conf.update({'vlans': {}})
 				vidstring = line.split(' ')[5]
-				vids = self._extrapolate_list(vidstring.split(','))
+				vids = extrapolate_list(vidstring.split(','))
 				for vid in vids:
 					conf['vlans'].update({vid: None})
 		return conf
@@ -182,19 +183,15 @@ class CumulusSwitch(NetWeaverPlugin):
 							if dstate['protocols']['ntp']['client']['servers'] != self.cstate['protocols']['ntp']['client']['servers']:
 								queue = queue + (self.set_ntp_client_servers(dstate['protocols']['ntp']['client']['servers'], execute=False))
 				if 'vlans' in dpstate:
-					dvl = []
-					cvl = []
-					for k, v in dpstate['vlans'].items():
-						dvl.append(str(k))
-					for k, v in self.cstate['vlans'].items():
-						cvl.append(str(k))
-					if dvl != cvl:
-						print('No matcherino')
-			print(queue)
+					dvl = self.appliance.fabric.config['vlans']
+					cvl = self.cstate['vlans']
+					if not compare_dict_keys(dvl, cvl):
+						queue = queue + self.set_vlans(dvl, execute=False)
 			for com in queue:
 				self.command(com)
 			self._net_commit()
 			self.reload_state()
+			return queue
 
 	def add_dns_nameserver(self, ip, commit=True, execute=True):
 		ip = ip_address(ip)
@@ -323,22 +320,19 @@ class CumulusSwitch(NetWeaverPlugin):
 	def set_interface_config(self, interfaces, profile=None, execute=True):
 		pass
 
-	def add_vlans(self, vlandict, execute=True, commit=True):
+	def add_vlan(self, vlan, execute=True, commit=True):
 		"""
 		Config objects like {1: {'description': 'Data'}}
 		:param vlans:
 		:param execute:
 		:return:
 		"""
-		commands = []
-		vlandict = self._dict_input_handler(vlandict)
-		for k, v in vlandict.items():
-			commands.append('net add bridge bridge vids {}'.format(k))
+		command = 'net add bridge bridge vids {}'.format(vlan)
 		if execute:
-			for com in commands:
-				self.command(com)
-				if commit:
-					self._net_commit()
+			self.command(command)
+			if commit:
+				self._net_commit()
+		return command
 
 	def rm_vlan(self, vid, execute=True, commit=True):
 		command = 'net del bridge bridge vids {}'.format(vid)
@@ -346,29 +340,27 @@ class CumulusSwitch(NetWeaverPlugin):
 			self.command(command)
 			if commit:
 				self._net_commit()
+		return command
+
+	def set_vlans(self, vlandictlist, execute=True, commit=True):
+		cvl = self.cstate['vlans']
+		commandqueue = []
+		for k, v in vlandictlist.items():
+			if k not in cvl:
+				commandqueue.append(self.add_vlan(k, execute=False))
+		for k, v in cvl.items():
+			if k not in vlandictlist:
+				commandqueue.append(self.rm_vlan(k, execute=False))
+		return commandqueue
 
 
-
-	def dict_input_handler(self, stringordict):
+	def _dict_input_handler(self, stringordict):
 		if type(stringordict) is str:
 			dic = json.loads(stringordict)
 		elif type(stringordict) is dict:
 			dic = stringordict
 		return dic
 
-	def _extrapolate_list(self, list):
-		newlist = []
-		for num in list:
-			if type(num) is str:
-				if '-' in num:
-					nums = num.split('-')
-					for n in range(int(nums[0]), int(nums[1]) + 1, 1):
-						newlist.append(str(n))
-				else:
-					newlist.append(str(num))
-			else:
-				newlist.append(str(num))
-		return newlist
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		if self.ssh:
