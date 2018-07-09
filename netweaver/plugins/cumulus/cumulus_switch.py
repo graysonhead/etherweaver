@@ -6,6 +6,7 @@ import pytz
 import json
 from netweaver.core_classes.utils import extrapolate_list, extrapolate_dict, compare_dict_keys
 
+
 class CumulusSwitch(NetWeaverPlugin):
 
 	def __init__(self, config, fabricconfig):
@@ -21,7 +22,7 @@ class CumulusSwitch(NetWeaverPlugin):
 		self.portmap = self.pull_port_state()
 
 	def build_ssh_session(self):
-		self.conn_type = NWConnType  #TODO, make this dynamically selected based on something
+		self.conn_type = NWConnType
 		self.ssh = self._build_ssh_client(
 			hostname=self.hostname,
 			username=self.username,
@@ -47,8 +48,6 @@ class CumulusSwitch(NetWeaverPlugin):
 		if self.ssh:
 			return self._ssh_command(command)
 
-
-
 	def _net_commit(self):
 		ret = self.command('net commit')
 		self.cstate = self.pull_state()
@@ -59,40 +58,6 @@ class CumulusSwitch(NetWeaverPlugin):
 
 	def get_dns_nameservers(self):
 		return self.cstate['protocols']['dns']['nameservers']
-
-	def _ifupdown_parser(text):
-		# Will parse lines with these keys as interfaces
-		iface_keys = ("interface", "iface")
-		# Will parse lines starting with these keys as options
-		iface_opts = ("address")
-		# This variable will be used to remember what interface we are on, in order to place options in the right
-		# dict
-		ifaces = {}
-		current_interface = None
-		for line in text.split('\n'):
-			# If the line is an interface stanza, this should catch it
-			if line.startswith(iface_keys):
-				# Split the interface declaration
-				line_items = line.split(' ')
-				ifname = line_items[1]  # Interface name should be the second item
-				ifaces.update({ifname: {}})
-				# If there are more than two items on this line, the rest are options
-				if len(line_items) > 2:
-					opts = line_items[2:len(line_items)]
-					ifaces[ifname].update({'options': opts})
-				# Any lines starting with an option name from this point on belong to the previously identified interface
-				current_interface = ifname
-			elif line.strip().startswith(iface_opts):  # Strip whitespace, as the option lines are indented
-				opt = line.strip().split(" ")
-				# Most options have one value
-				if len(opt) == 2:
-					ifaces[current_interface].update({opt[0]: opt[1]})
-				# But some have more
-				if len(opt) > 2:
-					ifaces[current_interface].update({opt[0]: []})
-					for value in opt[1:len(opt)]:
-						ifaces[current_interface][opt[0]].append(value)
-		return ifaces
 
 	def pull_state(self):
 		commands = self.command('net show configuration commands').split('\n')

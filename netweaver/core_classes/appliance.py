@@ -19,7 +19,7 @@ class Appliance(ConfigObject):
 		self.dtree = None
 
 	def _not_implemented(self):
-		return "Not implemented"
+		raise NotImplementedError
 
 	def load_plugin(self):
 		'''
@@ -44,15 +44,20 @@ class Appliance(ConfigObject):
 				'set': self.plugin.set_hostname,
 				'get': self.plugin.get_hostname,
 			},
+			'vlans': {
+				'get': self._not_implemented(),
+				'set': self.plugin.set_vlans,
+				'add': self.plugin.add_vlan
+			},
 			'protocols': {
 				'ntp': {
 					'client':
 						{
-							'timezone':{
+							'timezone': {
 								'get': self.plugin.cstate['protocols']['ntp']['client']['timezone'],
 								'set': self.plugin.set_ntp_client_timezone
 							},
-							'servers':{
+							'servers': {
 								'add': self.plugin.add_ntp_client_server,
 								'get': self.plugin.cstate['protocols']['ntp']['client']['servers'],
 								'del': self.plugin.rm_ntp_client_server,
@@ -60,11 +65,6 @@ class Appliance(ConfigObject):
 							},
 							'get': self.plugin.cstate['protocols']['ntp']['client'],
 						}
-				},
-				'vlans':{
-					'get': self.plugin.cstate['vlans'],
-					'set': self.plugin.set_vlans,
-					'add': self.plugin.add_vlan
 				},
 				'dns': {
 					'get': self.plugin.cstate['protocols']['dns'],
