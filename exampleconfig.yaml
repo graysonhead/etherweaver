@@ -2,15 +2,52 @@ roles:
   spine1:
     fabric: network1
     hostname: spine1.net.testco.org
+    protocols:
+      dns:
+        nameservers:
+            - 10.5.5.115
+      ntp:
+        client:
+          timezone: America/Chicago
+          servers:
+              - pool.ntp.org
+              - 0.cumulusnetworks.pool.ntp.org
+              - 1.cumulusnetworks.pool.ntp.org
+              - 2.cumulusnetworks.pool.ntp.org
+    interfaces:
+      1g:
+        1-40:
+          untagged_vlan: 1
+          tagged_vlans: [2, 3, 4, 5]
   spine2:
     fabric: network1
     hostname: spine2.net.testco.org
+    protocols:
+      dns:
+        nameservers:
+            - 10.5.5.115
+    ntp:
+        client:
+          timezone: America/Chicago
+          servers:
+              - pool.ntp.org
+              - 0.cumulusnetworks.pool.ntp.org
+              - 1.cumulusnetworks.pool.ntp.org
+              - 2.cumulusnetworks.pool.ntp.org
+
 
 fabrics:
   network1:
     credentials:
       username: cumulus
       password: CumulusLinux!
+    vlans:
+      1-4:
+      6:
+        description: Data
+      30:
+        description: Public
+      999-1200:
 
 appliances:
   0c-b3-6d-f1-11-00:

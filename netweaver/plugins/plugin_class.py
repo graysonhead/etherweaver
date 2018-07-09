@@ -34,10 +34,64 @@ class NetWeaverPlugin:
 	def not_supported(self):
 		raise FeatureNotSupported
 
+	def define_port_layout(self):
+		self.not_supported()
+
 	"""Override these functions to enable each feature"""
 
 	def get_hostname(self):
 		self.not_supported()
 
-	def set_hostname(self, hostname):
+	def set_hostname(self, hostname, execute=True):
+		self.not_supported()
+
+	def get_current_config(self):
+		self.not_supported()
+
+	def get_interface(self, speed, interface):
+		self.not_supported()
+
+	def get_dns(self):
+		self.not_supported()
+
+	def get_dns_nameservers(self):
+		self.not_supported()
+
+	def set_dns_nameservers(self, nameserverlist, execute=True):
+		self.not_supported()
+
+	def add_dns_nameserver(self, ip, execute=True):
+		self.not_supported()
+
+	def rm_dns_nameserver(self, ip, execute=True):
+		self.not_supported()
+
+	def pull_state(self):
+		self.not_supported()
+
+	def push_state(self, execute=True):
+		self.not_supported()
+
+	def set_ntp_client_timezone(self, timezone, execute=True):
+		self.not_supported()
+
+	def add_ntp_client_server(self, ntpserver, execute=True):
+		self.not_supported()
+
+	def rm_ntp_client_server(self, ntpserver, execute=True):
+		self.not_supported()
+
+	def set_ntp_client_servers(self, ntpserverlist, execute=True):
+		self.not_supported()
+
+	def set_interface_config(self, interfaces, profile=None, execute=True):
+		self.not_supported()
+
+	def set_vlans(self, vlans, execute=True):
+		self.not_supported()
+
+	def add_vlan(self, vlan, execute=True):
+		self.not_supported()
+
+	def rm_vlan(self, vlan, execute=True):
 		self.not_supported()
