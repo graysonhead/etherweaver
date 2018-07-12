@@ -47,14 +47,13 @@ fabrics:
         description: Data
       30:
         description: Public
-      999-1200:
 
 appliances:
-  0c-b3-6d-f1-11-00:
+  sw1:
     hostname: 10.5.5.33
     role: spine1
     plugin_package: cumulus
-  0c-b3-6d-9c-67-00:
+  sw2:
     hostname: 10.5.5.34
     role: spine2
     plugin_package: cumulus

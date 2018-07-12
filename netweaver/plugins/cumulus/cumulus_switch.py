@@ -63,14 +63,22 @@ class CumulusSwitch(NetWeaverPlugin):
 		commands = self.command('net show configuration commands').split('\n')
 		# This dict is constructed following the yaml structure for a role starting at the hostname level
 		# Watch the pluralization in here, a lot of the things are unplural in cumulus that are plural in weaver
-		conf = {}
+		conf = {
+			'vlans': {},
+			'protocols': {
+				'dns': {
+					'nameservers': []
+				},
+				'ntp': {
+					'client': {
+						'servers': []
+					}
+				}
+			}
+		}
 		for line in commands:
 			# Nameservers
 			if line.startswith('net add dns nameserver'):
-				try:
-					conf['protocols']['dns']['nameservers']
-				except KeyError:
-					conf.update({'protocols': {'dns': {'nameservers': []}}})
 				ln = line.split(' ')
 				conf['protocols']['dns']['nameservers'].append(ln[5])
 			# Hostname
@@ -79,21 +87,6 @@ class CumulusSwitch(NetWeaverPlugin):
 				conf.update({'hostname': ln[3]})
 			# NTP - client
 			elif line.startswith('net add time'):
-				# Make sure the dict is there, and be polite about creating it
-				try:
-					conf['protocols']
-				except KeyError:
-					conf.update({'protocols': {'ntp': {'client':{}}}})
-				else:
-					try:
-						conf['protocols']['ntp']
-					except KeyError:
-						conf['protocols'].update({'ntp': {'client':{}}})
-					else:
-						try:
-							conf['protocols']['ntp']['client']
-						except KeyError:
-							conf['protocols']['ntp'].update({'client':{}})
 				# TZ
 				if line.startswith('net add time zone'):
 					conf['protocols']['ntp']['client'].update({'timezone': line.split(' ')[4]})
@@ -104,8 +97,6 @@ class CumulusSwitch(NetWeaverPlugin):
 					conf['protocols']['ntp']['client']['servers'].append(line.split(' ')[5])
 			#VLANs
 			elif line.startswith('net add bridge bridge vids'):
-				if 'vlans' not in conf:
-					conf.update({'vlans': {}})
 				vidstring = line.split(' ')[5]
 				vids = extrapolate_list(vidstring.split(','))
 				for vid in vids:

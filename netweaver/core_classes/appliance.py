@@ -45,7 +45,7 @@ class Appliance(ConfigObject):
 				'get': self.plugin.get_hostname,
 			},
 			'vlans': {
-				'get': self._not_implemented(),
+				'get': self._not_implemented,
 				'set': self.plugin.set_vlans,
 				'add': self.plugin.add_vlan
 			},
@@ -104,15 +104,11 @@ class Appliance(ConfigObject):
 		"""
 		level = self.dtree
 		for com in sfunc:
-			if com == 'get' or com == 'apply':
+			if com == 'apply':
 				# TODO: Make this cleaner, the TypeError check on type-ing a string shouldn't be necesarry
-				# try:
-					if type(level[com]) is dict:
-						return level[com]
-					else:
-						return level[com]()
-				# except TypeError:
-				# 	return level[com]
+				return level[com]()
+			elif com == 'get':
+				return level[com]
 			elif com == 'set' or com == 'add':
 				return level[com](value)
 			else:
