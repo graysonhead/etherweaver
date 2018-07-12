@@ -15,7 +15,7 @@ roles:
               - 1.cumulusnetworks.pool.ntp.org
               - 2.cumulusnetworks.pool.ntp.org
     interfaces:
-      1g:
+      1G:
         1-40:
           untagged_vlan: 1
           tagged_vlans: [2, 3, 4, 5]

@@ -18,8 +18,9 @@ class CumulusSwitch(NetWeaverPlugin):
 		self.port = 22
 
 		self.build_ssh_session()
-		self.cstate = self.pull_state()
 		self.portmap = self.pull_port_state()
+		self.cstate = self.pull_state()
+
 
 	def build_ssh_session(self):
 		self.conn_type = NWConnType
@@ -64,6 +65,7 @@ class CumulusSwitch(NetWeaverPlugin):
 		# This dict is constructed following the yaml structure for a role starting at the hostname level
 		# Watch the pluralization in here, a lot of the things are unplural in cumulus that are plural in weaver
 		conf = {
+			'hostname': None,
 			'vlans': {},
 			'protocols': {
 				'dns': {
@@ -74,6 +76,13 @@ class CumulusSwitch(NetWeaverPlugin):
 						'servers': []
 					}
 				}
+			},
+			'interfaces': {
+				'1G': {},
+				'10G': {},
+				'40G': {},
+				'100G': {},
+				'mgmt': {}
 			}
 		}
 		for line in commands:
@@ -101,6 +110,10 @@ class CumulusSwitch(NetWeaverPlugin):
 				vids = extrapolate_list(vidstring.split(','))
 				for vid in vids:
 					conf['vlans'].update({vid: None})
+			#Interfaces
+			elif line.startswith('net add interface'):
+				if line.split(' ')[4] in self.portmap:
+					pass
 		return conf
 
 	def _check_atrib(self, atrib):
@@ -258,19 +271,37 @@ class CumulusSwitch(NetWeaverPlugin):
 
 	def pull_port_state(self):
 		ports = {
-			'1g': {},
-			'10g': {},
-			'40g': {},
-			'100g': {},
-			'mgmt': {}
+			'1G': {},
+			'10G': {},
+			'40G': {},
+			'100G': {},
+			'Mgmt': {}
 		}
 		prtjson = self._get_interface_json()
-		for k, v in prtjson.items():
-			if v['mode'] == 'Mgmt':
-				num = k.strip('eth')
-				id = k
-				body = v
-				ports['mgmt'].update({num: {'id': id, 'info': body}})
+		for pt, pv in ports.items():
+			for k, v in prtjson.items():
+				if v['mode'] == 'Trunk/L2':
+					if v['speed'] == pt:
+						if 'eth' in k:
+							num = k.strip('eth')
+						elif 'swp' in k:
+							num = k.strip('swp')
+						ports[pt].update({num: {'id': k, 'info': v}})
+				if pt == 'Mgmt' and v['mode'] == 'Mgmt':
+					num = k.strip('eth')
+					ports['Mgmt'].update({num: {'id': k, 'info': v}})
+
+		# for k, v in prtjson.items():
+		# 	if v['mode'] == 'Mgmt':
+		# 		num = k.strip('eth')
+		# 		id = k
+		# 		body = v
+		# 		ports['mgmt'].update({num: {'id': id, 'info': body}})
+		#
+		# 	elif v['mode'] == '1G':
+		# 		num = k.strip('swp')
+		# 		ports['1g'].update({num: {'id': k, 'info': v}})
+
 		return ports
 
 	def set_interface_config(self, interfaces, profile=None, execute=True):
