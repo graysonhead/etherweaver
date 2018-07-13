@@ -82,9 +82,10 @@ class CumulusSwitch(NetWeaverPlugin):
 				'10G': {},
 				'40G': {},
 				'100G': {},
-				'mgmt': {}
+				'Mgmt': {}
 			}
 		}
+
 		for line in commands:
 			# Nameservers
 			if line.startswith('net add dns nameserver'):
@@ -112,8 +113,25 @@ class CumulusSwitch(NetWeaverPlugin):
 					conf['vlans'].update({vid: None})
 			#Interfaces
 			elif line.startswith('net add interface'):
-				if line.split(' ')[4] in self.portmap:
-					pass
+				portid = line.split(' ')[3]
+				# Iterate through portmap
+				for k, v in self.portmap.items():
+					# Iterate through port group
+					for kpt, vpt in v.items():
+						# If we find a matching ID in the portmap, figure out if it exists in cstate interfaces
+						if vpt['id'] == portid:
+							# If this is the first time we are seeing this port, create a skeleton dict for it
+							if kpt not in conf['interfaces'][k]:
+								conf['interfaces'][k].update({kpt: self._gen_portskel()})
+							# Port VLAN configuration
+							if line.startswith('net add interface {} bridge'.format(portid)):
+								#PVID
+								if line.startswith('net add interface {} bridge pvid'.format(portid)):
+									conf['interfaces'][k][kpt]['untagged_vlan'] = line.split(' ')[6]
+								#Tagged vlans
+								if line.startswith('net add interface {} bridge vids'.format(portid)):
+									vids = line.split(' ')[6].split(',')
+									conf['interfaces'][k][kpt]['tagged_vlans'] = extrapolate_list(vids, int_out=True)
 		return conf
 
 	def _check_atrib(self, atrib):
@@ -125,6 +143,7 @@ class CumulusSwitch(NetWeaverPlugin):
 		else:
 			if atrib:
 				return True
+
 	def reload_state(self):
 		self.cstate = self.pull_state()
 		self.portmap = self.pull_port_state()
@@ -156,6 +175,20 @@ class CumulusSwitch(NetWeaverPlugin):
 					cvl = self.cstate['vlans']
 					if not compare_dict_keys(dvl, cvl):
 						queue = queue + self.set_vlans(dvl, execute=False)
+				# Interfaces
+				for typekey, typeval in dstate['interfaces'].items():
+					for portnum, portconf in typeval.items():
+						if portnum in self.cstate['interfaces'][typekey]:
+							#Compare the desired state to the current state of any defined interfaces
+							current_portstate = self.cstate['interfaces'][typekey][portnum]
+							if portconf != self.cstate['interfaces'][typekey][portnum]:
+								if portconf['tagged_vlans'] != current_portstate['tagged_vlans']:
+									queue = queue + self\
+										.set_interface_tagged_vlans(self.portmap[typekey][portnum]['id'], extrapolate_list(portconf['tagged_vlans'], int_out=False))
+							if portnum not in self.cstate['interfaces'][typekey]:
+								if portconf['tagged_vlans']:
+									self.set_interface_tagged_vlans(self.portmap[typekey][portnum]['id'])
+									#TODO: Fix portmap to contain all interfaces (even downed ones). Finish interface creation logic
 			for com in queue:
 				self.command(com)
 			self._net_commit()
@@ -283,12 +316,12 @@ class CumulusSwitch(NetWeaverPlugin):
 				if v['mode'] == 'Trunk/L2':
 					if v['speed'] == pt:
 						if 'eth' in k:
-							num = k.strip('eth')
+							num = int(k.strip('eth'))
 						elif 'swp' in k:
-							num = k.strip('swp')
+							num = int(k.strip('swp'))
 						ports[pt].update({num: {'id': k, 'info': v}})
 				if pt == 'Mgmt' and v['mode'] == 'Mgmt':
-					num = k.strip('eth')
+					num = int(k.strip('eth'))
 					ports['Mgmt'].update({num: {'id': k, 'info': v}})
 
 		# for k, v in prtjson.items():
@@ -348,6 +381,27 @@ class CumulusSwitch(NetWeaverPlugin):
 			dic = stringordict
 		return dic
 
+	def _gen_portskel(self):
+		return {
+			'tagged_vlans': [],
+			'untagged_vlan': None,
+			'ip': {
+				'address': []
+			}
+
+		}
+
+	def set_interface_tagged_vlans(self, interface, vlans, execute=True, commit=True):
+		commands = []
+		vids_to_add = ','.join(vlans)
+		commands.append('net del interface {} bridge vids'.format(interface))
+		commands.append('net add interface {} bridge vids {}'.format(interface, vids_to_add))
+		if execute:
+			for com in commands:
+				self.command(com)
+			if commit:
+				self._net_commit()
+		return commands
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		if self.ssh:
