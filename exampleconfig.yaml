@@ -15,9 +15,10 @@ roles:
               - 1.cumulusnetworks.pool.ntp.org
               - 2.cumulusnetworks.pool.ntp.org
     interfaces:
-      1g:
-        1-40:
-          untagged_vlan: 1
+      1G:
+        3:
+          tagged_vlans: [2, 3, 4, 5]
+        5:
           tagged_vlans: [2, 3, 4, 5]
   spine2:
     fabric: network1
@@ -36,25 +37,25 @@ roles:
               - 2.cumulusnetworks.pool.ntp.org
 
 
+
 fabrics:
   network1:
     credentials:
       username: cumulus
       password: CumulusLinux!
     vlans:
-      1-4:
+      1-5:
       6:
         description: Data
       30:
         description: Public
-      999-1200:
 
 appliances:
-  0c-b3-6d-f1-11-00:
+  sw1:
     hostname: 10.5.5.33
     role: spine1
     plugin_package: cumulus
-  0c-b3-6d-9c-67-00:
+  sw2:
     hostname: 10.5.5.34
     role: spine2
     plugin_package: cumulus

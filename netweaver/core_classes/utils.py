@@ -15,7 +15,7 @@ def extrapolate_dict(numdict):
 		return newnumdict
 
 
-def extrapolate_list(numlist):
+def extrapolate_list(numlist, int_out=False):
 		newlist = []
 		if type(numlist) is not list:
 			raise TypeError
@@ -29,6 +29,11 @@ def extrapolate_list(numlist):
 					newlist.append(str(num))
 			else:
 				newlist.append(str(num))
+		if int_out:
+			intlist = []
+			for num in newlist:
+				intlist.append(int(num))
+			return intlist
 		return newlist
 
 def compare_dict_keys(d1, d2):

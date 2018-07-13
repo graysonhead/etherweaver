@@ -28,10 +28,13 @@ class CLIApp:
 		"""
 		self.inf = Infrastructure(self.config)
 
-	def run(self, target=None, func=None, value=None):
+	def run(self, target=None, func=None, value=None , yamlout=True):
 		retval = self.inf.run_command(target, func, value)
 		if type(retval) == dict or list:
-			retval = (pp.pprint(retval))
+			if not yamlout:
+				retval = (pp.pprint(retval))
+			else:
+				retval = yaml.dump(retval)
 		return retval
 
 

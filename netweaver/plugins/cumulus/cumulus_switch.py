@@ -18,8 +18,9 @@ class CumulusSwitch(NetWeaverPlugin):
 		self.port = 22
 
 		self.build_ssh_session()
-		self.cstate = self.pull_state()
 		self.portmap = self.pull_port_state()
+		self.cstate = self.pull_state()
+
 
 	def build_ssh_session(self):
 		self.conn_type = NWConnType
@@ -63,14 +64,31 @@ class CumulusSwitch(NetWeaverPlugin):
 		commands = self.command('net show configuration commands').split('\n')
 		# This dict is constructed following the yaml structure for a role starting at the hostname level
 		# Watch the pluralization in here, a lot of the things are unplural in cumulus that are plural in weaver
-		conf = {}
+		conf = {
+			'hostname': None,
+			'vlans': {},
+			'protocols': {
+				'dns': {
+					'nameservers': []
+				},
+				'ntp': {
+					'client': {
+						'servers': []
+					}
+				}
+			},
+			'interfaces': {
+				'1G': {},
+				'10G': {},
+				'40G': {},
+				'100G': {},
+				'Mgmt': {}
+			}
+		}
+
 		for line in commands:
 			# Nameservers
 			if line.startswith('net add dns nameserver'):
-				try:
-					conf['protocols']['dns']['nameservers']
-				except KeyError:
-					conf.update({'protocols': {'dns': {'nameservers': []}}})
 				ln = line.split(' ')
 				conf['protocols']['dns']['nameservers'].append(ln[5])
 			# Hostname
@@ -79,21 +97,6 @@ class CumulusSwitch(NetWeaverPlugin):
 				conf.update({'hostname': ln[3]})
 			# NTP - client
 			elif line.startswith('net add time'):
-				# Make sure the dict is there, and be polite about creating it
-				try:
-					conf['protocols']
-				except KeyError:
-					conf.update({'protocols': {'ntp': {'client':{}}}})
-				else:
-					try:
-						conf['protocols']['ntp']
-					except KeyError:
-						conf['protocols'].update({'ntp': {'client':{}}})
-					else:
-						try:
-							conf['protocols']['ntp']['client']
-						except KeyError:
-							conf['protocols']['ntp'].update({'client':{}})
 				# TZ
 				if line.startswith('net add time zone'):
 					conf['protocols']['ntp']['client'].update({'timezone': line.split(' ')[4]})
@@ -104,12 +107,31 @@ class CumulusSwitch(NetWeaverPlugin):
 					conf['protocols']['ntp']['client']['servers'].append(line.split(' ')[5])
 			#VLANs
 			elif line.startswith('net add bridge bridge vids'):
-				if 'vlans' not in conf:
-					conf.update({'vlans': {}})
 				vidstring = line.split(' ')[5]
 				vids = extrapolate_list(vidstring.split(','))
 				for vid in vids:
 					conf['vlans'].update({vid: None})
+			#Interfaces
+			elif line.startswith('net add interface'):
+				portid = line.split(' ')[3]
+				# Iterate through portmap
+				for k, v in self.portmap.items():
+					# Iterate through port group
+					for kpt, vpt in v.items():
+						# If we find a matching ID in the portmap, figure out if it exists in cstate interfaces
+						if vpt['id'] == portid:
+							# If this is the first time we are seeing this port, create a skeleton dict for it
+							if kpt not in conf['interfaces'][k]:
+								conf['interfaces'][k].update({kpt: self._gen_portskel()})
+							# Port VLAN configuration
+							if line.startswith('net add interface {} bridge'.format(portid)):
+								#PVID
+								if line.startswith('net add interface {} bridge pvid'.format(portid)):
+									conf['interfaces'][k][kpt]['untagged_vlan'] = line.split(' ')[6]
+								#Tagged vlans
+								if line.startswith('net add interface {} bridge vids'.format(portid)):
+									vids = line.split(' ')[6].split(',')
+									conf['interfaces'][k][kpt]['tagged_vlans'] = extrapolate_list(vids, int_out=True)
 		return conf
 
 	def _check_atrib(self, atrib):
@@ -121,6 +143,7 @@ class CumulusSwitch(NetWeaverPlugin):
 		else:
 			if atrib:
 				return True
+
 	def reload_state(self):
 		self.cstate = self.pull_state()
 		self.portmap = self.pull_port_state()
@@ -152,6 +175,20 @@ class CumulusSwitch(NetWeaverPlugin):
 					cvl = self.cstate['vlans']
 					if not compare_dict_keys(dvl, cvl):
 						queue = queue + self.set_vlans(dvl, execute=False)
+				# Interfaces
+				for typekey, typeval in dstate['interfaces'].items():
+					for portnum, portconf in typeval.items():
+						if portnum in self.cstate['interfaces'][typekey]:
+							#Compare the desired state to the current state of any defined interfaces
+							current_portstate = self.cstate['interfaces'][typekey][portnum]
+							if portconf != self.cstate['interfaces'][typekey][portnum]:
+								if portconf['tagged_vlans'] != current_portstate['tagged_vlans']:
+									queue = queue + self\
+										.set_interface_tagged_vlans(self.portmap[typekey][portnum]['id'], extrapolate_list(portconf['tagged_vlans'], int_out=False))
+							if portnum not in self.cstate['interfaces'][typekey]:
+								if portconf['tagged_vlans']:
+									self.set_interface_tagged_vlans(self.portmap[typekey][portnum]['id'])
+									#TODO: Fix portmap to contain all interfaces (even downed ones). Finish interface creation logic
 			for com in queue:
 				self.command(com)
 			self._net_commit()
@@ -267,19 +304,37 @@ class CumulusSwitch(NetWeaverPlugin):
 
 	def pull_port_state(self):
 		ports = {
-			'1g': {},
-			'10g': {},
-			'40g': {},
-			'100g': {},
-			'mgmt': {}
+			'1G': {},
+			'10G': {},
+			'40G': {},
+			'100G': {},
+			'Mgmt': {}
 		}
 		prtjson = self._get_interface_json()
-		for k, v in prtjson.items():
-			if v['mode'] == 'Mgmt':
-				num = k.strip('eth')
-				id = k
-				body = v
-				ports['mgmt'].update({num: {'id': id, 'info': body}})
+		for pt, pv in ports.items():
+			for k, v in prtjson.items():
+				if v['mode'] == 'Trunk/L2':
+					if v['speed'] == pt:
+						if 'eth' in k:
+							num = int(k.strip('eth'))
+						elif 'swp' in k:
+							num = int(k.strip('swp'))
+						ports[pt].update({num: {'id': k, 'info': v}})
+				if pt == 'Mgmt' and v['mode'] == 'Mgmt':
+					num = int(k.strip('eth'))
+					ports['Mgmt'].update({num: {'id': k, 'info': v}})
+
+		# for k, v in prtjson.items():
+		# 	if v['mode'] == 'Mgmt':
+		# 		num = k.strip('eth')
+		# 		id = k
+		# 		body = v
+		# 		ports['mgmt'].update({num: {'id': id, 'info': body}})
+		#
+		# 	elif v['mode'] == '1G':
+		# 		num = k.strip('swp')
+		# 		ports['1g'].update({num: {'id': k, 'info': v}})
+
 		return ports
 
 	def set_interface_config(self, interfaces, profile=None, execute=True):
@@ -326,6 +381,27 @@ class CumulusSwitch(NetWeaverPlugin):
 			dic = stringordict
 		return dic
 
+	def _gen_portskel(self):
+		return {
+			'tagged_vlans': [],
+			'untagged_vlan': None,
+			'ip': {
+				'address': []
+			}
+
+		}
+
+	def set_interface_tagged_vlans(self, interface, vlans, execute=True, commit=True):
+		commands = []
+		vids_to_add = ','.join(vlans)
+		commands.append('net del interface {} bridge vids'.format(interface))
+		commands.append('net add interface {} bridge vids {}'.format(interface, vids_to_add))
+		if execute:
+			for com in commands:
+				self.command(com)
+			if commit:
+				self._net_commit()
+		return commands
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		if self.ssh:

@@ -95,3 +95,12 @@ class NetWeaverPlugin:
 
 	def rm_vlan(self, vlan, execute=True):
 		self.not_supported()
+
+	def set_interface_tagged_vlans(self, interface, vlans, execute=True):
+		self.not_supported()
+
+	def add_interface_tagged_vlan(self, interface, vlan, execute=True):
+		self.not_supported()
+
+	def rm_interface_tagged_vlan(self, interface, vlan, execute=True):
+		self.not_supported()
