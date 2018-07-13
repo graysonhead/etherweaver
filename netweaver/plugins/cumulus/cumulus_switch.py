@@ -113,7 +113,7 @@ class CumulusSwitch(NetWeaverPlugin):
 			#Interfaces
 			elif line.startswith('net add interface'):
 				if line.split(' ')[4] in self.portmap:
-					pass
+					ln = line.split(' ')[4]
 		return conf
 
 	def _check_atrib(self, atrib):
