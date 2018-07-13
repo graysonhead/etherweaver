@@ -24,7 +24,7 @@ class NetWeaverPlugin:
 	def _ssh_command(self, command):
 		stdin, stdout, stderr = self.ssh.exec_command(command)
 		if stderr.read():
-			raise SSHCommandError(stderr.read()) #TODO For some reason this line returns empty on error when run from a child instance
+			raise SSHCommandError("While running command {}, got error {}".format(command, stderr.read())) #TODO For some reason this line returns empty on error when run from a child instance
 		return stdout.read().decode('utf-8')
 
 	def _generic_command(self, command):

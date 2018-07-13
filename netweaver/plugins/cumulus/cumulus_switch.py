@@ -176,18 +176,25 @@ class CumulusSwitch(NetWeaverPlugin):
 					if not compare_dict_keys(dvl, cvl):
 						queue = queue + self.set_vlans(dvl, execute=False)
 				# Interfaces
+				# Iterate through dstate interface types
 				for typekey, typeval in dstate['interfaces'].items():
+					# Iterate through interfaces in each type
 					for portnum, portconf in typeval.items():
+						# If the portnumber exists in cstate:
 						if portnum in self.cstate['interfaces'][typekey]:
 							#Compare the desired state to the current state of any defined interfaces
 							current_portstate = self.cstate['interfaces'][typekey][portnum]
 							if portconf != self.cstate['interfaces'][typekey][portnum]:
 								if portconf['tagged_vlans'] != current_portstate['tagged_vlans']:
 									queue = queue + self\
-										.set_interface_tagged_vlans(self.portmap[typekey][portnum]['id'], extrapolate_list(portconf['tagged_vlans'], int_out=False))
+										.set_interface_tagged_vlans(self.portmap[typekey][portnum]['id'], extrapolate_list(portconf['tagged_vlans'], int_out=False), execute=False)
 							if portnum not in self.cstate['interfaces'][typekey]:
 								if portconf['tagged_vlans']:
 									self.set_interface_tagged_vlans(self.portmap[typekey][portnum]['id'])
+						# If the port doesn't exist in cstate
+						else:
+							if portconf['tagged_vlans']:
+								queue = queue + self.set_interface_tagged_vlans(self.portmap[typekey][portnum]['id'], extrapolate_list(portconf['tagged_vlans'], int_out=False), execute=False)
 									#TODO: Fix portmap to contain all interfaces (even downed ones). Finish interface creation logic
 			for com in queue:
 				self.command(com)
@@ -313,28 +320,21 @@ class CumulusSwitch(NetWeaverPlugin):
 		prtjson = self._get_interface_json()
 		for pt, pv in ports.items():
 			for k, v in prtjson.items():
-				if v['mode'] == 'Trunk/L2':
+				if v['mode'] != 'Mgmt':
 					if v['speed'] == pt:
 						if 'eth' in k:
 							num = int(k.strip('eth'))
 						elif 'swp' in k:
 							num = int(k.strip('swp'))
 						ports[pt].update({num: {'id': k, 'info': v}})
-				if pt == 'Mgmt' and v['mode'] == 'Mgmt':
+					if v['speed'] == 'N/A':
+						if 'swp' in k:
+							num = int(k.strip('swp'))
+							ports['1G'].update({num: {'id': k, 'info': v}})
+
+				elif pt == 'Mgmt' and v['mode'] == 'Mgmt':
 					num = int(k.strip('eth'))
 					ports['Mgmt'].update({num: {'id': k, 'info': v}})
-
-		# for k, v in prtjson.items():
-		# 	if v['mode'] == 'Mgmt':
-		# 		num = k.strip('eth')
-		# 		id = k
-		# 		body = v
-		# 		ports['mgmt'].update({num: {'id': id, 'info': body}})
-		#
-		# 	elif v['mode'] == '1G':
-		# 		num = k.strip('swp')
-		# 		ports['1g'].update({num: {'id': k, 'info': v}})
-
 		return ports
 
 	def set_interface_config(self, interfaces, profile=None, execute=True):
