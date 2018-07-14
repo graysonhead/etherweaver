@@ -82,7 +82,7 @@ class CumulusSwitch(NetWeaverPlugin):
 				'10G': {},
 				'40G': {},
 				'100G': {},
-				'Mgmt': {}
+				'mgmt': {}
 			}
 		}
 		# We have to do some pre-parsing here to expand interface ranges and such
@@ -95,7 +95,7 @@ class CumulusSwitch(NetWeaverPlugin):
 				int_iter = extrapolate_list(int_iter, int_out=False)
 				for interface in int_iter:
 					newline = []
-					for comp in components[0:2]:
+					for comp in components[0:3]:
 						newline.append(comp)
 					newline.append('swp' + interface)
 					for comp in components[4:]:
@@ -130,27 +130,39 @@ class CumulusSwitch(NetWeaverPlugin):
 				vids = extrapolate_list(vidstring.split(','))
 				for vid in vids:
 					conf['vlans'].update({vid: None})
-			#Interfaces
+			# Interfaces
 			elif line.startswith('net add interface'):
 				portid = line.split(' ')[3]
-				# Iterate through portmap
-				for k, v in self.portmap.items():
-					# Iterate through port group
-					for kpt, vpt in v.items():
-						# If we find a matching ID in the portmap, figure out if it exists in cstate interfaces
-						if vpt['id'] == portid:
-							# If this is the first time we are seeing this port, create a skeleton dict for it
-							if kpt not in conf['interfaces'][k]:
-								conf['interfaces'][k].update({kpt: self._gen_portskel()})
-							# Port VLAN configuration
-							if line.startswith('net add interface {} bridge'.format(portid)):
-								#PVID
-								if line.startswith('net add interface {} bridge pvid'.format(portid)):
-									conf['interfaces'][k][kpt]['untagged_vlan'] = line.split(' ')[6]
-								#Tagged vlans
-								if line.startswith('net add interface {} bridge vids'.format(portid)):
-									vids = line.split(' ')[6].split(',')
-									conf['interfaces'][k][kpt]['tagged_vlans'] = extrapolate_list(vids, int_out=True)
+				# lookup port
+				portnum = self.portmap['by_name'][portid]['portid']
+				if self.portmap['by_name'][portid]['mode'] == 'Mgmt':
+					speed = 'mgmt'
+				else:
+					speed = self.portmap['by_name'][portid]['speed']
+				conf['interfaces'][speed].update({portnum: self._gen_portskel()})
+				# Parse bridge options
+				if line.startswith('net add interface {} bridge vids'.format(portid)):
+					vids = line.split(' ')[6].split(',')
+					conf['interfaces'][speed][portnum]['tagged_vlans'] = extrapolate_list(vids, int_out=True)
+
+			# 	for k, v in self.portmap.items():
+			# 		# Iterate through port group
+			# 		for kpt, vpt in v.items():
+			# 			# If we find a matching ID in the portmap, figure out if it exists in cstate interfaces
+			# 			if vpt['id'] == portid:
+			# 				# If this is the first time we are seeing this port, create a skeleton dict for it
+			# 				if kpt not in conf['interfaces'][k]:
+			# 					conf['interfaces'][k].update({kpt: self._gen_portskel()})
+			# 				# Port VLAN configuration
+			# 				if line.startswith('net add interface {} bridge'.format(portid)):
+			# 					#PVID
+			# 					if line.startswith('net add interface {} bridge pvid'.format(portid)):
+			# 						conf['interfaces'][k][kpt]['untagged_vlan'] = line.split(' ')[6]
+			# 					#Tagged vlans
+			# 					if line.startswith('net add interface {} bridge vids'.format(portid)):
+			# 						vids = line.split(' ')[6].split(',')
+			# 						conf['interfaces'][k][kpt]['tagged_vlans'] = extrapolate_list(vids, int_out=True)
+
 		return conf
 
 	def _check_atrib(self, atrib):
@@ -328,33 +340,53 @@ class CumulusSwitch(NetWeaverPlugin):
 	def _get_interface_json(self):
 		return json.loads(self.command('net show interface all json'))
 
+	# def pull_port_state(self):
+	# 	ports = {
+	# 		'1G': {},
+	# 		'10G': {},
+	# 		'40G': {},
+	# 		'100G': {},
+	# 		'Mgmt': {}
+	# 	}
+	# 	prtjson = self._get_interface_json()
+	# 	for pt, pv in ports.items():
+	# 		for k, v in prtjson.items():
+	# 			if v['mode'] != 'Mgmt':
+	# 				if v['speed'] == pt:
+	# 					if 'eth' in k:
+	# 						num = int(k.strip('eth'))
+	# 					elif 'swp' in k:
+	# 						num = int(k.strip('swp'))
+	# 					ports[pt].update({num: {'id': k, 'info': v}})
+	# 				if v['speed'] == 'N/A':
+	# 					if 'swp' in k:
+	# 						num = int(k.strip('swp'))
+	# 						ports['1G'].update({num: {'id': k, 'info': v}})
+	#
+	# 			elif pt == 'Mgmt' and v['mode'] == 'Mgmt':
+	# 				num = int(k.strip('eth'))
+	# 				ports['Mgmt'].update({num: {'id': k, 'info': v}})
+	# 	return ports
 	def pull_port_state(self):
-		ports = {
-			'1G': {},
-			'10G': {},
-			'40G': {},
-			'100G': {},
-			'Mgmt': {}
-		}
+		ports_by_name = {}
+		ports_by_number = {}
+		"""
+		Ports will look like:
+		{ swp1: { speed: 1G, mode: Mgmt}
+		"""
 		prtjson = self._get_interface_json()
-		for pt, pv in ports.items():
-			for k, v in prtjson.items():
-				if v['mode'] != 'Mgmt':
-					if v['speed'] == pt:
-						if 'eth' in k:
-							num = int(k.strip('eth'))
-						elif 'swp' in k:
-							num = int(k.strip('swp'))
-						ports[pt].update({num: {'id': k, 'info': v}})
-					if v['speed'] == 'N/A':
-						if 'swp' in k:
-							num = int(k.strip('swp'))
-							ports['1G'].update({num: {'id': k, 'info': v}})
+		for k, v in prtjson.items():
+			if v['mode'] == 'Mgmt':
+				portname = k
+				portnum = k.strip('eth')
+			else:
+				portname = k
+				portnum = k.strip('swp')
+			ports_by_name.update({portname: {'portid': portnum, 'speed': v['speed'], 'mode': v['mode']}})
+			ports_by_number.update({portnum: {'portname': portname, 'speed': v['speed'], 'mode': v['mode']}})
+		return {'by_name': ports_by_name, 'by_number': ports_by_number}
 
-				elif pt == 'Mgmt' and v['mode'] == 'Mgmt':
-					num = int(k.strip('eth'))
-					ports['Mgmt'].update({num: {'id': k, 'info': v}})
-		return ports
+
 
 	def set_interface_config(self, interfaces, profile=None, execute=True):
 		pass
