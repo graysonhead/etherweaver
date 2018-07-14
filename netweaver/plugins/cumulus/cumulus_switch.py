@@ -61,7 +61,7 @@ class CumulusSwitch(NetWeaverPlugin):
 		return self.cstate['protocols']['dns']['nameservers']
 
 	def pull_state(self):
-		commands = self.command('net show configuration commands').split('\n')
+		pre_parse_commands = self.command('net show configuration commands').split('\n')
 		# This dict is constructed following the yaml structure for a role starting at the hostname level
 		# Watch the pluralization in here, a lot of the things are unplural in cumulus that are plural in weaver
 		conf = {
@@ -85,6 +85,25 @@ class CumulusSwitch(NetWeaverPlugin):
 				'Mgmt': {}
 			}
 		}
+		# We have to do some pre-parsing here to expand interface ranges and such
+		commands = []
+		for line in pre_parse_commands:
+			# This handles lines like: net add interface swp3,5 bridge vids 2-5
+			if line.startswith('net add interface') and ',' in line:
+				components = line.split(' ')
+				int_iter = line.split(' ')[3].strip('swp').split(',')
+				int_iter = extrapolate_list(int_iter, int_out=False)
+				for interface in int_iter:
+					newline = []
+					for comp in components[0:2]:
+						newline.append(comp)
+					newline.append('swp' + interface)
+					for comp in components[4:]:
+						newline.append(comp)
+					commands.append(' '.join(newline))
+			else:
+				commands.append(line)
+
 
 		for line in commands:
 			# Nameservers
