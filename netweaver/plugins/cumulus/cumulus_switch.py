@@ -164,25 +164,6 @@ class CumulusSwitch(NetWeaverPlugin):
 					conf['interfaces'][speed][portnum]['tagged_vlans'] = extrapolate_list(vids, int_out=True)
 				if line.startswith('net add interface {} bridge pvid'.format(portid)):
 					conf['interfaces'][speed][portnum]['untagged_vlan'] = line.split(' ')[6]
-
-			# 	for k, v in self.portmap.items():
-			# 		# Iterate through port group
-			# 		for kpt, vpt in v.items():
-			# 			# If we find a matching ID in the portmap, figure out if it exists in cstate interfaces
-			# 			if vpt['id'] == portid:
-			# 				# If this is the first time we are seeing this port, create a skeleton dict for it
-			# 				if kpt not in conf['interfaces'][k]:
-			# 					conf['interfaces'][k].update({kpt: self._gen_portskel()})
-			# 				# Port VLAN configuration
-			# 				if line.startswith('net add interface {} bridge'.format(portid)):
-			# 					#PVID
-			# 					if line.startswith('net add interface {} bridge pvid'.format(portid)):
-			# 						conf['interfaces'][k][kpt]['untagged_vlan'] = line.split(' ')[6]
-			# 					#Tagged vlans
-			# 					if line.startswith('net add interface {} bridge vids'.format(portid)):
-			# 						vids = line.split(' ')[6].split(',')
-			# 						conf['interfaces'][k][kpt]['tagged_vlans'] = extrapolate_list(vids, int_out=True)
-
 		return conf
 
 	def _check_atrib(self, atrib):
@@ -356,33 +337,6 @@ class CumulusSwitch(NetWeaverPlugin):
 	def _get_interface_json(self):
 		return json.loads(self.command('net show interface all json'))
 
-	# def pull_port_state(self):
-	# 	ports = {
-	# 		'1G': {},
-	# 		'10G': {},
-	# 		'40G': {},
-	# 		'100G': {},
-	# 		'Mgmt': {}
-	# 	}
-	# 	prtjson = self._get_interface_json()
-	# 	for pt, pv in ports.items():
-	# 		for k, v in prtjson.items():
-	# 			if v['mode'] != 'Mgmt':
-	# 				if v['speed'] == pt:
-	# 					if 'eth' in k:
-	# 						num = int(k.strip('eth'))
-	# 					elif 'swp' in k:
-	# 						num = int(k.strip('swp'))
-	# 					ports[pt].update({num: {'id': k, 'info': v}})
-	# 				if v['speed'] == 'N/A':
-	# 					if 'swp' in k:
-	# 						num = int(k.strip('swp'))
-	# 						ports['1G'].update({num: {'id': k, 'info': v}})
-	#
-	# 			elif pt == 'Mgmt' and v['mode'] == 'Mgmt':
-	# 				num = int(k.strip('eth'))
-	# 				ports['Mgmt'].update({num: {'id': k, 'info': v}})
-	# 	return ports
 	def pull_port_state(self):
 		ports_by_name = {}
 		ports_by_number = {}
