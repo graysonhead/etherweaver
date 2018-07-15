@@ -79,6 +79,7 @@ class Infrastructure:
 					fabric.appliances.append(app)
 			app.load_plugin()
 			app.plugin.build_ssh_session()
+			app.build_dstate()
 
 	def _parse_target(self, target):
 		for a in self.appliances:
