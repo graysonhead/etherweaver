@@ -104,3 +104,9 @@ class NetWeaverPlugin:
 
 	def rm_interface_tagged_vlan(self, interface, vlan, execute=True):
 		self.not_supported()
+
+	def set_interface_untagged_vlan(self, interface, vlan, execute=True):
+		self.not_supported()
+
+	def rm_interface_untagged_vlan(self, interface, execute=True):
+		self.not_supported()

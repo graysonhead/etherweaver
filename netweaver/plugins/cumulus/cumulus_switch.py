@@ -89,7 +89,8 @@ class CumulusSwitch(NetWeaverPlugin):
 		commands = []
 		for line in pre_parse_commands:
 			# This handles lines like: net add interface swp3,5 bridge vids 2-5
-			if line.startswith('net add interface') and ',' in line:
+			if line.startswith('net add interface') and ',' in line.split(' ')[3]\
+					or line.startswith('net add interface') and '-' in line.split(' ')[3]:
 				components = line.split(' ')
 				int_iter = line.split(' ')[3].strip('swp').split(',')
 				int_iter = extrapolate_list(int_iter, int_out=False)
@@ -139,11 +140,15 @@ class CumulusSwitch(NetWeaverPlugin):
 					speed = 'mgmt'
 				else:
 					speed = self.portmap['by_name'][portid]['speed']
-				conf['interfaces'][speed].update({portnum: self._gen_portskel()})
+					# Bootstrap the interface if it doesn't exist
+				if portnum not in conf['interfaces'][speed]:
+					conf['interfaces'][speed].update({portnum: self._gen_portskel()})
 				# Parse bridge options
 				if line.startswith('net add interface {} bridge vids'.format(portid)):
 					vids = line.split(' ')[6].split(',')
 					conf['interfaces'][speed][portnum]['tagged_vlans'] = extrapolate_list(vids, int_out=True)
+				if line.startswith('net add interface {} bridge pvid'.format(portid)):
+					conf['interfaces'][speed][portnum]['untagged_vlan'] = line.split(' ')[6]
 
 			# 	for k, v in self.portmap.items():
 			# 		# Iterate through port group
@@ -215,17 +220,21 @@ class CumulusSwitch(NetWeaverPlugin):
 						if portnum in self.cstate['interfaces'][typekey]:
 							#Compare the desired state to the current state of any defined interfaces
 							current_portstate = self.cstate['interfaces'][typekey][portnum]
-							if portconf != self.cstate['interfaces'][typekey][portnum]:
-								if portconf['tagged_vlans'] != current_portstate['tagged_vlans']:
+
+							if extrapolate_list(portconf['tagged_vlans'], int_out=True) != extrapolate_list(current_portstate['tagged_vlans'], int_out=True):
 									queue = queue + self\
-										.set_interface_tagged_vlans(self.portmap[typekey][portnum]['id'], extrapolate_list(portconf['tagged_vlans'], int_out=False), execute=False)
+										.set_interface_tagged_vlans(self._number_port_mapper(portnum), extrapolate_list(portconf['tagged_vlans'], int_out=False), execute=False)
 							if portnum not in self.cstate['interfaces'][typekey]:
 								if portconf['tagged_vlans']:
-									self.set_interface_tagged_vlans(self.portmap[typekey][portnum]['id'])
+									self.set_interface_tagged_vlans(self._number_port_mapper(portnum), extrapolate_list(portconf['tagged_vlans']), int_out=False, execute=False)
+							if 'untagged_vlan' in portconf:
+								if str(portconf['untagged_vlan']) != str(current_portstate['untagged_vlan']):
+									queue.append(self.set_interface_untagged_vlan(self._number_port_mapper(portnum), portconf['untagged_vlan'], execute=False))
+
 						# If the port doesn't exist in cstate
 						else:
 							if portconf['tagged_vlans']:
-								queue = queue + self.set_interface_tagged_vlans(self.portmap[typekey][portnum]['id'], extrapolate_list(portconf['tagged_vlans'], int_out=False), execute=False)
+								queue = queue + self.set_interface_tagged_vlans(self._number_port_mapper(portnum), extrapolate_list(portconf['tagged_vlans'], int_out=False), execute=False)
 									#TODO: Fix portmap to contain all interfaces (even downed ones). Finish interface creation logic
 			for com in queue:
 				self.command(com)
@@ -453,6 +462,24 @@ class CumulusSwitch(NetWeaverPlugin):
 			if commit:
 				self._net_commit()
 		return commands
+
+	def _name_port_mapper(self, port):
+		return self.portmap['by_name'][str(port)]['portid']
+
+	def _number_port_mapper(self, port):
+		return self.portmap['by_number'][str(port)]['portname']
+
+	def set_interface_untagged_vlan(self, interface, vlan, execute=True):
+		command = 'net add interface {} bridge pvid {}'.format(interface, vlan)
+		if execute:
+			self.command(command)
+		return command
+
+	def rm_interface_untagged_vlan(self, interface, execute=True):
+		command = 'net del interface {} bridge pvid'.format(interface)
+		if execute:
+			self.command(command)
+		return command
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		if self.ssh:
