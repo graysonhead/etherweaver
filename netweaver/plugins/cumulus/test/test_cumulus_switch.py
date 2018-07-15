@@ -43,8 +43,7 @@ class TestPlugin(unittest.TestCase):
 		dstate = {'protocols': {'dns': {'nameservers': ['8.8.8.8', '4.4.4.4']}}}
 		cstate = {'protocols': {'dns': {'nameservers': ['8.8.8.8']}}}
 		self.plugin.cstate = {'protocols': {'dns': {'nameservers': ['8.8.8.8']}}}
-		self.assertEqual(self.plugin._protocol_dns_nameservers_push(dstate, cstate),
-		                 ['net add dns nameserver ipv4 4.4.4.4'])
+		self.assertEqual(self.plugin._protocol_dns_nameservers_push(dstate, cstate), ['net add dns nameserver ipv4 4.4.4.4'])
 
 	def test_dns_nameservers_case3(self):
 		dstate = {'protocols': {'dns': {'nameservers': ['8.8.8.8', '4.4.4.4']}}}
@@ -52,6 +51,10 @@ class TestPlugin(unittest.TestCase):
 		self.plugin.cstate = {'protocols': {'dns': {'nameservers': []}}}
 		self.assertEqual(set(self.plugin._protocol_dns_nameservers_push(dstate, cstate)),
 		                 set(['net add dns nameserver ipv4 4.4.4.4', 'net add dns nameserver ipv4 8.8.8.8']))
+
+	def test_ntpclient_tz_push(self):
+		dstate = {'protocols': {'ntp': {'client': {'timezone': 'America/Chicago'}}}}
+		cstate = {'protocols': {'ntp': {'client': {'timezone': 'America/Chicago'}}}}
 
 if __name__ == '__main__':
 	unittest.main()

@@ -186,6 +186,8 @@ class CumulusSwitch(NetWeaverPlugin):
 			cstate = self.cstate
 			self._add_command(self._hostname_push(dstate, cstate))
 			self._add_command(self._protocol_dns_nameservers_push(dstate, cstate))
+			self._add_command(self._protocol_ntpclient_timezone_push(cstate, dstate))
+
 			# 	if 'ntp' in dstate['protocols']:
 			# 		if 'client' in dstate['protocols']['ntp']:
 			# 			if 'timezone' in dstate['protocols']['ntp']['client']:
@@ -442,34 +444,56 @@ class CumulusSwitch(NetWeaverPlugin):
 			self.command(command)
 		return command
 
-	def _protocol_dns_nameservers_push(self, dstate, cstate):
+	def _protocol_ntpclient_timezone_push(self, dstate, cstate):
+		dstate = dstate['protocols']['ntp']['client']['timezone']
+		cstate = cstate['protocols']['ntp']['client']['timezone']
 		# Case0
 		try:
-			dstate['protocols']['dns']['nameservers']
+			dstate
 		except KeyError:
 			return
 		# Case1
-		if dstate['protocols']['dns']['nameservers'] == cstate['protocols']['dns']['nameservers']:
+		if dstate == cstate:
 			return
-		# Case2 and 3 create
-		elif dstate['protocols']['dns']['nameservers'] != cstate['protocols']['dns']['nameservers']:
-			return self.set_dns_nameservers(dstate['protocols']['dns']['nameservers'], execute=False)
+		# Case 2 and 3
+		if dstate != cstate:
+			return self.set_ntp_client_timezone(dstate, execute=False)
 
-	def _hostname_push(self, dstate, cstate):
-		# Case0 ignore
+	# def _protocol_dns_nameservers_push(self, dstate, cstate):
+	# 	# Case0
+	# 	try:
+	# 		dstate['protocols']['dns']['nameservers']
+	# 	except KeyError:
+	# 		return
+	# 	# Case1
+	# 	if dstate['protocols']['dns']['nameservers'] == cstate['protocols']['dns']['nameservers']:
+	# 		return
+	# 	# Case2 and 3 create
+	# 	elif dstate['protocols']['dns']['nameservers'] != cstate['protocols']['dns']['nameservers']:
+	# 		return self.set_dns_nameservers(dstate['protocols']['dns']['nameservers'], execute=False)
+
+	def _protocol_dns_nameservers_push(self, dstate, cstate):
+		dstate = dstate['protocols']['dns']['nameservers']
+		cstate = cstate['protocols']['dns']['nameservers']
+		return self._compare_state(dstate, cstate, self.set_dns_nameservers)
+
+	def _compare_state(self, dstate, cstate, func):
+		# Case0
 		try:
-			dstate['hostname']
+			dstate
 		except KeyError:
 			return
-		# Case1 ignore
-		if dstate['hostname'] == cstate['hostname']:
+		# Case1
+		if dstate == cstate:
 			return
-		# Case2 create
-		if dstate['hostname'] and not cstate['hostname']:
-			return self.set_hostname(dstate['hostname'], execute=False)
-		# Case3 apply
-		if dstate['hostname'] != cstate['hostname']:
-			return self.set_hostname(dstate['hostname'], execute=False)
+		# Case2 and 3 create
+		elif dstate != cstate:
+			return func(dstate, execute=False)
+
+	def _hostname_push(self, dstate, cstate):
+		dstate = dstate['hostname']
+		cstate = cstate['hostname']
+		return self._compare_state(dstate, cstate, self.set_hostname)
 
 	def _add_command(self, commands):
 		if type(commands) == list:
