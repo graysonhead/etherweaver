@@ -186,8 +186,8 @@ class CumulusSwitch(NetWeaverPlugin):
 			cstate = self.cstate
 			self._add_command(self._hostname_push(dstate, cstate))
 			self._add_command(self._protocol_dns_nameservers_push(dstate, cstate))
-			self._add_command(self._protocol_ntpclient_timezone_push(cstate, dstate))
-
+			self._add_command(self._protocol_ntpclient_timezone_push(dstate, cstate))
+			self._add_command(self._protocol_ntpclient_servers(dstate, cstate))
 			# 	if 'ntp' in dstate['protocols']:
 			# 		if 'client' in dstate['protocols']['ntp']:
 			# 			if 'timezone' in dstate['protocols']['ntp']['client']:
@@ -444,7 +444,7 @@ class CumulusSwitch(NetWeaverPlugin):
 			self.command(command)
 		return command
 
-	def _protocol_ntpclient_timezone_push(self, dstate, cstate):
+	def _protocol_ntpclient_timezone_push(self, cstate, dstate):
 		dstate = dstate['protocols']['ntp']['client']['timezone']
 		cstate = cstate['protocols']['ntp']['client']['timezone']
 		# Case0
@@ -458,19 +458,6 @@ class CumulusSwitch(NetWeaverPlugin):
 		# Case 2 and 3
 		if dstate != cstate:
 			return self.set_ntp_client_timezone(dstate, execute=False)
-
-	# def _protocol_dns_nameservers_push(self, dstate, cstate):
-	# 	# Case0
-	# 	try:
-	# 		dstate['protocols']['dns']['nameservers']
-	# 	except KeyError:
-	# 		return
-	# 	# Case1
-	# 	if dstate['protocols']['dns']['nameservers'] == cstate['protocols']['dns']['nameservers']:
-	# 		return
-	# 	# Case2 and 3 create
-	# 	elif dstate['protocols']['dns']['nameservers'] != cstate['protocols']['dns']['nameservers']:
-	# 		return self.set_dns_nameservers(dstate['protocols']['dns']['nameservers'], execute=False)
 
 	def _protocol_dns_nameservers_push(self, dstate, cstate):
 		dstate = dstate['protocols']['dns']['nameservers']
@@ -489,6 +476,11 @@ class CumulusSwitch(NetWeaverPlugin):
 		# Case2 and 3 create
 		elif dstate != cstate:
 			return func(dstate, execute=False)
+
+	def _protocol_ntpclient_servers(self, dstate, cstate):
+		dstate = dstate['protocols']['ntp']['client']['servers']
+		cstate = cstate['protocols']['ntp']['client']['servers']
+		return self._compare_state(dstate, cstate, self.set_ntp_client_servers)
 
 	def _hostname_push(self, dstate, cstate):
 		dstate = dstate['hostname']
