@@ -203,7 +203,8 @@ class CumulusSwitch(NetWeaverPlugin):
 			queue = []
 			dstate = self.appliance.dstate
 			cstate = self.cstate
-			self._hostname_push(dstate, cstate)
+			self._add_command(self._hostname_push(dstate, cstate))
+
 			# if 'protocols' in dstate:
 			# 	if 'dns' in dstate['protocols']:
 			# 		if 'nameservers' in dstate['protocols']['dns']:
@@ -249,11 +250,11 @@ class CumulusSwitch(NetWeaverPlugin):
 			# 				if portconf['tagged_vlans']:
 			# 					queue = queue + self.set_interface_tagged_vlans(self._number_port_mapper(portnum), extrapolate_list(portconf['tagged_vlans'], int_out=False), execute=False)
 			# 						#TODO: Fix portmap to contain all interfaces (even downed ones). Finish interface creation logic
-			for com in queue:
+			for com in self.commands:
 				self.command(com)
 			self._net_commit()
 			self.reload_state()
-			return queue
+			return self.commands
 
 	def add_dns_nameserver(self, ip, commit=True, execute=True):
 		ip = ip_address(ip)
@@ -514,6 +515,8 @@ class CumulusSwitch(NetWeaverPlugin):
 		if type(commands) == list:
 			for com in commands:
 				self.commands.append(com)
+		elif commands is None:
+			return
 		else:
 			self.commands.append(commands)
 
