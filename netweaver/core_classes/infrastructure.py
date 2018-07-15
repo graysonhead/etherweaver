@@ -80,6 +80,15 @@ class Infrastructure:
 			app.load_plugin()
 			app.plugin.build_ssh_session()
 
+	def _parse_target(self, target):
+		for a in self.appliances:
+			if a.name == target:
+				return a
+
+	def run_command(self, target, func, value):
+		appliance = self._parse_target(target)
+		return appliance.run_individual_command(func, value)
+
 
 
 # conf = {

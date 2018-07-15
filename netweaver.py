@@ -1,18 +1,18 @@
 import argparse
 import yaml
 from netweaver.core_classes.infrastructure import Infrastructure
+import pprint
+
+pp = pprint.PrettyPrinter(indent=4)
 
 class CLIApp:
 
-	def __init__(self, tgt, func, yaml=None):
-		self.tgt = tgt
-		self.func = func
+	def __init__(self, yaml=None):
 		self.config = None  # This is defined by the parsers below
 		if yaml:
 			self.config = self._parse_yaml_file(yaml)
 
 		self._build_infrastructure_object()
-
 
 	def _parse_yaml_file(self, yamlfile):
 		"""Read Yaml from file and send to parse_yaml_string"""
@@ -28,13 +28,15 @@ class CLIApp:
 		"""
 		self.inf = Infrastructure(self.config)
 
-	def run(self):
-		return self._parse_target(self.tgt).plugin.command(self.func)
+	def run(self, target=None, func=None, value=None , yamlout=True):
+		retval = self.inf.run_command(target, func, value)
+		if type(retval) == dict or list:
+			if not yamlout:
+				retval = (pp.pprint(retval))
+			else:
+				retval = yaml.dump(retval)
+		return retval
 
-	def _parse_target(self, target):
-		for a in self.inf.appliances:
-			if a.name == target:
-				return a
 
 
 
@@ -46,6 +48,7 @@ if __name__ == '__main__':
 			description='Netweaver is an application to orchestrate network configurations.')
 	parser.add_argument('target', type=str)
 	parser.add_argument('func', type=str)
+	parser.add_argument('--value', type=str, dest='value', default=None)
 	parser.add_argument(
 		'--yaml',
 		type=str,
@@ -53,8 +56,9 @@ if __name__ == '__main__':
 		help='YAML file containing the roles, appliances, and fabric objects'
 	)
 	args = parser.parse_args()
-	cli = CLIApp(args.target, args.func, yaml=args.yamlfile)
+	cli = CLIApp(yaml=args.yamlfile)
+	print(cli.run(target=args.target, func=args.func, value=args.value))
 	# target = '0c-b3-6d-f1-11-00'
 	# func = 'get.hostname'
 	# cli = CLIApp(target, func, yaml='exampleconfig.yaml')
-	print(cli.run())
+
