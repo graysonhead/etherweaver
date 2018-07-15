@@ -24,7 +24,7 @@ class NetWeaverPlugin:
 	def _ssh_command(self, command):
 		stdin, stdout, stderr = self.ssh.exec_command(command)
 		if stderr.read():
-			raise SSHCommandError(stderr.read()) #TODO For some reason this line returns empty on error when run from a child instance
+			raise SSHCommandError("While running command {}, got error {}".format(command, stderr.read())) #TODO For some reason this line returns empty on error when run from a child instance
 		return stdout.read().decode('utf-8')
 
 	def _generic_command(self, command):
@@ -103,4 +103,10 @@ class NetWeaverPlugin:
 		self.not_supported()
 
 	def rm_interface_tagged_vlan(self, interface, vlan, execute=True):
+		self.not_supported()
+
+	def set_interface_untagged_vlan(self, interface, vlan, execute=True):
+		self.not_supported()
+
+	def rm_interface_untagged_vlan(self, interface, execute=True):
 		self.not_supported()
