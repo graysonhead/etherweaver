@@ -204,14 +204,7 @@ class CumulusSwitch(NetWeaverPlugin):
 			dstate = self.appliance.dstate
 			cstate = self.cstate
 			self._add_command(self._hostname_push(dstate, cstate))
-
-			# if 'protocols' in dstate:
-			# 	if 'dns' in dstate['protocols']:
-			# 		if 'nameservers' in dstate['protocols']['dns']:
-			# 			if dstate['protocols']['dns']['nameservers'] != self.cstate['protocols']['dns']['nameservers']:
-			# 				queue = queue + self.set_dns_nameservers(
-			# 					dstate['protocols']['dns']['nameservers'],
-			# 					execute=False)
+			self._add_command(self._protocol_dns_nameservers_push(dstate, cstate))
 			# 	if 'ntp' in dstate['protocols']:
 			# 		if 'client' in dstate['protocols']['ntp']:
 			# 			if 'timezone' in dstate['protocols']['ntp']['client']:
@@ -495,19 +488,32 @@ class CumulusSwitch(NetWeaverPlugin):
 			self.command(command)
 		return command
 
+	def _protocol_dns_nameservers_push(self, dstate, cstate):
+		# Case0
+		try:
+			dstate['protocols']['dns']['nameservers']
+		except KeyError:
+			return
+		# Case1
+		if dstate['protocols']['dns']['nameservers'] == cstate['protocols']['dns']['nameservers']:
+			return
+		# Case2 and 3 create
+		elif dstate['protocols']['dns']['nameservers'] != cstate['protocols']['dns']['nameservers']:
+			return self.set_dns_nameservers(dstate['protocols']['dns']['nameservers'], execute=False)
+
 	def _hostname_push(self, dstate, cstate):
 		# Case0 ignore
 		try:
 			dstate['hostname']
 		except KeyError:
 			return
-		# Case3 ignore
+		# Case1 ignore
 		if dstate['hostname'] == cstate['hostname']:
 			return
-		# Case1 create
+		# Case2 create
 		if dstate['hostname'] and not cstate['hostname']:
 			return self.set_hostname(dstate['hostname'], execute=False)
-		# Case2 apply
+		# Case3 apply
 		if dstate['hostname'] != cstate['hostname']:
 			return self.set_hostname(dstate['hostname'], execute=False)
 
