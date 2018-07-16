@@ -68,5 +68,16 @@ class TestPlugin(unittest.TestCase):
 		self.plugin.cstate = cstate
 		self.assertEqual(self.plugin._protocol_ntpclient_servers(dstate, cstate), ['net add time ntp server server1.server.com iburst'])
 
+	def test_vlan_push_case1(self):
+		dstate = {'vlans': {1: None, 2: None}}
+		cstate = {'vlans': {1: None, 2: None}}
+		self.plugin.cstate = cstate
+		self.assertEqual(self.plugin._vlans_push(dstate, cstate), None)
+
+	def test_vlan_push_case2(self):
+		dstate = {'vlans': {1: None, 2: None}}
+		cstate = {'vlans': {}}
+		self.plugin.cstate = cstate
+		self.assertEqual(self.plugin._vlans_push(dstate, cstate), ['net add bridge bridge vids 1', 'net add bridge bridge vids 2'])
 if __name__ == '__main__':
 	unittest.main()

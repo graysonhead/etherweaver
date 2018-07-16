@@ -188,19 +188,8 @@ class CumulusSwitch(NetWeaverPlugin):
 			self._add_command(self._protocol_dns_nameservers_push(dstate, cstate))
 			self._add_command(self._protocol_ntpclient_timezone_push(dstate, cstate))
 			self._add_command(self._protocol_ntpclient_servers(dstate, cstate))
-			# 	if 'ntp' in dstate['protocols']:
-			# 		if 'client' in dstate['protocols']['ntp']:
-			# 			if 'timezone' in dstate['protocols']['ntp']['client']:
-			# 				if dstate['protocols']['ntp']['client']['timezone'] != self.cstate['protocols']['ntp']['client']['timezone']:
-			# 					queue.append(self.set_ntp_client_timezone(dstate['protocols']['ntp']['client']['timezone'], execute=False))
-			# 			if 'servers' in dstate['protocols']['ntp']['client']:
-			# 				if dstate['protocols']['ntp']['client']['servers'] != self.cstate['protocols']['ntp']['client']['servers']:
-			# 					queue = queue + (self.set_ntp_client_servers(dstate['protocols']['ntp']['client']['servers'], execute=False))
-			# 	if 'vlans' in dpstate:
-			# 		dvl = self.appliance.fabric.config['vlans']
-			# 		cvl = self.cstate['vlans']
-			# 		if not compare_dict_keys(dvl, cvl):
-			# 			queue = queue + self.set_vlans(dvl, execute=False)
+			self._add_command(self._vlans_push(dstate, cstate))
+
 			# 	# Interfaces
 			# 	# Iterate through dstate interface types
 			# 	for typekey, typeval in dstate['interfaces'].items():
@@ -486,6 +475,13 @@ class CumulusSwitch(NetWeaverPlugin):
 		dstate = dstate['hostname']
 		cstate = cstate['hostname']
 		return self._compare_state(dstate, cstate, self.set_hostname)
+
+	def _vlans_push(self, dstate, cstate):
+		dstate = dstate['vlans']
+		cstate = cstate['vlans']
+		return self._compare_state(dstate, cstate, self.set_vlans)
+
+
 
 	def _add_command(self, commands):
 		if type(commands) == list:
