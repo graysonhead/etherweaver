@@ -189,6 +189,7 @@ class CumulusSwitch(NetWeaverPlugin):
 			self._add_command(self._protocol_ntpclient_timezone_push(dstate, cstate))
 			self._add_command(self._protocol_ntpclient_servers(dstate, cstate))
 			self._add_command(self._vlans_push(dstate, cstate))
+			self._add_command(self._interfaces_push(dstate, cstate))
 
 			# 	# Interfaces
 			# 	# Iterate through dstate interface types
@@ -433,7 +434,7 @@ class CumulusSwitch(NetWeaverPlugin):
 			self.command(command)
 		return command
 
-	def _protocol_ntpclient_timezone_push(self, cstate, dstate):
+	def _protocol_ntpclient_timezone_push(self, dstate, cstate):
 		dstate = dstate['protocols']['ntp']['client']['timezone']
 		cstate = cstate['protocols']['ntp']['client']['timezone']
 		# Case0
@@ -480,6 +481,57 @@ class CumulusSwitch(NetWeaverPlugin):
 		dstate = dstate['vlans']
 		cstate = cstate['vlans']
 		return self._compare_state(dstate, cstate, self.set_vlans)
+
+	def _interfaces_push(self, dstate, cstate):
+		i_dstate = dstate['interfaces']
+		i_cstate = cstate['interfaces']
+		blankstate = self._gen_portskel()
+		for kspd, vspd in i_dstate.items():
+			for kint, vint in vspd.items():
+				self._interface_tagged_vlans_push(cstate, dstate, kspd, kint)
+				if 'untagged_vlan' in vint:
+					self._interface_untagged_vlan_push(cstate, dstate, kspd, kint)
+
+	def _interface_untagged_vlan_push(self, cstate, dstate, speed, interface):
+		dstate = str(dstate['interfaces'][speed][interface]['untagged_vlan'])
+		# Case 3
+		try:
+			cstate = str(cstate['interfaces'][speed][interface]['untagged_vlan'])
+		except KeyError:
+			self._add_command(self.set_interface_untagged_vlan(self._number_port_mapper(interface), dstate, execute=False))
+		# Case0
+		try:
+			dstate
+		except KeyError:
+			return
+		# Case1
+		if dstate == cstate:
+			return
+		# Case 2
+		elif dstate != cstate:
+			self._add_command(
+				self.set_interface_untagged_vlan(self._number_port_mapper(interface), dstate, execute=False))
+
+
+	def _interface_tagged_vlans_push(self, cstate, dstate, speed, interface):
+		# Case 3
+		dstate = extrapolate_list(dstate['interfaces'][speed][interface]['tagged_vlans'], int_out=False)
+		try:
+			cstate = extrapolate_list(cstate['interfaces'][speed][str(interface)]['tagged_vlans'], int_out=False)
+		except KeyError:
+			self._add_command(self.set_interface_tagged_vlans(self._number_port_mapper(interface), dstate, execute=False))
+		# Case0
+		try:
+			dstate
+		except KeyError:
+			return
+		# Case1
+		if dstate == cstate:
+			return
+		# Case 2
+		elif dstate != cstate:
+			self._add_command(self.set_interface_tagged_vlans(self._number_port_mapper(interface), dstate, execute=False))
+
 
 
 
