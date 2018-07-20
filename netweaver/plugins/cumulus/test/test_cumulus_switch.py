@@ -55,12 +55,12 @@ class TestPlugin(unittest.TestCase):
 	def test_ntpclient_tz_push_case1(self):
 		dstate = {'protocols': {'ntp': {'client': {'timezone': 'America/Chicago'}}}}
 		cstate = {'protocols': {'ntp': {'client': {'timezone': 'America/Chicago'}}}}
-		self.assertEqual(self.plugin._protocol_ntpclient_timezone_push(cstate, dstate), None)
+		self.assertEqual(self.plugin._protocol_ntpclient_timezone_push(dstate, cstate), None)
 
 	def test_ntpclient_tz_push_case2(self):
-		dstate = {'protocols': {'ntp': {'client': {'timezone': 'America/Chicago'}}}}
+		dstate = {'protocols': {'ntp': {'client': {'timezone': 'Etc/UTC'}}}}
 		cstate = {'protocols': {'ntp': {'client': {'timezone': None}}}}
-		self.assertEqual(self.plugin._protocol_ntpclient_timezone_push(cstate, dstate), 'net add time zone America/Chicago')
+		self.assertEqual(self.plugin._protocol_ntpclient_timezone_push(dstate, cstate), 'net add time zone Etc/UTC')
 
 	def test_ntpclient_server_push_case1(self):
 		dstate = {'protocols': {'ntp': {'client': {'servers': ['server1.server.com']}}}}

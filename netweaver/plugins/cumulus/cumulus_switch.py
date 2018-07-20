@@ -488,7 +488,8 @@ class CumulusSwitch(NetWeaverPlugin):
 		blankstate = self._gen_portskel()
 		for kspd, vspd in i_dstate.items():
 			for kint, vint in vspd.items():
-				self._interface_tagged_vlans_push(cstate, dstate, kspd, kint)
+				if 'tagged_vlan' in vint:
+					self._interface_tagged_vlans_push(cstate, dstate, kspd, kint)
 				if 'untagged_vlan' in vint:
 					self._interface_untagged_vlan_push(cstate, dstate, kspd, kint)
 
@@ -496,7 +497,7 @@ class CumulusSwitch(NetWeaverPlugin):
 		dstate = str(dstate['interfaces'][speed][interface]['untagged_vlan'])
 		# Case 3
 		try:
-			cstate = str(cstate['interfaces'][speed][interface]['untagged_vlan'])
+			cstate = str(cstate['interfaces'][speed][str(interface)]['untagged_vlan'])
 		except KeyError:
 			self._add_command(self.set_interface_untagged_vlan(self._number_port_mapper(interface), dstate, execute=False))
 		# Case0

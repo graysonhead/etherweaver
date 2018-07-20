@@ -11,9 +11,9 @@ roles:
           timezone: America/Chicago
           servers:
               - pool.ntp.org
-              - 0.cumulusnetworks.pool.ntp.org
-              - 1.cumulusnetworks.pool.ntp.org
-              - 2.cumulusnetworks.pool.ntp.org
+#              - 0.cumulusnetworks.pool.ntp.org
+#              - 1.cumulusnetworks.pool.ntp.org
+#              - 2.cumulusnetworks.pool.ntp.org
     interfaces:
       1G:
         1:
@@ -21,6 +21,8 @@ roles:
           untagged_vlan: 7
         '5':
           tagged_vlans: [2, 3, 4, 5, 6]
+        6:
+          untagged_vlan: 5
   spine2:
     fabric: network1
     hostname: spine2.net.testco.org
@@ -33,9 +35,9 @@ roles:
           timezone: America/Chicago
           servers:
               - pool.ntp.org
-              - 0.cumulusnetworks.pool.ntp.org
-              - 1.cumulusnetworks.pool.ntp.org
-              - 2.cumulusnetworks.pool.ntp.org
+#              - 0.cumulusnetworks.pool.ntp.org
+#              - 1.cumulusnetworks.pool.ntp.org
+#              - 2.cumulusnetworks.pool.ntp.org
 
 
 
