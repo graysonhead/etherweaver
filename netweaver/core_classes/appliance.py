@@ -17,6 +17,7 @@ class Appliance(ConfigObject):
 		self.plugin = None
 
 		self.dtree = None
+		self.dstate = {}
 
 	def _not_implemented(self):
 		raise NotImplementedError
@@ -31,8 +32,14 @@ class Appliance(ConfigObject):
 		plugin = getattr(module, package.information['class_name'])
 		# return plugin(self.config)
 		self.plugin = plugin(self.config, self.fabric.config)
-		self._build_dispatch_tree()
 		self.plugin.appliance = self
+		self.plugin.connect()
+		self._build_dispatch_tree()
+
+	def build_dstate(self):
+		self.dstate.update(self.role.config)
+		self.dstate.update({'vlans': self.fabric.config['vlans']})
+
 
 	def _build_dispatch_tree(self):
 		self.dtree = {

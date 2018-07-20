@@ -9,18 +9,33 @@ from netweaver.core_classes.utils import extrapolate_list, extrapolate_dict, com
 
 class CumulusSwitch(NetWeaverPlugin):
 
-	def __init__(self, config, fabricconfig):
+	def __init__(self, appconfig, fabricconfig):
 		self.is_plugin = True
 		self.fabricconfig = fabricconfig
-		self.hostname = config['hostname']
+		self.hostname = appconfig['hostname']
 		self.username = fabricconfig['credentials']['username']
 		self.password = fabricconfig['credentials']['password']
 		self.port = 22
 
+		self.portmap = None
+		self.cstate = None
+
+		self.commands = []
+
+		"""
+		State cases referenced in below modules:
+		cstate = Current State (stored in plugin)
+		dstate = Desired state (stored in appliance)
+		
+		Case0: exists in cstate but not dstate (ignore)
+		Case1: exists in dstate but not cstate (create dstate)
+		Case2: exists in both, but values do not match (apply dstate)
+		Case3 exists in both, and both match (do nothing)
+		"""
+	def connect(self):
 		self.build_ssh_session()
 		self.portmap = self.pull_port_state()
 		self.cstate = self.pull_state()
-
 
 	def build_ssh_session(self):
 		self.conn_type = NWConnType
@@ -149,25 +164,6 @@ class CumulusSwitch(NetWeaverPlugin):
 					conf['interfaces'][speed][portnum]['tagged_vlans'] = extrapolate_list(vids, int_out=True)
 				if line.startswith('net add interface {} bridge pvid'.format(portid)):
 					conf['interfaces'][speed][portnum]['untagged_vlan'] = line.split(' ')[6]
-
-			# 	for k, v in self.portmap.items():
-			# 		# Iterate through port group
-			# 		for kpt, vpt in v.items():
-			# 			# If we find a matching ID in the portmap, figure out if it exists in cstate interfaces
-			# 			if vpt['id'] == portid:
-			# 				# If this is the first time we are seeing this port, create a skeleton dict for it
-			# 				if kpt not in conf['interfaces'][k]:
-			# 					conf['interfaces'][k].update({kpt: self._gen_portskel()})
-			# 				# Port VLAN configuration
-			# 				if line.startswith('net add interface {} bridge'.format(portid)):
-			# 					#PVID
-			# 					if line.startswith('net add interface {} bridge pvid'.format(portid)):
-			# 						conf['interfaces'][k][kpt]['untagged_vlan'] = line.split(' ')[6]
-			# 					#Tagged vlans
-			# 					if line.startswith('net add interface {} bridge vids'.format(portid)):
-			# 						vids = line.split(' ')[6].split(',')
-			# 						conf['interfaces'][k][kpt]['tagged_vlans'] = extrapolate_list(vids, int_out=True)
-
 		return conf
 
 	def _check_atrib(self, atrib):
@@ -186,61 +182,45 @@ class CumulusSwitch(NetWeaverPlugin):
 
 	def push_state(self, execute=True):
 			queue = []
-			dstate = self.appliance.role.config
-			dpstate = self.appliance.fabric.config
-			if 'hostname' in dstate:
-				if dstate['hostname'] != self.cstate['hostname']:
-					queue.append(self.set_hostname(dstate['hostname'], execute=False))
-			if 'protocols' in dstate:
-				if 'dns' in dstate['protocols']:
-					if 'nameservers' in dstate['protocols']['dns']:
-						if dstate['protocols']['dns']['nameservers'] != self.cstate['protocols']['dns']['nameservers']:
-							queue = queue + self.set_dns_nameservers(
-								dstate['protocols']['dns']['nameservers'],
-								execute=False)
-				if 'ntp' in dstate['protocols']:
-					if 'client' in dstate['protocols']['ntp']:
-						if 'timezone' in dstate['protocols']['ntp']['client']:
-							if dstate['protocols']['ntp']['client']['timezone'] != self.cstate['protocols']['ntp']['client']['timezone']:
-								queue.append(self.set_ntp_client_timezone(dstate['protocols']['ntp']['client']['timezone'], execute=False))
-						if 'servers' in dstate['protocols']['ntp']['client']:
-							if dstate['protocols']['ntp']['client']['servers'] != self.cstate['protocols']['ntp']['client']['servers']:
-								queue = queue + (self.set_ntp_client_servers(dstate['protocols']['ntp']['client']['servers'], execute=False))
-				if 'vlans' in dpstate:
-					dvl = self.appliance.fabric.config['vlans']
-					cvl = self.cstate['vlans']
-					if not compare_dict_keys(dvl, cvl):
-						queue = queue + self.set_vlans(dvl, execute=False)
-				# Interfaces
-				# Iterate through dstate interface types
-				for typekey, typeval in dstate['interfaces'].items():
-					# Iterate through interfaces in each type
-					for portnum, portconf in typeval.items():
-						# If the portnumber exists in cstate:
-						if portnum in self.cstate['interfaces'][typekey]:
-							#Compare the desired state to the current state of any defined interfaces
-							current_portstate = self.cstate['interfaces'][typekey][portnum]
+			dstate = self.appliance.dstate
+			cstate = self.cstate
+			self._add_command(self._hostname_push(dstate, cstate))
+			self._add_command(self._protocol_dns_nameservers_push(dstate, cstate))
+			self._add_command(self._protocol_ntpclient_timezone_push(dstate, cstate))
+			self._add_command(self._protocol_ntpclient_servers(dstate, cstate))
+			self._add_command(self._vlans_push(dstate, cstate))
+			self._add_command(self._interfaces_push(dstate, cstate))
 
-							if extrapolate_list(portconf['tagged_vlans'], int_out=True) != extrapolate_list(current_portstate['tagged_vlans'], int_out=True):
-									queue = queue + self\
-										.set_interface_tagged_vlans(self._number_port_mapper(portnum), extrapolate_list(portconf['tagged_vlans'], int_out=False), execute=False)
-							if portnum not in self.cstate['interfaces'][typekey]:
-								if portconf['tagged_vlans']:
-									self.set_interface_tagged_vlans(self._number_port_mapper(portnum), extrapolate_list(portconf['tagged_vlans']), int_out=False, execute=False)
-							if 'untagged_vlan' in portconf:
-								if str(portconf['untagged_vlan']) != str(current_portstate['untagged_vlan']):
-									queue.append(self.set_interface_untagged_vlan(self._number_port_mapper(portnum), portconf['untagged_vlan'], execute=False))
-
-						# If the port doesn't exist in cstate
-						else:
-							if portconf['tagged_vlans']:
-								queue = queue + self.set_interface_tagged_vlans(self._number_port_mapper(portnum), extrapolate_list(portconf['tagged_vlans'], int_out=False), execute=False)
-									#TODO: Fix portmap to contain all interfaces (even downed ones). Finish interface creation logic
-			for com in queue:
+			# 	# Interfaces
+			# 	# Iterate through dstate interface types
+			# 	for typekey, typeval in dstate['interfaces'].items():
+			# 		# Iterate through interfaces in each type
+			# 		for portnum, portconf in typeval.items():
+			# 			# If the portnumber exists in cstate:
+			# 			if portnum in self.cstate['interfaces'][typekey]:
+			# 				#Compare the desired state to the current state of any defined interfaces
+			# 				current_portstate = self.cstate['interfaces'][typekey][portnum]
+			#
+			# 				if extrapolate_list(portconf['tagged_vlans'], int_out=True) != extrapolate_list(current_portstate['tagged_vlans'], int_out=True):
+			# 						queue = queue + self\
+			# 							.set_interface_tagged_vlans(self._number_port_mapper(portnum), extrapolate_list(portconf['tagged_vlans'], int_out=False), execute=False)
+			# 				if portnum not in self.cstate['interfaces'][typekey]:
+			# 					if portconf['tagged_vlans']:
+			# 						self.set_interface_tagged_vlans(self._number_port_mapper(portnum), extrapolate_list(portconf['tagged_vlans']), int_out=False, execute=False)
+			# 				if 'untagged_vlan' in portconf:
+			# 					if str(portconf['untagged_vlan']) != str(current_portstate['untagged_vlan']):
+			# 						queue.append(self.set_interface_untagged_vlan(self._number_port_mapper(portnum), portconf['untagged_vlan'], execute=False))
+			#
+			# 			# If the port doesn't exist in cstate
+			# 			else:
+			# 				if portconf['tagged_vlans']:
+			# 					queue = queue + self.set_interface_tagged_vlans(self._number_port_mapper(portnum), extrapolate_list(portconf['tagged_vlans'], int_out=False), execute=False)
+			# 						#TODO: Fix portmap to contain all interfaces (even downed ones). Finish interface creation logic
+			for com in self.commands:
 				self.command(com)
 			self._net_commit()
 			self.reload_state()
-			return queue
+			return self.commands
 
 	def add_dns_nameserver(self, ip, commit=True, execute=True):
 		ip = ip_address(ip)
@@ -349,33 +329,6 @@ class CumulusSwitch(NetWeaverPlugin):
 	def _get_interface_json(self):
 		return json.loads(self.command('net show interface all json'))
 
-	# def pull_port_state(self):
-	# 	ports = {
-	# 		'1G': {},
-	# 		'10G': {},
-	# 		'40G': {},
-	# 		'100G': {},
-	# 		'Mgmt': {}
-	# 	}
-	# 	prtjson = self._get_interface_json()
-	# 	for pt, pv in ports.items():
-	# 		for k, v in prtjson.items():
-	# 			if v['mode'] != 'Mgmt':
-	# 				if v['speed'] == pt:
-	# 					if 'eth' in k:
-	# 						num = int(k.strip('eth'))
-	# 					elif 'swp' in k:
-	# 						num = int(k.strip('swp'))
-	# 					ports[pt].update({num: {'id': k, 'info': v}})
-	# 				if v['speed'] == 'N/A':
-	# 					if 'swp' in k:
-	# 						num = int(k.strip('swp'))
-	# 						ports['1G'].update({num: {'id': k, 'info': v}})
-	#
-	# 			elif pt == 'Mgmt' and v['mode'] == 'Mgmt':
-	# 				num = int(k.strip('eth'))
-	# 				ports['Mgmt'].update({num: {'id': k, 'info': v}})
-	# 	return ports
 	def pull_port_state(self):
 		ports_by_name = {}
 		ports_by_number = {}
@@ -480,6 +433,117 @@ class CumulusSwitch(NetWeaverPlugin):
 		if execute:
 			self.command(command)
 		return command
+
+	def _protocol_ntpclient_timezone_push(self, dstate, cstate):
+		dstate = dstate['protocols']['ntp']['client']['timezone']
+		cstate = cstate['protocols']['ntp']['client']['timezone']
+		# Case0
+		try:
+			dstate
+		except KeyError:
+			return
+		# Case1
+		if dstate == cstate:
+			return
+		# Case 2 and 3
+		if dstate != cstate:
+			return self.set_ntp_client_timezone(dstate, execute=False)
+
+	def _protocol_dns_nameservers_push(self, dstate, cstate):
+		dstate = dstate['protocols']['dns']['nameservers']
+		cstate = cstate['protocols']['dns']['nameservers']
+		return self._compare_state(dstate, cstate, self.set_dns_nameservers)
+
+	def _compare_state(self, dstate, cstate, func):
+		# Case0
+		try:
+			dstate
+		except KeyError:
+			return
+		# Case1
+		if dstate == cstate:
+			return
+		# Case2 and 3 create
+		elif dstate != cstate:
+			return func(dstate, execute=False)
+
+	def _protocol_ntpclient_servers(self, dstate, cstate):
+		dstate = dstate['protocols']['ntp']['client']['servers']
+		cstate = cstate['protocols']['ntp']['client']['servers']
+		return self._compare_state(dstate, cstate, self.set_ntp_client_servers)
+
+	def _hostname_push(self, dstate, cstate):
+		dstate = dstate['hostname']
+		cstate = cstate['hostname']
+		return self._compare_state(dstate, cstate, self.set_hostname)
+
+	def _vlans_push(self, dstate, cstate):
+		dstate = dstate['vlans']
+		cstate = cstate['vlans']
+		return self._compare_state(dstate, cstate, self.set_vlans)
+
+	def _interfaces_push(self, dstate, cstate):
+		i_dstate = dstate['interfaces']
+		i_cstate = cstate['interfaces']
+		blankstate = self._gen_portskel()
+		for kspd, vspd in i_dstate.items():
+			for kint, vint in vspd.items():
+				if 'tagged_vlan' in vint:
+					self._interface_tagged_vlans_push(cstate, dstate, kspd, kint)
+				if 'untagged_vlan' in vint:
+					self._interface_untagged_vlan_push(cstate, dstate, kspd, kint)
+
+	def _interface_untagged_vlan_push(self, cstate, dstate, speed, interface):
+		dstate = str(dstate['interfaces'][speed][interface]['untagged_vlan'])
+		# Case 3
+		try:
+			cstate = str(cstate['interfaces'][speed][str(interface)]['untagged_vlan'])
+		except KeyError:
+			self._add_command(self.set_interface_untagged_vlan(self._number_port_mapper(interface), dstate, execute=False))
+		# Case0
+		try:
+			dstate
+		except KeyError:
+			return
+		# Case1
+		if dstate == cstate:
+			return
+		# Case 2
+		elif dstate != cstate:
+			self._add_command(
+				self.set_interface_untagged_vlan(self._number_port_mapper(interface), dstate, execute=False))
+
+
+	def _interface_tagged_vlans_push(self, cstate, dstate, speed, interface):
+		# Case 3
+		dstate = extrapolate_list(dstate['interfaces'][speed][interface]['tagged_vlans'], int_out=False)
+		try:
+			cstate = extrapolate_list(cstate['interfaces'][speed][str(interface)]['tagged_vlans'], int_out=False)
+		except KeyError:
+			self._add_command(self.set_interface_tagged_vlans(self._number_port_mapper(interface), dstate, execute=False))
+		# Case0
+		try:
+			dstate
+		except KeyError:
+			return
+		# Case1
+		if dstate == cstate:
+			return
+		# Case 2
+		elif dstate != cstate:
+			self._add_command(self.set_interface_tagged_vlans(self._number_port_mapper(interface), dstate, execute=False))
+
+
+
+
+	def _add_command(self, commands):
+		if type(commands) == list:
+			for com in commands:
+				self.commands.append(com)
+		elif commands is None:
+			return
+		else:
+			self.commands.append(commands)
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		if self.ssh:

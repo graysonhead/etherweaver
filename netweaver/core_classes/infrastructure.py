@@ -79,6 +79,7 @@ class Infrastructure:
 					fabric.appliances.append(app)
 			app.load_plugin()
 			app.plugin.build_ssh_session()
+			app.build_dstate()
 
 	def _parse_target(self, target):
 		for a in self.appliances:
@@ -86,6 +87,11 @@ class Infrastructure:
 				return a
 
 	def run_command(self, target, func, value):
+		if target == '*':
+			retvals = {}
+			for app in self.appliances:
+				retvals.update({app.name: app.run_individual_command(func, value)})
+			return retvals
 		appliance = self._parse_target(target)
 		return appliance.run_individual_command(func, value)
 
