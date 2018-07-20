@@ -28,7 +28,7 @@ class CLIApp:
 		"""
 		self.inf = Infrastructure(self.config)
 
-	def run(self, target=None, func=None, value=None , yamlout=True):
+	def run(self, target=None, func=None, value=None, yamlout=True):
 		retval = self.inf.run_command(target, func, value)
 		if type(retval) == dict or list:
 			if not yamlout:
