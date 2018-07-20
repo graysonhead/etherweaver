@@ -12,6 +12,7 @@ Etherweaver, Config Management for Network Engineers
 
    license
    getting_started
+   poc
 
 
 Indices and tables
