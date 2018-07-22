@@ -344,7 +344,10 @@ class CumulusSwitch(NetWeaverPlugin):
 			else:
 				portname = k
 				portnum = k.strip('swp')
-			ports_by_name.update({portname: {'portid': portnum, 'speed': v['speed'], 'mode': v['mode']}})
+			if v['speed'] == 'N/A':
+				ports_by_name.update({portname: {'portid': portnum, 'speed': '1G', 'mode': v['mode']}})
+			else:
+				ports_by_name.update({portname: {'portid': portnum, 'speed': v['speed'], 'mode': v['mode']}})
 			ports_by_number.update({portnum: {'portname': portname, 'speed': v['speed'], 'mode': v['mode']}})
 		return {'by_name': ports_by_name, 'by_number': ports_by_number}
 
@@ -488,7 +491,7 @@ class CumulusSwitch(NetWeaverPlugin):
 		blankstate = self._gen_portskel()
 		for kspd, vspd in i_dstate.items():
 			for kint, vint in vspd.items():
-				if 'tagged_vlan' in vint:
+				if 'tagged_vlans' in vint:
 					self._interface_tagged_vlans_push(cstate, dstate, kspd, kint)
 				if 'untagged_vlan' in vint:
 					self._interface_untagged_vlan_push(cstate, dstate, kspd, kint)

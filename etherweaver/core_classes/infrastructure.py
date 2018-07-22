@@ -2,6 +2,7 @@ from etherweaver.core_classes.fabric import Fabric
 from etherweaver.core_classes.appliance import Appliance
 from etherweaver.core_classes.role import NetworkRole
 from etherweaver.core_classes.errors import MissingRequiredAttribute
+from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict
 
 class Infrastructure:
 	"""
@@ -10,7 +11,7 @@ class Infrastructure:
 
 	def __init__(self, config_dict):
 		self.appliances_conf = config_dict['appliances']
-		self.roles_conf = config_dict['roles']
+		self.roles_conf = self._extrapolate_config_dict('role', config_dict['roles'])
 		self.fabrics_conf = config_dict['fabrics']
 		self.appliances = []
 		self.fabrics = []
@@ -18,6 +19,25 @@ class Infrastructure:
 		self.is_infrastructure = True
 
 		self._build_infrastructure()
+
+	def _extrapolate_config_dict(self, type, config):
+		"""
+
+		:param type: 'role', 'appliance', or 'dict'
+		:param config:
+		:return:
+		"""
+
+		if type == 'role':
+			for rolek, rolev in config.items():
+				if 'interfaces' in rolev:
+					for spdk, spdv in rolev['interfaces'].items():
+						config[rolek]['interfaces'][spdk] = extrapolate_dict(spdv)
+					for spdk, spdv in rolev['interfaces'].items():
+						for intk, intv in spdv.items():
+							if 'tagged_vlans' in intv:
+								config[rolek]['interfaces'][spdk][intk]['tagged_vlans'] = extrapolate_list(intv['tagged_vlans'])
+		return config
 
 	def _build_infrastructure(self):
 		"""
@@ -94,43 +114,3 @@ class Infrastructure:
 			return retvals
 		appliance = self._parse_target(target)
 		return appliance.run_individual_command(func, value)
-
-
-
-# conf = {
-# 	'roles':
-# 		{'spine1':
-# 			{
-# 				'fabric': 'network1',
-# 				'hostname': 'spine1.net.testco.org'
-# 			}, 'spine2':
-# 			{
-# 				'fabric': 'network1',
-# 				'hostname': 'spine2.net.testco.org'
-# 			}
-# 		},
-# 	'fabrics': {
-# 		'network1':
-# 			{'credentials':
-# 				{
-# 					'username': 'cumulus',
-# 					'password': 'CumulusLinux!'
-# 				}
-# 			}
-# 		},
-# 	'appliances':
-# 		{'0c-b3-6d-f1-11-00':
-# 			{
-# 				'hostname': '10.5.5.33',
-# 				'role': 'spine1',
-# 				'plugin_package': 'cumulus'
-# 			},
-# 			'0c-b3-6d-9c-67-00':
-# 				{
-# 					'hostname': '10.5.5.34',
-# 					'role': 'spine2',
-# 					'plugin_package': 'cumulus'
-# 				}
-# 		}
-# }
-# inf = Infrastructure(conf)
