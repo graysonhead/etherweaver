@@ -1,5 +1,5 @@
-from netweaver.core_classes.config_object import ConfigObject
-from netweaver.core_classes.utils import extrapolate_dict
+from etherweaver.core_classes.config_object import ConfigObject
+from etherweaver.core_classes.utils import extrapolate_dict
 
 class Fabric(ConfigObject):
 

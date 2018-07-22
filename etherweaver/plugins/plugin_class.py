@@ -1,6 +1,6 @@
 from paramiko import SSHClient, WarningPolicy
 from enum import IntEnum
-from netweaver.plugins.plugin_class_errors import *
+from etherweaver.plugins.plugin_class_errors import *
 
 class NWConnType(IntEnum):
 	Telnet = 1

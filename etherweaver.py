@@ -1,6 +1,6 @@
 import argparse
 import yaml
-from netweaver.core_classes.infrastructure import Infrastructure
+from etherweaver.core_classes.infrastructure import Infrastructure
 import pprint
 
 pp = pprint.PrettyPrinter(indent=4)
@@ -45,7 +45,7 @@ if __name__ == '__main__':
 	pass
 	#TODO move this to init for the class
 	parser = argparse.ArgumentParser(
-			description='Netweaver is an application to orchestrate network configurations.')
+			description='Etherweaver is an application to orchestrate network configurations.')
 	parser.add_argument('target', type=str)
 	parser.add_argument('func', type=str)
 	parser.add_argument('--value', type=str, dest='value', default=None)
