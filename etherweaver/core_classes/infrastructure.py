@@ -1,7 +1,7 @@
-from netweaver.core_classes.fabric import Fabric
-from netweaver.core_classes.appliance import Appliance
-from netweaver.core_classes.role import NetworkRole
-from netweaver.core_classes.errors import MissingRequiredAttribute
+from etherweaver.core_classes.fabric import Fabric
+from etherweaver.core_classes.appliance import Appliance
+from etherweaver.core_classes.role import NetworkRole
+from etherweaver.core_classes.errors import MissingRequiredAttribute
 
 class Infrastructure:
 	"""

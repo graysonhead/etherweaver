@@ -1,10 +1,10 @@
-from netweaver.core_classes.config_object import ConfigObject
+from etherweaver.core_classes.config_object import ConfigObject
 import unittest
-from netweaver.server_config_loader import get_server_config
+from etherweaver.server_config_loader import get_server_config
 from importlib.machinery import SourceFileLoader
+import os
+import inspect
 from .errors import *
-
-
 
 
 class Appliance(ConfigObject):
@@ -39,7 +39,6 @@ class Appliance(ConfigObject):
 	def build_dstate(self):
 		self.dstate.update(self.role.config)
 		self.dstate.update({'vlans': self.fabric.config['vlans']})
-
 
 	def _build_dispatch_tree(self):
 		self.dtree = {
@@ -96,6 +95,8 @@ class Appliance(ConfigObject):
 			return '{}/{}'.format(get_server_config()['plugin_path'], self.config['plugin_package'])
 		except KeyError:
 			raise NonExistantPlugin()
+		except FileNotFoundError:
+			return '{}/../plugins/{}'.format(os.path.dirname(inspect.getfile(Appliance)), self.config['plugin_package'])
 
 	def __repr__(self):
 		return '<Appliance: {}>'.format(self.name)
