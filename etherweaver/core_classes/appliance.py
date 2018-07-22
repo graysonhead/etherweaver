@@ -48,10 +48,10 @@ class Appliance(ConfigObject):
 			},
 			'hostname': {
 				'set': self.plugin.set_hostname,
-				'get': self.plugin.get_hostname,
+				'get': self.plugin.cstate['hostname'],
 			},
 			'vlans': {
-				'get': self._not_implemented,
+				'get': self.plugin.cstate['vlans'],
 				'set': self.plugin.set_vlans,
 				'add': self.plugin.add_vlan
 			},
@@ -113,12 +113,20 @@ class Appliance(ConfigObject):
 		level = self.dtree
 		for com in sfunc:
 			if com == 'apply':
-				# TODO: Make this cleaner, the TypeError check on type-ing a string shouldn't be necesarry
 				return level[com]()
 			elif com == 'get':
 				return level[com]
 			elif com == 'set' or com == 'add':
 				return level[com](value)
+			elif com == 'interfaces':
+				try:
+					return self.plugin.cstate['interfaces'][sfunc[1]][sfunc[2]]
+				except KeyError:
+					return "Interface {}/{} does not exist on {}".format(
+						sfunc[1],
+						sfunc[2],
+						self.plugin.hostname
+					)
 			else:
 				level = level[com]
 
