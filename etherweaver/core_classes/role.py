@@ -1,4 +1,4 @@
-from netweaver.core_classes.config_object import ConfigObject
+from etherweaver.core_classes.config_object import ConfigObject
 
 
 class NetworkRole(ConfigObject):

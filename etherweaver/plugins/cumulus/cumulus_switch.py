@@ -1,10 +1,10 @@
-from netweaver.plugins.plugin_class import NetWeaverPlugin, NWConnType
+from etherweaver.plugins.plugin_class import NetWeaverPlugin, NWConnType
 from functools import wraps
 import logging
 from ipaddress import ip_address, IPv4Address, IPv6Address
 import pytz
 import json
-from netweaver.core_classes.utils import extrapolate_list, extrapolate_dict, compare_dict_keys
+from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict, compare_dict_keys
 
 
 class CumulusSwitch(NetWeaverPlugin):

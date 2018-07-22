@@ -1,4 +1,4 @@
-from netweaver.plugins.cumulus.cumulus_switch import CumulusSwitch
+from etherweaver.plugins.cumulus.cumulus_switch import CumulusSwitch
 import unittest
 
 fabricconf = {

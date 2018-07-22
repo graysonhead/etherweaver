@@ -1,6 +1,6 @@
 import yaml
 
-def get_server_config(config_path="/etc/netweaver/server_config.yml"):
+def get_server_config(config_path="/etc/etherweaver/server_config.yml"):
     '''
     :param config_path: path to server config yaml file
     :return: dict
