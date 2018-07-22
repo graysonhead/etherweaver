@@ -191,31 +191,6 @@ class CumulusSwitch(NetWeaverPlugin):
 			self._add_command(self._vlans_push(dstate, cstate))
 			self._add_command(self._interfaces_push(dstate, cstate))
 
-			# 	# Interfaces
-			# 	# Iterate through dstate interface types
-			# 	for typekey, typeval in dstate['interfaces'].items():
-			# 		# Iterate through interfaces in each type
-			# 		for portnum, portconf in typeval.items():
-			# 			# If the portnumber exists in cstate:
-			# 			if portnum in self.cstate['interfaces'][typekey]:
-			# 				#Compare the desired state to the current state of any defined interfaces
-			# 				current_portstate = self.cstate['interfaces'][typekey][portnum]
-			#
-			# 				if extrapolate_list(portconf['tagged_vlans'], int_out=True) != extrapolate_list(current_portstate['tagged_vlans'], int_out=True):
-			# 						queue = queue + self\
-			# 							.set_interface_tagged_vlans(self._number_port_mapper(portnum), extrapolate_list(portconf['tagged_vlans'], int_out=False), execute=False)
-			# 				if portnum not in self.cstate['interfaces'][typekey]:
-			# 					if portconf['tagged_vlans']:
-			# 						self.set_interface_tagged_vlans(self._number_port_mapper(portnum), extrapolate_list(portconf['tagged_vlans']), int_out=False, execute=False)
-			# 				if 'untagged_vlan' in portconf:
-			# 					if str(portconf['untagged_vlan']) != str(current_portstate['untagged_vlan']):
-			# 						queue.append(self.set_interface_untagged_vlan(self._number_port_mapper(portnum), portconf['untagged_vlan'], execute=False))
-			#
-			# 			# If the port doesn't exist in cstate
-			# 			else:
-			# 				if portconf['tagged_vlans']:
-			# 					queue = queue + self.set_interface_tagged_vlans(self._number_port_mapper(portnum), extrapolate_list(portconf['tagged_vlans'], int_out=False), execute=False)
-			# 						#TODO: Fix portmap to contain all interfaces (even downed ones). Finish interface creation logic
 			for com in self.commands:
 				self.command(com)
 			self._net_commit()
