@@ -1,5 +1,8 @@
 # NetWeaver
 
+[![Build Status](https://travis-ci.com/graysonhead/etherweaver.svg?branch=master)](https://travis-ci.com/graysonhead/etherweaver)
+
+
 Netweaver is an agentless configuration management system.
 
 Similar to Ansible and Salt, the goal of NetWeaver is to abstract the task of managing large switch fabrics.

@@ -43,7 +43,7 @@ class TestPluginLoader(unittest.TestCase):
 		}
 		inf = Infrastructure(mock)
 		self.assertEqual(inf.appliances[0].plugin.is_plugin, True)
-		
+
 
 class TestInfrastructureClass(unittest.TestCase):
 	def test_infrastructure_class(self):
