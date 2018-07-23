@@ -19,6 +19,8 @@ class Appliance(ConfigObject):
 		self.dtree = None
 		self.dstate = {}
 
+		self.is_appliance = True
+
 	def _not_implemented(self):
 		raise NotImplementedError
 
@@ -38,7 +40,8 @@ class Appliance(ConfigObject):
 
 	def build_dstate(self):
 		self.dstate.update(self.role.config)
-		self.dstate.update({'vlans': self.fabric.config['vlans']})
+		if 'vlans' in self.fabric.config:
+			self.dstate.update({'vlans': self.fabric.config['vlans']})
 
 	def _build_dispatch_tree(self):
 		self.dtree = {

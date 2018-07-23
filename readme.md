@@ -1,8 +1,12 @@
-# NetWeaver
+# Etherweaver
 
-Netweaver is an agentless configuration management system.
+[![Build Status](https://travis-ci.com/graysonhead/etherweaver.svg?branch=master)](https://travis-ci.com/graysonhead/etherweaver)
+[![Docs Status](https://readthedocs.org/projects/netweaver/badge/?version=latest)](https://netweaver.readthedocs.io/en/latest/#)
 
-Similar to Ansible and Salt, the goal of NetWeaver is to abstract the task of managing large switch fabrics.
+Etherweaver is an agentless configuration management system.
+
+Similar to Ansible and Salt, the goal of Etherweaver is to abstract the task of managing large switch fabrics.
+
 
 ### Core Design Concepts
 
@@ -10,17 +14,17 @@ Similar to Ansible and Salt, the goal of NetWeaver is to abstract the task of ma
 
    A switch switches packets, and a router routes them. If they follow standards, they will perform this job identically. While the featureset may be disimilar between two platforms from different vendors, the way they implement protocols are similar, as is the end result. 
 
-   The goal of netweaver is to allow the user to create a "universal" definiation of their desired state (configuration), and disconnect the format of this configuration from the vendor-specific OS it is being applied to.
+   The goal of Etherweaver is to allow the user to create a "universal" definiation of their desired state (configuration), and disconnect the format of this configuration from the vendor-specific OS it is being applied to.
 
 * #### Idempotent and Self-recovering
 
-  To reduce the chance of NetWeaver causing momentary outages, it should always compare the current state with the desired state, and avoid making changes if they are equivelant.
+  To reduce the chance of Etherweaver causing momentary outages, it should always compare the current state with the desired state, and avoid making changes if they are equivelant.
   
-  When possible, netweaver should use clever config file management and rollback functionality on network appliances to reduce the risk of a bad statement causing a permanent management disconnection.
+  When possible, Etherweaver should use clever config file management and rollback functionality on network appliances to reduce the risk of a bad statement causing a permanent management disconnection.
   
 * #### Agentless
 
-  Closed source switching and routing platforms shouldn't be excluded from config management. Thus, NetWeaver is agentless by default. Each plugin will support a number of methods (ssh, telnet, RS232, etc.) to ensure that all networks can be maintained in an automated fashion.
+  Closed source switching and routing platforms shouldn't be excluded from config management. Thus, Etherweaver is agentless by default. Each plugin will support a number of methods (ssh, telnet, RS232, etc.) to ensure that all networks can be maintained in an automated fashion.
   
   
 
@@ -33,17 +37,6 @@ fabrics: # A list of all fabrics
 appliances: # A list of all hardware
 ```
 
-NetWeaver supports includes.
-
-The the top level yaml generally looks like this.
-
-```yaml
-roles: !include roles.yml
-fabrics: !include fabrics.yml
-appliances: !include appliances.yml
-
-```
-
 ### Roles
 
 A Role describes the state and attributes that can describe a specific appliance, or group of appliances.
@@ -52,34 +45,29 @@ Roles can be defined on a per device status (for example, you may have role obje
 
 Here is an example of a Role Object as defined in YAML:
 ```yaml
-spine1: # The name of the object
-  fabric: network1
-  hostname: spine1.net.testco.org
-  protocols: # Contains sub-objects that configure Network Protocols
-    ipv4: 
-      routing:
-        default_gateway: 10.11.12.1
-  interfaces: # Interfaces defines the physical and logical topology of a network object with switching capability
-    1g: # Interfaces are distinguished by speed, and automatically translated to the correct format by the vendor specific plugins
-      eth0: #represents out of band management interface
-        ip: 10.11.12.2/24
-    10g:
-      1-40:
-        profile: trunk # Profiles reference meta-network objects to reduce repeated statements
-      peerlink.4094:
-        ip: 169.254.1.1/30
-        clag: # Clustering ling aggregation that references another Network Object to reduce configuration length
-          peer_with: spine2
-          clag_peer_ip: 169.254.1.2
-          clag_backup_ip: 192.0.2.50
-          clag_sys_mac: '44:38:39:FF:40:94'
-      41:
-        slave_of: peerlink.4094 
-        connected_to: spine2.41 # "connected-to" statements can provide for physical interconnect drift management 
-      42:
-        slave_of: peerlink.4094
-        connected_to: spine2.42
-
+roles:
+  spine1:
+    fabric: network1
+    hostname: spine1.net.testco.org
+    protocols:
+      dns:
+        nameservers:
+            - 10.5.5.115
+      ntp:
+        client:
+          timezone: America/Chicago
+          servers:
+              - pool.ntp.org
+              - 0.cumulusnetworks.pool.ntp.org
+              - 1.cumulusnetworks.pool.ntp.org
+              - 2.cumulusnetworks.pool.ntp.org
+    interfaces:
+      1G:
+        1-5:
+          tagged_vlans: [2-4]
+          untagged_vlan: 7
+        6:
+          untagged_vlan: 5
 ```
 
 ### Fabrics
@@ -89,39 +77,18 @@ A fabric is a collection of common configuration items, usually representing a s
 Here is an example of a fabric object:
 
 ```yaml
-network1:
-  vlans:
-    - 1
-    - 2:
-        description: Management
-    - 20:
-        description: VOIP
-    - 30:
+fabrics:
+  network1:
+    credentials:
+      username: cumulus
+      password: CumulusLinux!
+    vlans:
+      1-5:
+      6:
         description: Data
-    - 35:
+      30:
         description: Public
-  interface_profiles:
-    trunk:
-      untagged_vlan: 1
-      tagged_vlans: [2, 20, 30, 35]
-      lldp:
-        enable: True
-    desk_access:
-      untagged_vlan: 30
-      tagged_vlans: 20
-      stp:
-        mode: access_port
-      lldp:
-        enable: True
-        tlv:
-          - system-name
-          - system-description
-    Wireless_Access_Point:
-      untagged_vlan: 2
-      tagged_vlans: [35, 30]
-      lldp:
-        enable: True
-        tlv: all
+      11-29:
 ```
 ## Appliances
 
@@ -132,22 +99,24 @@ Appliances are defined by a hyphen separated MAC address. On switches with multi
 This file contains all hardware specific information.
 
 ```yaml
-0c-b3-6d-f1-11-00:
-  hostname: 10.5.5.33
-  role: spine1
+appliances:
+  sw1:
+    hostname: 10.5.5.33
+    role: spine1
+    plugin_package: cumulus
+  sw2:
+    hostname: 10.5.5.34
+    role: spine2
+    plugin_package: cumulus
 ```
-## Dependencies
-
-- paramiko
-- scp
-- PyYAML
 
 ## Usage
 
-Netweaver uses a salt-like syntax:
+Etherweaver uses a salt-like syntax:
 
 ```
-netweaver.py 'spine1' role.apply
+Etherweaver.py 'sw1' role.apply --yaml=exampleconf.yaml
 ```
 
 This command will apply the role spine1 to any assigned hardware appliances.
+

@@ -8,7 +8,8 @@ class Fabric(ConfigObject):
 		self.config = config
 		self.appliances = []
 		self.is_fabric = True
-		self.extrapolate_vlan_config()
+		if 'vlans' in self.config:
+			self.extrapolate_vlan_config()
 
 	def extrapolate_vlan_config(self):
 		self.config['vlans'] = extrapolate_dict(self.config['vlans'])
