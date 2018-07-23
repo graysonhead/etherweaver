@@ -35,8 +35,8 @@ class Appliance(ConfigObject):
 		# return plugin(self.config)
 		self.plugin = plugin(self.config, self.fabric.config)
 		self.plugin.appliance = self
-		self.plugin.connect()
-		self._build_dispatch_tree()
+		# self.plugin.connect()
+		# self._build_dispatch_tree()
 
 	def build_dstate(self):
 		self.dstate.update(self.role.config)
@@ -109,6 +109,8 @@ class Appliance(ConfigObject):
 		# 	return self.plugin.get_hostname()
 		# if func == 'set.hostname':
 		# 	return self.plugin.set_hostname(value)
+		self.plugin.connect()
+		self._build_dispatch_tree()
 		sfunc = func.split('.')
 		"""
 		Iterate through each level of the config and stop when you get to a command (get, set, etc.)
