@@ -181,7 +181,7 @@ class CumulusSwitch(NetWeaverPlugin):
 		self.portmap = self.pull_port_state()
 
 	def push_state(self, execute=True):
-			queue = []
+			queue = ['net rollback last']
 			dstate = self.appliance.dstate
 			cstate = self.cstate
 			self._add_command(self._hostname_push(dstate, cstate))

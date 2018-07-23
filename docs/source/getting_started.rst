@@ -61,4 +61,89 @@ An Example Config
 The above configuration will configure one switch to set its hostname to "spine1.net.testco.org", set its nameserver to
 "10.5.5.115", and configure interface 1 with a PVID of 7, and tagged vlans 2-6.
 
-This state can be applied by running "netweaver.py sw1 state.apply --yaml=config.yaml"
+Nodes
+-----
+
+Think of nodes as a meta-dictionary that allow you to access, modify, or remove the current state
+of an appliance without writing any YAML. A node is respresented by it's path in the dict (which is the same as the config.yaml)
+
+For instance, here are some valid nodes:
+
+- protocols.dns.nameservers
+- interfaces.1G.1
+- hostname
+
+Nodes have different commands depending on their type, for instance single value nodes (such as hostname) generally have
+two commands:
+
+- hostname.get
+- hostname.set
+
+List nodes will often have more command types:
+
+- protocols.ntp.client.servers.add: Adds a single server
+- protocols.ntp.client.servers.get: Gets a list of all servers
+- protocols.ntp.client.servers.set: Overwrites the server list with a new list
+- protocols.ntp.client.servers.del: deletes the list
+
+Additionally, there are a few meta nodes such as 'state'. State is likely the one you will use the most, and it has two
+functions:
+
+- state.apply: Applies the current config.yaml
+- state.get: Returns a yaml or json formatted dict representing the current state of the appliances specified
+
+
+Commands
+--------
+Commands follow a simple syntax:
+
+netweaver 'role|*' node --yaml=Yaml config file --value=Value to be written to a write node.
+
+
+
+The YAML state can be applied to every appliance in the infrastructure file by running the following:
+
+.. code-block:: bash
+
+   netweaver.py '*' state.apply --yaml=config.yaml
+   sw1: []
+   sw2: []
+
+The brackets will contain a list of any commands run in order to bring the switches in alignment with the current state.
+
+You can view the current state of all appliances in the environment using the following command:
+
+.. code-block:: bash
+
+   netweaver.py 'sw1' state.get --yaml=config.yaml
+   sw1:
+      hostname: spine1.net.testco.org
+      interfaces:
+        100G: {}
+        10G: {}
+        1G:
+          '1':
+            ip:
+              address: []
+            tagged_vlans: [2, 3, 4]
+            untagged_vlan: '7'
+       ...
+
+
+.. code-block:: bash
+
+    etherweaver.py '*' protocols.ntp.client.servers.get --yaml=config.yaml
+    sw1: [pool.ntp.org, 0.cumulusnetworks.pool.ntp.org, 1.cumulusnetworks.pool.ntp.org,
+    2.cumulusnetworks.pool.ntp.org]
+    sw2: [0.cumulusnetworks.pool.ntp.org, 1.cumulusnetworks.pool.ntp.org, 2.cumulusnetworks.pool.ntp.org,
+    pool.ntp.org]
+
+
+
+.. code-block:: bash
+
+   netweaver.py 'sw1' hostname.set --value='spine2' --yaml=config.yaml
+    net add hostname spine2
+
+Note: Currently not all config nodes work. Accessing any disabled
+nodes should raise a NotSupported error
