@@ -1,13 +1,11 @@
-# NetWeaver
+# Etherweaver
 
 [![Build Status](https://travis-ci.com/graysonhead/etherweaver.svg?branch=master)](https://travis-ci.com/graysonhead/etherweaver)
+[![Docs Status](https://readthedocs.org/projects/netweaver/badge/?version=latest)](https://netweaver.readthedocs.io/en/latest/#)
 
+Etherweaver is an agentless configuration management system.
 
-Netweaver is an agentless configuration management system.
-
-Similar to Ansible and Salt, the goal of NetWeaver is to abstract the task of managing large switch fabrics.
-
-Full documentation [here](https://netweaver.readthedocs.io/en/latest/).
+Similar to Ansible and Salt, the goal of Etherweaver is to abstract the task of managing large switch fabrics.
 
 
 ### Core Design Concepts
@@ -16,17 +14,17 @@ Full documentation [here](https://netweaver.readthedocs.io/en/latest/).
 
    A switch switches packets, and a router routes them. If they follow standards, they will perform this job identically. While the featureset may be disimilar between two platforms from different vendors, the way they implement protocols are similar, as is the end result. 
 
-   The goal of netweaver is to allow the user to create a "universal" definiation of their desired state (configuration), and disconnect the format of this configuration from the vendor-specific OS it is being applied to.
+   The goal of Etherweaver is to allow the user to create a "universal" definiation of their desired state (configuration), and disconnect the format of this configuration from the vendor-specific OS it is being applied to.
 
 * #### Idempotent and Self-recovering
 
-  To reduce the chance of NetWeaver causing momentary outages, it should always compare the current state with the desired state, and avoid making changes if they are equivelant.
+  To reduce the chance of Etherweaver causing momentary outages, it should always compare the current state with the desired state, and avoid making changes if they are equivelant.
   
-  When possible, netweaver should use clever config file management and rollback functionality on network appliances to reduce the risk of a bad statement causing a permanent management disconnection.
+  When possible, Etherweaver should use clever config file management and rollback functionality on network appliances to reduce the risk of a bad statement causing a permanent management disconnection.
   
 * #### Agentless
 
-  Closed source switching and routing platforms shouldn't be excluded from config management. Thus, NetWeaver is agentless by default. Each plugin will support a number of methods (ssh, telnet, RS232, etc.) to ensure that all networks can be maintained in an automated fashion.
+  Closed source switching and routing platforms shouldn't be excluded from config management. Thus, Etherweaver is agentless by default. Each plugin will support a number of methods (ssh, telnet, RS232, etc.) to ensure that all networks can be maintained in an automated fashion.
   
   
 
@@ -114,10 +112,10 @@ appliances:
 
 ## Usage
 
-Netweaver uses a salt-like syntax:
+Etherweaver uses a salt-like syntax:
 
 ```
-netweaver.py 'sw1' role.apply --yaml=exampleconf.yaml
+Etherweaver.py 'sw1' role.apply --yaml=exampleconf.yaml
 ```
 
 This command will apply the role spine1 to any assigned hardware appliances.
