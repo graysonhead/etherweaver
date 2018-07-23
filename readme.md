@@ -14,7 +14,7 @@ Similar to Ansible and Salt, the goal of Etherweaver is to abstract the task of 
 
    A switch switches packets, and a router routes them. If they follow standards, they will perform this job identically. While the featureset may be disimilar between two platforms from different vendors, the way they implement protocols are similar, as is the end result. 
 
-   The goal of Etherweaver is to allow the user to create a "universal" definiation of their desired state (configuration), and disconnect the format of this configuration from the vendor-specific OS it is being applied to.
+   The goal of Etherweaver is to allow the user to create a "universal" definition of their desired state (configuration), and disconnect the format of this configuration from the vendor-specific OS it is being applied to.
 
 * #### Idempotent and Self-recovering
 
