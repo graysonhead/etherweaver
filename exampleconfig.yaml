@@ -1,19 +1,6 @@
 roles:
   spine1:
     fabric: network1
-    hostname: spine1.net.testco.org
-    protocols:
-      dns:
-        nameservers:
-            - 10.5.5.115
-      ntp:
-        client:
-          timezone: America/Chicago
-          servers:
-              - pool.ntp.org
-              - 0.cumulusnetworks.pool.ntp.org
-              - 1.cumulusnetworks.pool.ntp.org
-              - 2.cumulusnetworks.pool.ntp.org
     interfaces:
       1G:
         1-5:
@@ -24,8 +11,9 @@ roles:
   spine2:
     interfaces:
       1G:
-        1:
+        1-5:
           tagged_vlans: [2, 3, 4, 5]
+
     fabric: network1
     hostname: spine2.net.testco.org
     protocols:
@@ -66,6 +54,10 @@ appliances:
     role: spine2
     plugin_package: cumulus
   sw3:
-    hostname: 10.5.5.243
+    hostname: 10.5.5.44
+    role: spine2
+    plugin_package: cumulus
+  sw4:
+    hostname: 10.5.5.45
     role: spine2
     plugin_package: cumulus

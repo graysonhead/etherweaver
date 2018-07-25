@@ -413,11 +413,10 @@ class CumulusSwitch(NetWeaverPlugin):
 		return command
 
 	def _protocol_ntpclient_timezone_push(self, dstate, cstate):
-		dstate = dstate['protocols']['ntp']['client']['timezone']
 		cstate = cstate['protocols']['ntp']['client']['timezone']
 		# Case0
 		try:
-			dstate
+			dstate = dstate['protocols']['ntp']['client']['timezone']
 		except KeyError:
 			return
 		# Case1
@@ -428,7 +427,10 @@ class CumulusSwitch(NetWeaverPlugin):
 			return self.set_ntp_client_timezone(dstate, execute=False)
 
 	def _protocol_dns_nameservers_push(self, dstate, cstate):
-		dstate = dstate['protocols']['dns']['nameservers']
+		try:
+			dstate = dstate['protocols']['dns']['nameservers']
+		except KeyError:
+			dstate = None
 		cstate = cstate['protocols']['dns']['nameservers']
 		return self._compare_state(dstate, cstate, self.set_dns_nameservers)
 
@@ -438,6 +440,8 @@ class CumulusSwitch(NetWeaverPlugin):
 			dstate
 		except KeyError:
 			return
+		if not dstate:
+			return
 		# Case1
 		if dstate == cstate:
 			return
@@ -446,12 +450,18 @@ class CumulusSwitch(NetWeaverPlugin):
 			return func(dstate, execute=False)
 
 	def _protocol_ntpclient_servers(self, dstate, cstate):
-		dstate = dstate['protocols']['ntp']['client']['servers']
+		try:
+			dstate = dstate['protocols']['ntp']['client']['servers']
+		except KeyError:
+			dstate = None
 		cstate = cstate['protocols']['ntp']['client']['servers']
 		return self._compare_state(dstate, cstate, self.set_ntp_client_servers)
 
 	def _hostname_push(self, dstate, cstate):
-		dstate = dstate['hostname']
+		try:
+			dstate = dstate['hostname']
+		except KeyError:
+			dstate = None
 		cstate = cstate['hostname']
 		return self._compare_state(dstate, cstate, self.set_hostname)
 
