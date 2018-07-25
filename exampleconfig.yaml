@@ -53,12 +53,10 @@ appliances:
     hostname: 10.5.5.34
     role: spine2
     plugin_package: cumulus
-
   sw3:
     hostname: 10.5.5.44
     role: spine2
     plugin_package: cumulus
-
   sw4:
     hostname: 10.5.5.45
     role: spine2

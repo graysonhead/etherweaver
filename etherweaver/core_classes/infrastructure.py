@@ -90,15 +90,17 @@ class Infrastructure:
 		"""Attach appliances to roles"""
 		for app in self.appliances:
 			for role in self.roles:
-				if app.config['role'] == role.name:
-					app.role = role
-					role.appliances.append(app)
+				try:
+					if app.config['role'] == role.name:
+						app.role = role
+						role.appliances.append(app)
+				except KeyError:
+					raise SyntaxError('Appliance {} has no associated role'.format(app.name))
 			for fabric in self.fabrics:  # Attach Appliances to fabrics
 				if app.role.config['fabric'] == fabric.name:
 					app.fabric = fabric
 					fabric.appliances.append(app)
 			app.load_plugin()
-			app.plugin.build_ssh_session()
 			app.build_dstate()
 
 	def _parse_target(self, target):
