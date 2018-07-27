@@ -22,7 +22,6 @@ class Infrastructure:
 
 	def _extrapolate_config_dict(self, type, config):
 		"""
-
 		:param type: 'role', 'appliance', or 'dict'
 		:param config:
 		:return:

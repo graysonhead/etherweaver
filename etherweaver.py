@@ -48,7 +48,7 @@ if __name__ == '__main__':
 			description='Etherweaver is an application to orchestrate network configurations.')
 	parser.add_argument('target', type=str)
 	parser.add_argument('func', type=str)
-	parser.add_argument('--value', type=str, dest='value', default=None)
+	parser.add_argument('value', type=str, nargs='?', default=None)
 	parser.add_argument(
 		'--yaml',
 		type=str,

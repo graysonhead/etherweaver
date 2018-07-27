@@ -4,14 +4,14 @@ roles:
     interfaces:
       1G:
         1-5:
-          tagged_vlans: [2-4]
-          untagged_vlan: 7
+          tagged_vlans: [2-3]
+          untagged_vlan: 1
         6:
           untagged_vlan: 5
   spine2:
     interfaces:
       1G:
-        1-5:
+        1-3:
           tagged_vlans: [2, 3, 4, 5]
 
     fabric: network1
@@ -20,6 +20,7 @@ roles:
       dns:
         nameservers:
             - 10.5.5.115
+            - 8.8.8.8
       ntp:
         client:
           timezone: America/Chicago
@@ -27,7 +28,6 @@ roles:
               - pool.ntp.org
               - 0.cumulusnetworks.pool.ntp.org
               - 1.cumulusnetworks.pool.ntp.org
-              - 2.cumulusnetworks.pool.ntp.org
 
 
 
