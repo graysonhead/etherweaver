@@ -73,7 +73,7 @@ class CumulusSwitch(NetWeaverPlugin):
 		pass
 
 	def get_dns_nameservers(self):
-		return self.cstate['protocols']['dns']['nameservers']
+		return self.appliance.cstate['protocols']['dns']['nameservers']
 
 	def pull_state(self):
 		pre_parse_commands = self.command('net show configuration commands').split('\n')
@@ -211,12 +211,12 @@ class CumulusSwitch(NetWeaverPlugin):
 		return command
 
 	def get_dns(self):
-		return self.cstate['protocols']['dns']
+		return self.appliance.cstate['protocols']['dns']
 
 	def set_dns_nameservers(self, nameserverlist, execute=True, commit=True):
 		commandqueue = []
 		try:
-			nslist = self.cstate['protocols']['dns']['nameservers']
+			nslist = self.appliance.cstate['protocols']['dns']['nameservers']
 		except KeyError:
 			pass
 		else:
@@ -224,7 +224,7 @@ class CumulusSwitch(NetWeaverPlugin):
 				if ns not in nameserverlist:
 					commandqueue.append(self.rm_dns_nameserver(ns, execute=False))
 		for ns in nameserverlist:
-				if ns not in self.cstate['protocols']['dns']['nameservers']:
+				if ns not in self.appliance.cstate['protocols']['dns']['nameservers']:
 					commandqueue.append(self.add_dns_nameserver(ns, commit=False, execute=False))
 		if execute:
 			for com in commandqueue:
@@ -284,7 +284,7 @@ class CumulusSwitch(NetWeaverPlugin):
 	def set_ntp_client_servers(self, ntpserverlist, execute=True, commit=True):
 		commandqueue = []
 		try:
-			slist = self.cstate['protocols']['ntp']['client']['servers']
+			slist = self.appliance.cstate['protocols']['ntp']['client']['servers']
 		except KeyError:
 			pass
 		else:
@@ -292,7 +292,7 @@ class CumulusSwitch(NetWeaverPlugin):
 				if serv not in ntpserverlist:
 					commandqueue.append(self.rm_ntp_client_server(serv, execute=False))
 		for serv in ntpserverlist:
-			if serv not in self.cstate['protocols']['ntp']['client']['servers']:
+			if serv not in self.appliance.cstate['protocols']['ntp']['client']['servers']:
 				commandqueue.append(self.add_ntp_client_server(serv, execute=False))
 		if execute:
 			for com in commandqueue:
@@ -352,7 +352,7 @@ class CumulusSwitch(NetWeaverPlugin):
 		return command
 
 	def set_vlans(self, vlandictlist, execute=True, commit=True):
-		cvl = self.cstate['vlans']
+		cvl = self.appliance.cstate['vlans']
 		commandqueue = []
 		for k, v in vlandictlist.items():
 			if k not in cvl:
@@ -400,7 +400,7 @@ class CumulusSwitch(NetWeaverPlugin):
 		return self.portmap['by_number'][str(port)]['portname']
 
 	def set_interface_untagged_vlan(self, interface, vlan, execute=True):
-		command = 'net add interface {} bridge pvid {}'.format(interface, vlan)
+		command = 'net add interface {} bridge pvid {}'.format(self._number_port_mapper(interface), vlan)
 		if execute:
 			self.command(command)
 		return command
