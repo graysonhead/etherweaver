@@ -12,7 +12,7 @@ roles:
     interfaces:
       1G:
         1-5:
-          tagged_vlans: [2, 3, 4, 5]
+          tagged_vlans: [2, 3, 4, 5, 6]
 
     fabric: network1
     hostname: spine2.net.testco.org

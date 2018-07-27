@@ -2,6 +2,8 @@ from etherweaver.core_classes.config_object import ConfigObject
 import unittest
 from etherweaver.server_config_loader import get_server_config
 from importlib.machinery import SourceFileLoader
+from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict
+from etherweaver.plugins.plugin_class_errors import *
 import os
 import inspect
 from .errors import *
@@ -19,8 +21,12 @@ class Appliance(ConfigObject):
 
 		self.dtree = None
 		self.dstate = self.gen_config_skel()
-
+		self.cstate = self.gen_config_skel()
 		self.is_appliance = True
+
+
+	def get_cstate(self):
+		self.cstate = self.plugin.pull_state()
 
 	def _not_implemented(self):
 		raise NotImplementedError
@@ -54,7 +60,8 @@ class Appliance(ConfigObject):
 				},
 				'ntp': {
 					'client': {
-						'servers': []
+						'servers': [],
+						'timezone': None
 					}
 				}
 			},
@@ -70,8 +77,8 @@ class Appliance(ConfigObject):
 	def _build_dispatch_tree(self):
 		self.dtree = {
 			'state': {
-				'apply': self.plugin.push_state,
-				'get': self.plugin.cstate,
+				'apply': self.push_state,
+				'get': self.cstate,
 			},
 			'hostname': {
 				'set': self.plugin.set_hostname,
@@ -129,11 +136,8 @@ class Appliance(ConfigObject):
 		return '<Appliance: {}>'.format(self.name)
 
 	def run_individual_command(self, func, value):
-		# if func == 'get.hostname':
-		# 	return self.plugin.get_hostname()
-		# if func == 'set.hostname':
-		# 	return self.plugin.set_hostname(value)
 		self.plugin.connect()
+		self.cstate.update(self.plugin.cstate)
 		self._build_dispatch_tree()
 		sfunc = func.split('.')
 		"""
@@ -159,17 +163,150 @@ class Appliance(ConfigObject):
 			else:
 				level = level[com]
 
+	# State comparison methods
 
-class TestPluginLoader(unittest.TestCase):
-	def test_plugin_loader(self):
-		mock = {
-					'hostname': '10.0.0.1',
-					'role': 'spine1',
-					'plugin_package': 'cumulus'
-				}
-		appl = Appliance("00-00-00-00-00-00",  mock)
-		inst = appl.load_plugin()
-		self.assertEqual(inst.is_plugin(), True)
+	def push_state(self, execute=True):
+		# Run pre-push commands if the plugin writer overrode the class
+		try:
+			self.plugin.pre_push()
+		except FeatureNotImplemented:
+			pass
+		dstate = self.dstate
+		cstate = self.cstate
+		self.plugin.add_command(self._hostname_push(dstate, cstate))
+		self.plugin.add_command(self._protocol_dns_nameservers_push(dstate, cstate))
+		self.plugin.add_command(self._protocol_ntpclient_timezone_push(dstate, cstate))
+		self.plugin.add_command(self._protocol_ntpclient_servers(dstate, cstate))
+		self.plugin.add_command(self._vlans_push(dstate, cstate))
+		self.plugin.add_command(self._interfaces_push(dstate, cstate))
+
+		for com in self.plugin.commands:
+			self.plugin.command(com)
+		self.plugin.commit()
+		# self.plugin.reload_state()
+		return self.plugin.commands
+
+	def _compare_state(self, dstate, cstate, func):
+		# Case0
+		try:
+			dstate
+		except KeyError:
+			return
+		if dstate is None:
+			return
+		# Case1
+		if dstate == cstate:
+			return
+		# Case2 and 3 create
+		elif dstate != cstate:
+			return func(dstate, execute=False)
+
+	def _protocol_ntpclient_servers(self, dstate, cstate):
+		try:
+			dstate = dstate['protocols']['ntp']['client']['servers']
+		except KeyError:
+			dstate = None
+		cstate = cstate['protocols']['ntp']['client']['servers']
+		return self._compare_state(dstate, cstate, self.plugin.set_ntp_client_servers)
+
+	def _hostname_push(self, dstate, cstate):
+		try:
+			dstate = dstate['hostname']
+		except KeyError:
+			dstate = None
+		cstate = cstate['hostname']
+		return self._compare_state(dstate, cstate, self.plugin.set_hostname)
+
+	def _vlans_push(self, dstate, cstate):
+		dstate = dstate['vlans']
+		cstate = cstate['vlans']
+		return self._compare_state(dstate, cstate, self.plugin.set_vlans)
+
+	def _interfaces_push(self, dstate, cstate):
+		# Todo, this wont work for other plugins
+		i_dstate = dstate['interfaces']
+		i_cstate = cstate['interfaces']
+		blankstate = self.plugin._gen_portskel()
+		for kspd, vspd in i_dstate.items():
+			for kint, vint in vspd.items():
+				if 'tagged_vlans' in vint:
+					self._interface_tagged_vlans_push(cstate, dstate, kspd, kint)
+				if 'untagged_vlan' in vint:
+					self._interface_untagged_vlan_push(cstate, dstate, kspd, kint)
+
+	def _interface_untagged_vlan_push(self, cstate, dstate, speed, interface):
+		dstate = str(dstate['interfaces'][speed][interface]['untagged_vlan'])
+		# Case 3
+		try:
+			cstate = str(cstate['interfaces'][speed][str(interface)]['untagged_vlan'])
+		except KeyError:
+			self.plugin.add_command(self.plugin.set_interface_untagged_vlan(interface, dstate, execute=False))
+		# Case0
+		try:
+			dstate
+		except KeyError:
+			return
+		# Case1
+		if dstate == cstate:
+			return
+		# Case 2
+		elif dstate != cstate:
+			self.plugin.add_command(
+				self.plugin.set_interface_untagged_vlan(interface, dstate, execute=False))
+
+	def _interface_tagged_vlans_push(self, cstate, dstate, speed, interface):
+		# Case 3
+		dstate = extrapolate_list(dstate['interfaces'][speed][interface]['tagged_vlans'], int_out=False)
+		try:
+			cstate = extrapolate_list(cstate['interfaces'][speed][str(interface)]['tagged_vlans'], int_out=False)
+		except KeyError:
+			self.plugin.add_command(self.plugin.set_interface_tagged_vlans(interface, dstate, execute=False))
+		# Case0
+		try:
+			dstate
+		except KeyError:
+			return
+		# Case1
+		if dstate == cstate:
+			return
+		# Case 2
+		elif dstate != cstate:
+			self.plugin.add_command(self.plugin.set_interface_tagged_vlans(interface, dstate, execute=False))
+
+	def _protocol_ntpclient_timezone_push(self, dstate, cstate):
+		cstate = cstate['protocols']['ntp']['client']['timezone']
+		dstate = dstate['protocols']['ntp']['client']['timezone']
+		return self._compare_state(dstate, cstate, self.plugin.set_ntp_client_timezone)
+		# Case0
+		# try:
+		# 	dstate = dstate['protocols']['ntp']['client']['timezone']
+		# except KeyError:
+		# 	return
+		# # Case1
+		# if dstate == cstate:
+		# 	return
+		# # Case 2 and 3
+		# if dstate != cstate:
+		# 	return self.plugin.set_ntp_client_timezone(dstate, execute=False)
+
+	def _protocol_dns_nameservers_push(self, dstate, cstate):
+		try:
+			dstate = dstate['protocols']['dns']['nameservers']
+		except KeyError:
+			dstate = None
+		cstate = cstate['protocols']['dns']['nameservers']
+		return self._compare_state(dstate, cstate, self.plugin.set_dns_nameservers)
+
+# class TestPluginLoader(unittest.TestCase):
+# 	def test_plugin_loader(self):
+# 		mock = {
+# 					'hostname': '10.0.0.1',
+# 					'role': 'spine1',
+# 					'plugin_package': 'cumulus'
+# 				}
+# 		appl = Appliance("00-00-00-00-00-00",  mock)
+# 		inst = appl.load_plugin()
+# 		self.assertEqual(inst.is_plugin(), True)
 
 
 if __name__ == '__main__':
