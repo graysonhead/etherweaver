@@ -14,6 +14,8 @@ appconfig = {
 
 class TestPlugin(unittest.TestCase):
 	def setUp(self):
+
+		
 		self.plugin = CumulusSwitch(appconfig, fabricconf)
 
 	def test_plugin_load(self):

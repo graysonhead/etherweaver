@@ -397,7 +397,7 @@ class CumulusSwitch(NetWeaverPlugin):
 		return self.portmap['by_name'][str(port)]['portid']
 
 	def _number_port_mapper(self, port):
-		return self.portmap['by_number'][str(self._number_port_mapper(port))]['portname']
+		return self.portmap['by_number'][str(port)]['portname']
 
 	def set_interface_untagged_vlan(self, interface, vlan, execute=True):
 		command = 'net add interface {} bridge pvid {}'.format(interface, vlan)
