@@ -9,6 +9,7 @@ from .errors import *
 
 class Appliance(ConfigObject):
 
+
 	def __init__(self, name, appliance_dict):
 		self.name = name
 		self.config = appliance_dict
@@ -17,7 +18,7 @@ class Appliance(ConfigObject):
 		self.plugin = None
 
 		self.dtree = None
-		self.dstate = {}
+		self.dstate = self.gen_config_skel()
 
 		self.is_appliance = True
 
@@ -42,6 +43,29 @@ class Appliance(ConfigObject):
 		self.dstate.update(self.role.config)
 		if 'vlans' in self.fabric.config:
 			self.dstate.update({'vlans': self.fabric.config['vlans']})
+
+	def gen_config_skel(self):
+		return {
+			'hostname': None,
+			'vlans': {},
+			'protocols': {
+				'dns': {
+					'nameservers': []
+				},
+				'ntp': {
+					'client': {
+						'servers': []
+					}
+				}
+			},
+			'interfaces': {
+				'1G': {},
+				'10G': {},
+				'40G': {},
+				'100G': {},
+				'mgmt': {}
+			}
+		}
 
 	def _build_dispatch_tree(self):
 		self.dtree = {
