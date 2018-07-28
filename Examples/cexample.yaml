@@ -1,0 +1,25 @@
+roles:
+  spine1:
+    hostname: billy2
+    fabric: network1
+
+fabrics:
+  network1:
+    vlans:
+      4-11:
+    fabric: toplevelnet
+    credentials:
+      username: cumulus
+      password: CumulusLinux!
+  toplevelnet:
+    vlans:
+      11:
+
+appliances:
+  sw1:
+    hostname: 10.5.5.33
+    role: spine1
+    plugin_package: cumulus
+    credentials:
+      username: cumulus
+      password: CumulusLinux!

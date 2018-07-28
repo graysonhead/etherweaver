@@ -1,4 +1,5 @@
 from etherweaver.plugins.plugin_class import NetWeaverPlugin, NWConnType
+from etherweaver.core_classes.errors import *
 from functools import wraps
 import logging
 from ipaddress import ip_address, IPv4Address, IPv6Address
@@ -12,9 +13,14 @@ class CumulusSwitch(NetWeaverPlugin):
 	def __init__(self, appconfig, fabricconfig):
 		self.is_plugin = True
 		self.fabricconfig = fabricconfig
-		self.hostname = appconfig['hostname']
-		self.username = fabricconfig['credentials']['username']
-		self.password = fabricconfig['credentials']['password']
+		self.hostname = ''
+		if 'hostname' in appconfig:
+			self.hostname = appconfig['hostname']
+		try:
+			self.username = appconfig['credentials']['username']
+			self.password = appconfig['credentials']['password']
+		except KeyError:
+			raise MissingRequiredAttribute('[\'credentials\']', self.hostname)
 		self.port = 22
 
 		self.portmap = None

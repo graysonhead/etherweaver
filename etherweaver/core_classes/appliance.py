@@ -192,7 +192,7 @@ class Appliance(ConfigObject):
 			dstate
 		except KeyError:
 			return
-		if dstate is None:
+		if dstate is False or dstate is None or bool(dstate) is False:
 			return
 		# Case1
 		if dstate == cstate:

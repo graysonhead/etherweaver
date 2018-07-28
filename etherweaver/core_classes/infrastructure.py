@@ -99,6 +99,11 @@ class Infrastructure:
 				if app.role.config['fabric'] == fabric.name:
 					app.fabric = fabric
 					fabric.appliances.append(app)
+				if 'fabric' in fabric.config:
+					for pfab in self.fabrics:
+						if pfab.name == fabric.config['fabric']:
+							fabric.parent_fabric = pfab
+							pfab.child_fabrics.append(fabric)
 			app.load_plugin()
 			app.build_dstate()
 

@@ -1,3 +1,6 @@
+import collections
+
+
 def extrapolate_dict(numdict):
 		newnumdict = {}
 		if type(numdict) is not dict:
@@ -36,6 +39,7 @@ def extrapolate_list(numlist, int_out=False):
 			return intlist
 		return newlist
 
+
 def compare_dict_keys(d1, d2):
 	for i in d1:
 		if i not in d2:
@@ -44,3 +48,12 @@ def compare_dict_keys(d1, d2):
 		if i not in d1:
 			return False
 	return True
+
+
+def smart_dict_merge(d, u):
+	for k, v in u.items():
+		if isinstance(v, collections.Mapping):
+			d[k] = smart_dict_merge(d.get(k, {}), v)
+		else:
+			d[k] = v
+	return d
