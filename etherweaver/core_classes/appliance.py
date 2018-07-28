@@ -2,7 +2,7 @@ from etherweaver.core_classes.config_object import ConfigObject
 import unittest
 from etherweaver.server_config_loader import get_server_config
 from importlib.machinery import SourceFileLoader
-from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict
+from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict, smart_dict_merge
 from etherweaver.plugins.plugin_class_errors import *
 import os
 import inspect
@@ -24,6 +24,7 @@ class Appliance(ConfigObject):
 		self.cstate = self.gen_config_skel()
 		self.is_appliance = True
 
+		self.fabric_tree = []
 
 	def get_cstate(self):
 		self.cstate = self.plugin.pull_state()
@@ -46,9 +47,26 @@ class Appliance(ConfigObject):
 		# self._build_dispatch_tree()
 
 	def build_dstate(self):
-		self.dstate.update(self.role.config)
-		if 'vlans' in self.fabric.config:
-			self.dstate.update({'vlans': self.fabric.config['vlans']})
+		# self.dstate.update(self.role.config)
+		# if 'vlans' in self.fabric.config:
+		# 	self.dstate.update({'vlans': self.fabric.config['vlans']})
+		if self.fabric:
+			self.fabric_tree.append(self.fabric)
+			self.return_fabrics(self.fabric)
+		dstate = self.fabric_tree[-1].config
+		for fab in self.fabric_tree[:-1]:
+			dstate = smart_dict_merge(dstate, fab.config)
+		if self.role:
+			dstate = smart_dict_merge(dstate, self.role.config)
+		dstate = smart_dict_merge(dstate, self.config)
+		dstate.pop('fabric', None)
+		self.dstate = dstate
+
+
+	def return_fabrics(self, fabric):
+		if fabric.parent_fabric:
+			self.fabric_tree.append(fabric.parent_fabric)
+			self.return_fabrics(fabric.parent_fabric)
 
 	def gen_config_skel(self):
 		return {
