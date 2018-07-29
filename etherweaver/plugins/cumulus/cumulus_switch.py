@@ -10,23 +10,14 @@ from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict, c
 
 class CumulusSwitch(NetWeaverPlugin):
 
-	def __init__(self, appconfig, fabricconfig):
+	def __init__(self, cstate):
 		self.is_plugin = True
-		self.fabricconfig = fabricconfig
 		self.hostname = ''
-		if 'hostname' in appconfig:
-			self.hostname = appconfig['hostname']
-		try:
-			self.username = appconfig['credentials']['username']
-			self.password = appconfig['credentials']['password']
-		except KeyError:
-			raise MissingRequiredAttribute('[\'credentials\']', self.hostname)
 		self.port = 22
-
 		self.portmap = None
-		self.cstate = None
-
+		self.cstate = cstate
 		self.commands = []
+
 
 		"""
 		State cases referenced in below modules:
@@ -46,9 +37,9 @@ class CumulusSwitch(NetWeaverPlugin):
 	def build_ssh_session(self):
 		self.conn_type = NWConnType
 		self.ssh = self._build_ssh_client(
-			hostname=self.hostname,
-			username=self.username,
-			password=self.password,
+			hostname=self.appliance.dstate['connections']['ssh']['hostname'],
+			username=self.appliance.dstate['connections']['ssh']['username'],
+			password=self.appliance.dstate['connections']['ssh']['password'],
 			port=self.port
 		)
 

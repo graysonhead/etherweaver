@@ -41,7 +41,7 @@ class Appliance(ConfigObject):
 		module = SourceFileLoader('module', '{}/{}'.format(path, package.information['module_name'])).load_module()
 		plugin = getattr(module, package.information['class_name'])
 		# return plugin(self.config)
-		self.plugin = plugin(self.config, self.fabric.config)
+		self.plugin = plugin(self.cstate)
 		self.plugin.appliance = self
 		# self.plugin.connect()
 		# self._build_dispatch_tree()
@@ -60,6 +60,7 @@ class Appliance(ConfigObject):
 			dstate = smart_dict_merge(dstate, self.role.config)
 		dstate = smart_dict_merge(dstate, self.config)
 		dstate.pop('fabric', None)
+		dstate = smart_dict_merge(self.gen_config_skel(), dstate)
 		self.dstate = dstate
 
 

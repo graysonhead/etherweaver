@@ -4,7 +4,7 @@ roles:
     fabric: network1
     interfaces:
       1G:
-        1-10:
+        1-6:
           untagged_vlan: 2
 
 fabrics:
@@ -20,10 +20,15 @@ fabrics:
       11:
 
 appliances:
-  sw1:
-    hostname: 10.5.5.33
+  sw1v2:
     role: spine1
     plugin_package: cumulus
-    credentials:
-      username: cumulus
-      password: CumulusLinux!
+    connections:
+      ssh:
+        hostname: 10.5.5.33
+        username: cumulus
+        password: CumulusLinux!
+    interfaces:
+      1G:
+        2-5:
+          untagged_vlan: 1
