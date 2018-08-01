@@ -4,6 +4,7 @@ from etherweaver.core_classes.role import NetworkRole
 from etherweaver.core_classes.errors import MissingRequiredAttribute
 from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict
 
+
 class Infrastructure:
 	"""
 	This is the constructor/dependency injector for the Appliance, Fabric, and Role classes
@@ -119,4 +120,7 @@ class Infrastructure:
 				retvals.update({app.name: app.run_individual_command(func, value)})
 			return retvals
 		appliance = self._parse_target(target)
-		return appliance.run_individual_command(func, value)
+		try:
+			return appliance.run_individual_command(func, value)
+		except AttributeError:
+			raise AttributeError('No appliance with name {} found in config'.format(target))

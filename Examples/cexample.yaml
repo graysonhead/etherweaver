@@ -20,7 +20,7 @@ fabrics:
       11:
 
 appliances:
-  sw1v2:
+  sw1:
     role: spine1
     plugin_package: cumulus
     connections:
