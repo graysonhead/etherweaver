@@ -13,7 +13,10 @@ class Infrastructure:
 	def __init__(self, config_dict):
 		self.appliances_conf = config_dict['appliances']
 		self.roles_conf = self._extrapolate_config_dict('role', config_dict['roles'])
-		self.fabrics_conf = config_dict['fabrics']
+		if 'fabrics' in config_dict:
+			self.fabrics_conf = config_dict['fabrics']
+		else:
+			self.fabrics_conf = None
 		self.appliances = []
 		self.fabrics = []
 		self.roles = []
@@ -44,7 +47,8 @@ class Infrastructure:
 		Builds the requisite classes and injects dependencies
 		"""
 		self._build_appliances()
-		self._build_fabrics()
+		if self.fabrics_conf:
+			self._build_fabrics()
 		self._build_roles()
 		self._associate_dependencies()
 

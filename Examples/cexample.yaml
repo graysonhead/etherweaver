@@ -17,7 +17,7 @@ fabrics:
       password: CumulusLinux2!
   toplevelnet:
     vlans:
-      11:
+      1-10:
 
 appliances:
   sw1:
@@ -32,3 +32,4 @@ appliances:
       1G:
         2-5:
           untagged_vlan: 1
+          tagged_vlans: [1, 2-5]

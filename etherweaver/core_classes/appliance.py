@@ -4,6 +4,7 @@ from etherweaver.server_config_loader import get_server_config
 from importlib.machinery import SourceFileLoader
 from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict, smart_dict_merge
 from etherweaver.plugins.plugin_class_errors import *
+from etherweaver.core_classes.datatypes import WeaverConfig
 import os
 import inspect
 from .errors import *
@@ -53,21 +54,23 @@ class Appliance(ConfigObject):
 		if self.fabric:
 			self.fabric_tree.append(self.fabric)
 			self.return_fabrics(self.fabric)
-		dstate = self.fabric_tree[-1].config
-		for fab in self.fabric_tree[:-1]:
-			dstate = smart_dict_merge(dstate, fab.config)
-		if self.role:
-			dstate = smart_dict_merge(dstate, self.role.config)
-		dstate = smart_dict_merge(dstate, self.config)
-		dstate.pop('fabric', None)
-		dstate = smart_dict_merge(self.gen_config_skel(), dstate)
+			dstate = WeaverConfig(self.fabric_tree[-1].config)
+			for fab in self.fabric_tree[:-1]:
+				dstate = dstate.merge_configs(WeaverConfig(fab.config))
+			if self.role:
+				dstate = dstate.merge_configs(WeaverConfig(self.role.config))
+		else:
+			dstate = WeaverConfig(self.role.config)
+		dstate = dstate.merge_configs(WeaverConfig(self.config))
+		dstate = smart_dict_merge(self.gen_config_skel(), dstate.config)
 		self.dstate = dstate
 
 
 	def return_fabrics(self, fabric):
 		if fabric.parent_fabric:
 			self.fabric_tree.append(fabric.parent_fabric)
-			self.return_fabrics(fabric.parent_fabric)
+			if fabric.parent_fabric.name != fabric.name:
+				self.return_fabrics(fabric.parent_fabric)
 
 	def gen_config_skel(self):
 		return {

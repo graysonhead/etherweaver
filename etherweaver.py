@@ -58,7 +58,5 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 	cli = CLIApp(yaml=args.yamlfile)
 	print(cli.run(target=args.target, func=args.func, value=args.value))
-	# target = '0c-b3-6d-f1-11-00'
-	# func = 'get.hostname'
-	# cli = CLIApp(target, func, yaml='exampleconfig.yaml')
+
 

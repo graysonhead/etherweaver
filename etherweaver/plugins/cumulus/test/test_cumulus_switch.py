@@ -17,7 +17,7 @@ class TestPlugin(unittest.TestCase):
 
 	def setUp(self):
 
-		self.plugin = CumulusSwitch(appconfig, fabricconf)
+		self.plugin = CumulusSwitch(appconfig)
 		self.plugin.appliance = Appliance('testappliance', appconfig)
 		# This makes me feel dirty
 		self.plugin.appliance.plugin = self.plugin

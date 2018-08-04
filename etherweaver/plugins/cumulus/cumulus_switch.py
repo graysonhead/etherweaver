@@ -142,7 +142,7 @@ class CumulusSwitch(NetWeaverPlugin):
 				vidstring = line.split(' ')[5]
 				vids = extrapolate_list(vidstring.split(','))
 				for vid in vids:
-					conf['vlans'].update({vid: None})
+					conf['vlans'].update({int(vid): None})
 			# Interfaces
 			elif line.startswith('net add interface'):
 				portid = line.split(' ')[3]
