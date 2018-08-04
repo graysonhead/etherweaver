@@ -2,8 +2,9 @@ from etherweaver.core_classes.config_object import ConfigObject
 import unittest
 from etherweaver.server_config_loader import get_server_config
 from importlib.machinery import SourceFileLoader
-from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict
+from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict, smart_dict_merge
 from etherweaver.plugins.plugin_class_errors import *
+from etherweaver.core_classes.datatypes import WeaverConfig
 import os
 import inspect
 from .errors import *
@@ -24,6 +25,7 @@ class Appliance(ConfigObject):
 		self.cstate = self.gen_config_skel()
 		self.is_appliance = True
 
+		self.fabric_tree = []
 
 	def get_cstate(self):
 		self.cstate = self.plugin.pull_state()
@@ -40,15 +42,35 @@ class Appliance(ConfigObject):
 		module = SourceFileLoader('module', '{}/{}'.format(path, package.information['module_name'])).load_module()
 		plugin = getattr(module, package.information['class_name'])
 		# return plugin(self.config)
-		self.plugin = plugin(self.config, self.fabric.config)
+		self.plugin = plugin(self.cstate)
 		self.plugin.appliance = self
 		# self.plugin.connect()
 		# self._build_dispatch_tree()
 
 	def build_dstate(self):
-		self.dstate.update(self.role.config)
-		if 'vlans' in self.fabric.config:
-			self.dstate.update({'vlans': self.fabric.config['vlans']})
+		# self.dstate.update(self.role.config)
+		# if 'vlans' in self.fabric.config:
+		# 	self.dstate.update({'vlans': self.fabric.config['vlans']})
+		if self.fabric:
+			self.fabric_tree.append(self.fabric)
+			self.return_fabrics(self.fabric)
+			dstate = WeaverConfig(self.fabric_tree[-1].config)
+			for fab in self.fabric_tree[:-1]:
+				dstate = dstate.merge_configs(WeaverConfig(fab.config))
+			if self.role:
+				dstate = dstate.merge_configs(WeaverConfig(self.role.config))
+		else:
+			dstate = WeaverConfig(self.role.config)
+		dstate = dstate.merge_configs(WeaverConfig(self.config))
+		dstate = smart_dict_merge(self.gen_config_skel(), dstate.config)
+		self.dstate = dstate
+
+
+	def return_fabrics(self, fabric):
+		if fabric.parent_fabric:
+			self.fabric_tree.append(fabric.parent_fabric)
+			if fabric.parent_fabric.name != fabric.name:
+				self.return_fabrics(fabric.parent_fabric)
 
 	def gen_config_skel(self):
 		return {
@@ -192,7 +214,7 @@ class Appliance(ConfigObject):
 			dstate
 		except KeyError:
 			return
-		if dstate is None:
+		if dstate is False or dstate is None or bool(dstate) is False:
 			return
 		# Case1
 		if dstate == cstate:

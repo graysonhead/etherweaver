@@ -1,4 +1,7 @@
-def extrapolate_dict(numdict):
+import collections
+
+
+def extrapolate_dict(numdict, int_key=False):
 		newnumdict = {}
 		if type(numdict) is not dict:
 			raise TypeError
@@ -7,11 +10,20 @@ def extrapolate_dict(numdict):
 				if '-' in k:
 					nums = k.split('-')
 					for n in range(int(nums[0]), int(nums[1]) + 1, 1):
-						newnumdict.update({str(n): v})
+						if int_key:
+							newnumdict.update({int(n): v})
+						else:
+							newnumdict.update({str(n): v})
+				else:
+					if int_key:
+						newnumdict.update({int(k): v})
+					else:
+						newnumdict.update({str(k): v})
+			else:
+				if int_key:
+					newnumdict.update({int(k): v})
 				else:
 					newnumdict.update({str(k): v})
-			else:
-				newnumdict.update({str(k): v})
 		return newnumdict
 
 
@@ -34,7 +46,9 @@ def extrapolate_list(numlist, int_out=False):
 			for num in newlist:
 				intlist.append(int(num))
 			return intlist
-		return newlist
+		else:
+			return newlist
+
 
 def compare_dict_keys(d1, d2):
 	for i in d1:
@@ -44,3 +58,12 @@ def compare_dict_keys(d1, d2):
 		if i not in d1:
 			return False
 	return True
+
+
+def smart_dict_merge(d, u):
+	for k, v in u.items():
+		if isinstance(v, collections.Mapping):
+			d[k] = smart_dict_merge(d.get(k, {}), v)
+		else:
+			d[k] = v
+	return d
