@@ -4,6 +4,7 @@ from etherweaver.core_classes.role import NetworkRole
 from etherweaver.core_classes.errors import MissingRequiredAttribute
 from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict
 
+
 class Infrastructure:
 	"""
 	This is the constructor/dependency injector for the Appliance, Fabric, and Role classes
@@ -12,7 +13,10 @@ class Infrastructure:
 	def __init__(self, config_dict):
 		self.appliances_conf = config_dict['appliances']
 		self.roles_conf = self._extrapolate_config_dict('role', config_dict['roles'])
-		self.fabrics_conf = config_dict['fabrics']
+		if 'fabrics' in config_dict:
+			self.fabrics_conf = config_dict['fabrics']
+		else:
+			self.fabrics_conf = None
 		self.appliances = []
 		self.fabrics = []
 		self.roles = []
@@ -22,7 +26,6 @@ class Infrastructure:
 
 	def _extrapolate_config_dict(self, type, config):
 		"""
-
 		:param type: 'role', 'appliance', or 'dict'
 		:param config:
 		:return:
@@ -44,7 +47,8 @@ class Infrastructure:
 		Builds the requisite classes and injects dependencies
 		"""
 		self._build_appliances()
-		self._build_fabrics()
+		if self.fabrics_conf:
+			self._build_fabrics()
 		self._build_roles()
 		self._associate_dependencies()
 
@@ -90,15 +94,22 @@ class Infrastructure:
 		"""Attach appliances to roles"""
 		for app in self.appliances:
 			for role in self.roles:
-				if app.config['role'] == role.name:
-					app.role = role
-					role.appliances.append(app)
+				try:
+					if app.config['role'] == role.name:
+						app.role = role
+						role.appliances.append(app)
+				except KeyError:
+					raise SyntaxError('Appliance {} has no associated role'.format(app.name))
 			for fabric in self.fabrics:  # Attach Appliances to fabrics
 				if app.role.config['fabric'] == fabric.name:
 					app.fabric = fabric
 					fabric.appliances.append(app)
+				if 'fabric' in fabric.config:
+					for pfab in self.fabrics:
+						if pfab.name == fabric.config['fabric']:
+							fabric.parent_fabric = pfab
+							pfab.child_fabrics.append(fabric)
 			app.load_plugin()
-			app.plugin.build_ssh_session()
 			app.build_dstate()
 
 	def _parse_target(self, target):
@@ -113,4 +124,7 @@ class Infrastructure:
 				retvals.update({app.name: app.run_individual_command(func, value)})
 			return retvals
 		appliance = self._parse_target(target)
-		return appliance.run_individual_command(func, value)
+		try:
+			return appliance.run_individual_command(func, value)
+		except AttributeError:
+			raise AttributeError('No appliance with name {} found in config'.format(target))

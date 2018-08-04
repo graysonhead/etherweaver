@@ -7,6 +7,8 @@ class Fabric(ConfigObject):
 		self.name = name
 		self.config = config
 		self.appliances = []
+		self.parent_fabric = None
+		self.child_fabrics = []
 		self.is_fabric = True
 		if 'vlans' in self.config:
 			self.extrapolate_vlan_config()

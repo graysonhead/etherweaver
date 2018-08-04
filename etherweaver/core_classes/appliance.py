@@ -2,12 +2,16 @@ from etherweaver.core_classes.config_object import ConfigObject
 import unittest
 from etherweaver.server_config_loader import get_server_config
 from importlib.machinery import SourceFileLoader
+from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict, smart_dict_merge
+from etherweaver.plugins.plugin_class_errors import *
+from etherweaver.core_classes.datatypes import WeaverConfig
 import os
 import inspect
 from .errors import *
 
 
 class Appliance(ConfigObject):
+
 
 	def __init__(self, name, appliance_dict):
 		self.name = name
@@ -17,9 +21,14 @@ class Appliance(ConfigObject):
 		self.plugin = None
 
 		self.dtree = None
-		self.dstate = {}
-
+		self.dstate = self.gen_config_skel()
+		self.cstate = self.gen_config_skel()
 		self.is_appliance = True
+
+		self.fabric_tree = []
+
+	def get_cstate(self):
+		self.cstate = self.plugin.pull_state()
 
 	def _not_implemented(self):
 		raise NotImplementedError
@@ -33,21 +42,65 @@ class Appliance(ConfigObject):
 		module = SourceFileLoader('module', '{}/{}'.format(path, package.information['module_name'])).load_module()
 		plugin = getattr(module, package.information['class_name'])
 		# return plugin(self.config)
-		self.plugin = plugin(self.config, self.fabric.config)
+		self.plugin = plugin(self.cstate)
 		self.plugin.appliance = self
-		self.plugin.connect()
-		self._build_dispatch_tree()
+		# self.plugin.connect()
+		# self._build_dispatch_tree()
 
 	def build_dstate(self):
-		self.dstate.update(self.role.config)
-		if 'vlans' in self.fabric.config:
-			self.dstate.update({'vlans': self.fabric.config['vlans']})
+		# self.dstate.update(self.role.config)
+		# if 'vlans' in self.fabric.config:
+		# 	self.dstate.update({'vlans': self.fabric.config['vlans']})
+		if self.fabric:
+			self.fabric_tree.append(self.fabric)
+			self.return_fabrics(self.fabric)
+			dstate = WeaverConfig(self.fabric_tree[-1].config)
+			for fab in self.fabric_tree[:-1]:
+				dstate = dstate.merge_configs(WeaverConfig(fab.config))
+			if self.role:
+				dstate = dstate.merge_configs(WeaverConfig(self.role.config))
+		else:
+			dstate = WeaverConfig(self.role.config)
+		dstate = dstate.merge_configs(WeaverConfig(self.config))
+		dstate = smart_dict_merge(self.gen_config_skel(), dstate.config)
+		self.dstate = dstate
+
+
+	def return_fabrics(self, fabric):
+		if fabric.parent_fabric:
+			self.fabric_tree.append(fabric.parent_fabric)
+			if fabric.parent_fabric.name != fabric.name:
+				self.return_fabrics(fabric.parent_fabric)
+
+	def gen_config_skel(self):
+		return {
+			'hostname': None,
+			'vlans': {},
+			'protocols': {
+				'dns': {
+					'nameservers': []
+				},
+				'ntp': {
+					'client': {
+						'servers': [],
+						'timezone': None
+					}
+				}
+			},
+			'interfaces': {
+				'1G': {},
+				'10G': {},
+				'40G': {},
+				'100G': {},
+				'mgmt': {}
+			}
+		}
 
 	def _build_dispatch_tree(self):
 		self.dtree = {
 			'state': {
-				'apply': self.plugin.push_state,
-				'get': self.plugin.cstate,
+				'apply': self.push_state,
+				'get': self.cstate,
 			},
 			'hostname': {
 				'set': self.plugin.set_hostname,
@@ -105,10 +158,9 @@ class Appliance(ConfigObject):
 		return '<Appliance: {}>'.format(self.name)
 
 	def run_individual_command(self, func, value):
-		# if func == 'get.hostname':
-		# 	return self.plugin.get_hostname()
-		# if func == 'set.hostname':
-		# 	return self.plugin.set_hostname(value)
+		self.plugin.connect()
+		self.cstate.update(self.plugin.cstate)
+		self._build_dispatch_tree()
 		sfunc = func.split('.')
 		"""
 		Iterate through each level of the config and stop when you get to a command (get, set, etc.)
@@ -133,17 +185,150 @@ class Appliance(ConfigObject):
 			else:
 				level = level[com]
 
+	# State comparison methods
 
-class TestPluginLoader(unittest.TestCase):
-	def test_plugin_loader(self):
-		mock = {
-					'hostname': '10.0.0.1',
-					'role': 'spine1',
-					'plugin_package': 'cumulus'
-				}
-		appl = Appliance("00-00-00-00-00-00",  mock)
-		inst = appl.load_plugin()
-		self.assertEqual(inst.is_plugin(), True)
+	def push_state(self, execute=True):
+		# Run pre-push commands if the plugin writer overrode the class
+		try:
+			self.plugin.pre_push()
+		except FeatureNotImplemented:
+			pass
+		dstate = self.dstate
+		cstate = self.cstate
+		self.plugin.add_command(self._hostname_push(dstate, cstate))
+		self.plugin.add_command(self._protocol_dns_nameservers_push(dstate, cstate))
+		self.plugin.add_command(self._protocol_ntpclient_timezone_push(dstate, cstate))
+		self.plugin.add_command(self._protocol_ntpclient_servers(dstate, cstate))
+		self.plugin.add_command(self._vlans_push(dstate, cstate))
+		self.plugin.add_command(self._interfaces_push(dstate, cstate))
+
+		for com in self.plugin.commands:
+			self.plugin.command(com)
+		self.plugin.commit()
+		# self.plugin.reload_state()
+		return self.plugin.commands
+
+	def _compare_state(self, dstate, cstate, func):
+		# Case0
+		try:
+			dstate
+		except KeyError:
+			return
+		if dstate is False or dstate is None or bool(dstate) is False:
+			return
+		# Case1
+		if dstate == cstate:
+			return
+		# Case2 and 3 create
+		elif dstate != cstate:
+			return func(dstate, execute=False)
+
+	def _protocol_ntpclient_servers(self, dstate, cstate):
+		try:
+			dstate = dstate['protocols']['ntp']['client']['servers']
+		except KeyError:
+			dstate = None
+		cstate = cstate['protocols']['ntp']['client']['servers']
+		return self._compare_state(dstate, cstate, self.plugin.set_ntp_client_servers)
+
+	def _hostname_push(self, dstate, cstate):
+		try:
+			dstate = dstate['hostname']
+		except KeyError:
+			dstate = None
+		cstate = cstate['hostname']
+		return self._compare_state(dstate, cstate, self.plugin.set_hostname)
+
+	def _vlans_push(self, dstate, cstate):
+		dstate = dstate['vlans']
+		cstate = cstate['vlans']
+		return self._compare_state(dstate, cstate, self.plugin.set_vlans)
+
+	def _interfaces_push(self, dstate, cstate):
+		# Todo, this wont work for other plugins
+		i_dstate = dstate['interfaces']
+		i_cstate = cstate['interfaces']
+		blankstate = self.plugin._gen_portskel()
+		for kspd, vspd in i_dstate.items():
+			for kint, vint in vspd.items():
+				if 'tagged_vlans' in vint:
+					self._interface_tagged_vlans_push(cstate, dstate, kspd, kint)
+				if 'untagged_vlan' in vint:
+					self._interface_untagged_vlan_push(cstate, dstate, kspd, kint)
+
+	def _interface_untagged_vlan_push(self, cstate, dstate, speed, interface):
+		dstate = str(dstate['interfaces'][speed][interface]['untagged_vlan'])
+		# Case 3
+		try:
+			cstate = str(cstate['interfaces'][speed][str(interface)]['untagged_vlan'])
+		except KeyError:
+			self.plugin.add_command(self.plugin.set_interface_untagged_vlan(interface, dstate, execute=False))
+		# Case0
+		try:
+			dstate
+		except KeyError:
+			return
+		# Case1
+		if dstate == cstate:
+			return
+		# Case 2
+		elif dstate != cstate:
+			self.plugin.add_command(
+				self.plugin.set_interface_untagged_vlan(interface, dstate, execute=False))
+
+	def _interface_tagged_vlans_push(self, cstate, dstate, speed, interface):
+		# Case 3
+		dstate = extrapolate_list(dstate['interfaces'][speed][interface]['tagged_vlans'], int_out=False)
+		try:
+			cstate = extrapolate_list(cstate['interfaces'][speed][str(interface)]['tagged_vlans'], int_out=False)
+		except KeyError:
+			self.plugin.add_command(self.plugin.set_interface_tagged_vlans(interface, dstate, execute=False))
+		# Case0
+		try:
+			dstate
+		except KeyError:
+			return
+		# Case1
+		if dstate == cstate:
+			return
+		# Case 2
+		elif dstate != cstate:
+			self.plugin.add_command(self.plugin.set_interface_tagged_vlans(interface, dstate, execute=False))
+
+	def _protocol_ntpclient_timezone_push(self, dstate, cstate):
+		cstate = cstate['protocols']['ntp']['client']['timezone']
+		dstate = dstate['protocols']['ntp']['client']['timezone']
+		return self._compare_state(dstate, cstate, self.plugin.set_ntp_client_timezone)
+		# Case0
+		# try:
+		# 	dstate = dstate['protocols']['ntp']['client']['timezone']
+		# except KeyError:
+		# 	return
+		# # Case1
+		# if dstate == cstate:
+		# 	return
+		# # Case 2 and 3
+		# if dstate != cstate:
+		# 	return self.plugin.set_ntp_client_timezone(dstate, execute=False)
+
+	def _protocol_dns_nameservers_push(self, dstate, cstate):
+		try:
+			dstate = dstate['protocols']['dns']['nameservers']
+		except KeyError:
+			dstate = None
+		cstate = cstate['protocols']['dns']['nameservers']
+		return self._compare_state(dstate, cstate, self.plugin.set_dns_nameservers)
+
+# class TestPluginLoader(unittest.TestCase):
+# 	def test_plugin_loader(self):
+# 		mock = {
+# 					'hostname': '10.0.0.1',
+# 					'role': 'spine1',
+# 					'plugin_package': 'cumulus'
+# 				}
+# 		appl = Appliance("00-00-00-00-00-00",  mock)
+# 		inst = appl.load_plugin()
+# 		self.assertEqual(inst.is_plugin(), True)
 
 
 if __name__ == '__main__':
