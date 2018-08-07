@@ -9,4 +9,3 @@ Install using git:
 
     git clone https://github.com/graysonhead/etherweaver.git
     pip install -r requirements.txt
-
