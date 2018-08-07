@@ -30,36 +30,39 @@ An Example Config
 .. code-block:: yaml
    :caption: config.yaml
 
-    roles:
-      spine1:
-        fabric: network1
-        hostname: spine1.net.testco.org
-        protocols:
-          dns:
-            nameservers:
-                - 10.5.5.115
-        interfaces:
-          1G:
-            1:
-              tagged_vlans: [2, 3, 4, 5, 6]
-              untagged_vlan: 7
-
-    fabrics:
+   fabrics:
       network1:
-        credentials:
-          username: cumulus
-          password: CumulusLinux!
-        vlans:
-         2-6:
+         vlans:
+            4-10
+      connections:
+         ssh:
+            username: user
+            password: password!
 
-    appliances:
-      sw1:
-        hostname: 10.5.5.33
-        role: spine1
-        plugin_package: cumulus
+   roles:
+      distribution:
+         fabric: network1
+         interfaces:
+            1G:
+               1-22:
+                  untagged_vlan: 4
+                  tagged_vlans: 5-7
+               23-24:
+                  tagged_vlans: 4-10
 
-The above configuration will configure one switch to set its hostname to "spine1.net.testco.org", set its nameserver to
-"10.5.5.115", and configure interface 1 with a PVID of 7, and tagged vlans 2-6.
+   appliances:
+      distsw1:
+         role: distribution
+         plugin_package: cumulus
+         connections:
+            ssh:
+               hostname: 10.5.5.33
+
+The inheritance structure flows like so:
+
+Fabric -> Fabric*n -> roles -> appliances.
+
+Appliances map to individual instances of hosts, but everything else is logically mapped to whatever makes sense for a given user.
 
 Nodes
 -----

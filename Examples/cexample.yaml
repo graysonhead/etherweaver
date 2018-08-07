@@ -12,9 +12,6 @@ fabrics:
     vlans:
       4-10:
     fabric: toplevelnet
-    credentials:
-      username: cumulus
-      password: CumulusLinux2!
   toplevelnet:
     vlans:
       1-10:
