@@ -15,6 +15,23 @@ class WeaverConfig(object):
 						vint['tagged_vlans'] = extrapolate_list(vint['tagged_vlans'], int_out=True)
 				new_int.update({kspd: extrapolate_dict(vspd, int_key=True)})
 			self.config['interfaces'] = new_int
+		self.validate()
 
 	def merge_configs(self, config_obj):
 		return WeaverConfig(smart_dict_merge(self.config, config_obj.config))
+
+	def validate(self):
+		pass
+
+	def type_validate(self):
+		"""
+		Class specific validation function
+		:return:
+		"""
+		pass
+
+
+class WeaverFabricConfig(WeaverConfig):
+
+	def type_validate(self):
+		pass
