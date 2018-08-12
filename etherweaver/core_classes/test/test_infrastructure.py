@@ -2,7 +2,7 @@ import unittest
 from etherweaver.core_classes.appliance import Appliance
 from etherweaver.core_classes.infrastructure import Infrastructure
 
-mock = {
+mock1 = {
 			'roles':
 				{
 					'spine1': {
@@ -35,11 +35,19 @@ mock = {
 		}
 }
 
-class TestPluginLoader(unittest.TestCase):
-	def test_plugin_loader(self):
+mock = {'roles': {
+	'spine1': {'hostname': 'billy2', 'fabric': 'network1', 'interfaces': {'1G': {'1-6': {'untagged_vlan': 1}}}}},
+        'fabrics': {'network1': {'vlans': {'4-10': None}, 'fabric': 'toplevelnet'},
+                    'toplevelnet': {'vlans': {'1-10': 'None'}}}, 'appliances': {
+		'sw1': {'role': 'spine1', 'plugin_package': 'cumulus',
+		        'connections': {'ssh': {'hostname': '10.5.5.33', 'username': 'cumulus', 'password': 'CumulusLinux!'}},
+		        'interfaces': {'1G': {'2-5': {'untagged_vlan': 1, 'tagged_vlans': [1, '2-5']}}}}}}
 
-		inf = Infrastructure(mock)
-		self.assertEqual(inf.appliances[0].plugin.is_plugin, True)
+class TestPluginLoader(unittest.TestCase):
+
+	def test_plugin_loader(self):
+		inf1 = Infrastructure(mock1)
+		self.assertEqual(inf1.appliances[0].plugin.is_plugin, True)
 
 
 class TestInfrastructureClass(unittest.TestCase):
