@@ -22,5 +22,5 @@ class ConfigKeyError(Exception):
 	Raised when an unknown or illegal key is used in a yaml file
 	"""
 
-	def __init__(self, key):
-		super().__init__('Unknown key {} in config'.key)
+	def __init__(self, key, value=None):
+		super().__init__('Unknown key in \'{}\': \'{}\' in config'.format(key, value))

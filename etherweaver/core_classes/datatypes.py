@@ -1,9 +1,13 @@
 from etherweaver.core_classes.utils import extrapolate_dict, extrapolate_list, smart_dict_merge
+from etherweaver.core_classes.errors import ConfigKeyError
 
 
 class WeaverConfig(object):
 
-	def __init__(self, config_dict):
+	def __init__(self, config_dict, name=None):
+		self.name = name
+		self.type = None
+		self.type_specific_keys = {}
 		self.config = config_dict
 		if 'vlans' in self.config:
 			self.config['vlans'] = extrapolate_dict(self.config['vlans'], int_key=True)
@@ -20,18 +24,88 @@ class WeaverConfig(object):
 	def merge_configs(self, config_obj):
 		return WeaverConfig(smart_dict_merge(self.config, config_obj.config))
 
-	def validate(self):
-		pass
 
-	def type_validate(self):
+	def gen_config_skel(self):
+		return {
+			'hostname': None,
+			'vlans': {},
+			'protocols': {
+				'dns': {
+					'nameservers': []
+				},
+				'ntp': {
+					'client': {
+						'servers': [],
+						'timezone': None
+					}
+				}
+			},
+			'interfaces': {
+				'1G': {},
+				'10G': {},
+				'40G': {},
+				'100G': {},
+				'mgmt': {}
+			}
+		}
+
+	def validate(self):
+		config_skel = self.gen_config_skel()
+		# Config skel will be overriden by child classes to validate any class specific keys
+		config_skel.update(self._type_specific_keys())
+		self._validate_dict(self.config, config_skel)
+
+	def _type_specific_keys(self):
+		return {}
+
+	def _validate_dict(self, config_dict, skel_dict):
 		"""
-		Class specific validation function
+		Currently only validates keys
+		:param config_dict:
+		Usually self.config.
+		:param skel_dict:
 		:return:
 		"""
-		pass
+		for k, v in config_dict.items():
+			# Ensure key is present in the skeleton config, otherwise it is invalid
+			invalid_keys = {}
+			if k in skel_dict and k is not 'interfaces':
+				if type(v) is dict:
+					self._validate_dict(config_dict[k], skel_dict[k])
+			elif k is 'interfaces':
+				pass
+			else:
+				raise ConfigKeyError(k, value=v)
+
+	def get_full_config(self):
+		return smart_dict_merge(self.config, self.gen_config_skel())
 
 
-class WeaverFabricConfig(WeaverConfig):
+class ApplianceConfig(WeaverConfig):
 
-	def type_validate(self):
-		pass
+	def _type_specific_keys(self):
+		return {
+		'role': str,
+		'plugin_package': str,
+		'connections': {
+			'ssh': {
+				'hostname': str,
+				'username': str,
+				'password': str
+			}
+		}
+	}
+
+class FabricConfig(WeaverConfig):
+
+	def _type_specific_keys(self):
+		return {
+			'fabric': str
+		}
+
+class RoleConfig(WeaverConfig):
+
+	def _type_specific_keys(self):
+		return {
+			'fabric': str
+		}

@@ -21,8 +21,8 @@ class Appliance(ConfigObject):
 		self.plugin = None
 
 		self.dtree = None
-		self.dstate = self.gen_config_skel()
-		self.cstate = self.gen_config_skel()
+		self.dstate = {}
+		self.cstate = {}
 		self.is_appliance = True
 
 		self.fabric_tree = []
@@ -72,29 +72,30 @@ class Appliance(ConfigObject):
 			if fabric.parent_fabric.name != fabric.name:
 				self.return_fabrics(fabric.parent_fabric)
 
-	def gen_config_skel(self):
-		return {
-			'hostname': None,
-			'vlans': {},
-			'protocols': {
-				'dns': {
-					'nameservers': []
-				},
-				'ntp': {
-					'client': {
-						'servers': [],
-						'timezone': None
-					}
-				}
-			},
-			'interfaces': {
-				'1G': {},
-				'10G': {},
-				'40G': {},
-				'100G': {},
-				'mgmt': {}
-			}
-		}
+	# @staticmethod
+	# def gen_config_skel():
+	# 	return {
+	# 		'hostname': None,
+	# 		'vlans': {},
+	# 		'protocols': {
+	# 			'dns': {
+	# 				'nameservers': []
+	# 			},
+	# 			'ntp': {
+	# 				'client': {
+	# 					'servers': [],
+	# 					'timezone': None
+	# 				}
+	# 			}
+	# 		},
+	# 		'interfaces': {
+	# 			'1G': {},
+	# 			'10G': {},
+	# 			'40G': {},
+	# 			'100G': {},
+	# 			'mgmt': {}
+	# 		}
+	# 	}
 
 	def _build_dispatch_tree(self):
 		self.dtree = {
@@ -247,8 +248,6 @@ class Appliance(ConfigObject):
 	def _interfaces_push(self, dstate, cstate):
 		# Todo, this wont work for other plugins
 		i_dstate = dstate['interfaces']
-		i_cstate = cstate['interfaces']
-		blankstate = self.plugin._gen_portskel()
 		for kspd, vspd in i_dstate.items():
 			for kint, vint in vspd.items():
 				if 'tagged_vlans' in vint:
