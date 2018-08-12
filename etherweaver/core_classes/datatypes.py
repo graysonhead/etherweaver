@@ -4,7 +4,7 @@ from etherweaver.core_classes.errors import ConfigKeyError
 
 class WeaverConfig(object):
 
-	def __init__(self, config_dict, name=None):
+	def __init__(self, config_dict, name=None, validate=True):
 		self.name = name
 		self.type = None
 		self.type_specific_keys = {}
@@ -19,10 +19,15 @@ class WeaverConfig(object):
 						vint['tagged_vlans'] = extrapolate_list(vint['tagged_vlans'], int_out=True)
 				new_int.update({kspd: extrapolate_dict(vspd, int_key=True)})
 			self.config['interfaces'] = new_int
-		self.validate()
+		if validate:
+			self.validate()
+		self._clean_config()
 
-	def merge_configs(self, config_obj):
-		return WeaverConfig(smart_dict_merge(self.config, config_obj.config))
+	def _clean_config(self):
+		pass
+
+	def merge_configs(self, config_obj, validate=True):
+		return WeaverConfig(smart_dict_merge(self.config, config_obj.config), validate=validate)
 
 
 	def gen_config_skel(self):
@@ -68,12 +73,16 @@ class WeaverConfig(object):
 		"""
 		for k, v in config_dict.items():
 			# Ensure key is present in the skeleton config, otherwise it is invalid
+			skip_set = [
+				'vlans',
+				'interfaces'
+			]
 			invalid_keys = {}
-			if k in skel_dict and k is not 'interfaces':
+			if k in skip_set:
+				pass
+			elif k in skel_dict:
 				if type(v) is dict:
 					self._validate_dict(config_dict[k], skel_dict[k])
-			elif k is 'interfaces':
-				pass
 			else:
 				raise ConfigKeyError(k, value=v)
 
@@ -84,6 +93,7 @@ class WeaverConfig(object):
 class ApplianceConfig(WeaverConfig):
 
 	def _type_specific_keys(self):
+		self.type = 'Appliance'
 		return {
 		'role': str,
 		'plugin_package': str,
@@ -95,17 +105,32 @@ class ApplianceConfig(WeaverConfig):
 			}
 		}
 	}
+	def _clean_config(self):
+		if 'role' in self.config:
+			del(self.config['role'])
+
 
 class FabricConfig(WeaverConfig):
 
 	def _type_specific_keys(self):
+		self.type = 'Fabric'
 		return {
 			'fabric': str
 		}
+
+	def _clean_config(self):
+		if 'fabric' in self.config:
+			del(self.config['fabric'])
+
 
 class RoleConfig(WeaverConfig):
 
 	def _type_specific_keys(self):
+		self.type = 'Role'
 		return {
 			'fabric': str
 		}
+
+	def _clean_config(self):
+		if 'fabric' in self.config:
+			del(self.config['fabric'])

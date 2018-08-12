@@ -4,7 +4,7 @@ from etherweaver.server_config_loader import get_server_config
 from importlib.machinery import SourceFileLoader
 from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict, smart_dict_merge
 from etherweaver.plugins.plugin_class_errors import *
-from etherweaver.core_classes.datatypes import WeaverConfig
+from etherweaver.core_classes.datatypes import ApplianceConfig, FabricConfig, RoleConfig
 import os
 import inspect
 from .errors import *
@@ -54,16 +54,15 @@ class Appliance(ConfigObject):
 		if self.fabric:
 			self.fabric_tree.append(self.fabric)
 			self.return_fabrics(self.fabric)
-			dstate = WeaverConfig(self.fabric_tree[-1].config)
+			dstate = FabricConfig(self.fabric_tree[-1].config)
 			for fab in self.fabric_tree[:-1]:
-				dstate = dstate.merge_configs(WeaverConfig(fab.config))
+				dstate = dstate.merge_configs(FabricConfig(fab.config))
 			if self.role:
-				dstate = dstate.merge_configs(WeaverConfig(self.role.config))
+				dstate = dstate.merge_configs(RoleConfig(self.role.config))
 		else:
-			dstate = WeaverConfig(self.role.config)
-		dstate = dstate.merge_configs(WeaverConfig(self.config))
-		dstate = smart_dict_merge(self.gen_config_skel(), dstate.config)
-		self.dstate = dstate
+			dstate = RoleConfig(self.role.config)
+		dstate = dstate.merge_configs(ApplianceConfig(self.config), validate=False)
+		self.dstate = dstate.get_full_config()
 
 
 	def return_fabrics(self, fabric):
