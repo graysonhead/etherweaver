@@ -18,15 +18,6 @@ class CumulusSwitch(NetWeaverPlugin):
 		self.portmap = self.pull_port_state()
 		self.cstate = self.pull_state()
 
-	def get_current_config(self):
-		"""
-		Get_current_config should return a Dict containing the current state of an object.
-		This structure should match the structure of a standard 'role' object.
-		"""
-		config = {}
-		config.update({'hostname': self.get_hostname()})
-		return config
-
 	def command(self, command):
 		"""
 		This just wraps _ssh_command right now, eventually it will allow for other comm types
