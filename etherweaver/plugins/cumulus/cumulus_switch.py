@@ -14,8 +14,7 @@ class CumulusSwitch(NetWeaverPlugin):
 		self.cstate = cstate
 		self.commands = []
 
-	def connect(self):
-		self.build_ssh_session()
+	def after_connect(self):
 		self.portmap = self.pull_port_state()
 		self.cstate = self.pull_state()
 

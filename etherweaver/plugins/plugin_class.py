@@ -2,6 +2,16 @@ from paramiko import SSHClient, WarningPolicy
 from enum import IntEnum
 from etherweaver.plugins.plugin_class_errors import *
 
+"""
+This is the best place to start if you plan on building a plugin.
+
+If you are making commits to this file, please be extra careful to add descriptive comments.
+
+The NetWeaverPlugin class must be inherited by any plugin. Any class marked with "PLUGIN_OVERRIDE" 
+is a skeleton method intended to be implemented by a plugin.
+"""
+
+
 class NWConnType(IntEnum):
 	Telnet = 1
 	SSH = 2
@@ -13,10 +23,12 @@ class NetWeaverPlugin:
 	hostname = None
 	commands = []
 
-	def _ssh_request(self):
-		"""Make an ssh request and parse returncode"""
-
 	def add_command(self, commands):
+		"""
+		Adds a command to the command queue
+		:param commands:
+		:return:
+		"""
 		if type(commands) == list:
 			for com in commands:
 				self.commands.append(com)
@@ -26,6 +38,10 @@ class NetWeaverPlugin:
 			self.commands.append(commands)
 
 	def build_ssh_session(self):
+		"""
+		This builds the SSH connection
+		:return:
+		"""
 		self.conn_type = NWConnType
 		self.ssh = self._build_ssh_client(
 			hostname=self.appliance.dstate['connections']['ssh']['hostname'],
@@ -37,6 +53,17 @@ class NetWeaverPlugin:
 	def connect(self):
 		"""
 		Examine protocol attribute and set up connection accordingly
+		:return:
+		"""
+		self.build_ssh_session()
+		self.after_connect()
+
+
+	def after_connect(self):
+		"""
+		PLUGIN_OVERRIDE
+
+		Put anything here that your plugin needs to do after a self.connect is called
 		:return:
 		"""
 
