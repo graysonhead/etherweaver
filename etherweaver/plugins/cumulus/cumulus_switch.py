@@ -270,7 +270,6 @@ class CumulusSwitch(NetWeaverPlugin):
 				commandqueue.append(self.rm_vlan(k, execute=False))
 		return commandqueue
 
-
 	def _dict_input_handler(self, stringordict):
 		if type(stringordict) is str:
 			dic = json.loads(stringordict)

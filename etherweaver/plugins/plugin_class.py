@@ -60,7 +60,6 @@ class NetWeaverPlugin:
 			self.build_ssh_session()
 			self.after_connect()
 
-
 	def after_connect(self):
 		"""
 		PLUGIN_OVERRIDE
