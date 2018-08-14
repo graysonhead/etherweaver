@@ -12,7 +12,6 @@ from .errors import *
 
 class Appliance(ConfigObject):
 
-
 	def __init__(self, name, appliance_dict):
 		self.name = name
 		self.config = appliance_dict
@@ -41,16 +40,10 @@ class Appliance(ConfigObject):
 		package = SourceFileLoader('package', '{}/{}'.format(path, '__init__.py')).load_module()
 		module = SourceFileLoader('module', '{}/{}'.format(path, package.information['module_name'])).load_module()
 		plugin = getattr(module, package.information['class_name'])
-		# return plugin(self.config)
 		self.plugin = plugin(self.cstate)
 		self.plugin.appliance = self
-		# self.plugin.connect()
-		# self._build_dispatch_tree()
 
 	def build_dstate(self):
-		# self.dstate.update(self.role.config)
-		# if 'vlans' in self.fabric.config:
-		# 	self.dstate.update({'vlans': self.fabric.config['vlans']})
 		if self.fabric:
 			self.fabric_tree.append(self.fabric)
 			self.return_fabrics(self.fabric)
@@ -70,31 +63,6 @@ class Appliance(ConfigObject):
 			self.fabric_tree.append(fabric.parent_fabric)
 			if fabric.parent_fabric.name != fabric.name:
 				self.return_fabrics(fabric.parent_fabric)
-
-	# @staticmethod
-	# def gen_config_skel():
-	# 	return {
-	# 		'hostname': None,
-	# 		'vlans': {},
-	# 		'protocols': {
-	# 			'dns': {
-	# 				'nameservers': []
-	# 			},
-	# 			'ntp': {
-	# 				'client': {
-	# 					'servers': [],
-	# 					'timezone': None
-	# 				}
-	# 			}
-	# 		},
-	# 		'interfaces': {
-	# 			'1G': {},
-	# 			'10G': {},
-	# 			'40G': {},
-	# 			'100G': {},
-	# 			'mgmt': {}
-	# 		}
-	# 	}
 
 	def _build_dispatch_tree(self):
 		self.dtree = {
@@ -150,7 +118,7 @@ class Appliance(ConfigObject):
 		try:
 			return '{}/{}'.format(get_server_config()['plugin_path'], self.config['plugin_package'])
 		except KeyError:
-			raise NonExistantPlugin()
+			raise NonExistantPlugin
 		except FileNotFoundError:
 			return '{}/../plugins/{}'.format(os.path.dirname(inspect.getfile(Appliance)), self.config['plugin_package'])
 
@@ -297,17 +265,6 @@ class Appliance(ConfigObject):
 		cstate = cstate['protocols']['ntp']['client']['timezone']
 		dstate = dstate['protocols']['ntp']['client']['timezone']
 		return self._compare_state(dstate, cstate, self.plugin.set_ntp_client_timezone)
-		# Case0
-		# try:
-		# 	dstate = dstate['protocols']['ntp']['client']['timezone']
-		# except KeyError:
-		# 	return
-		# # Case1
-		# if dstate == cstate:
-		# 	return
-		# # Case 2 and 3
-		# if dstate != cstate:
-		# 	return self.plugin.set_ntp_client_timezone(dstate, execute=False)
 
 	def _protocol_dns_nameservers_push(self, dstate, cstate):
 		try:
@@ -316,18 +273,3 @@ class Appliance(ConfigObject):
 			dstate = None
 		cstate = cstate['protocols']['dns']['nameservers']
 		return self._compare_state(dstate, cstate, self.plugin.set_dns_nameservers)
-
-# class TestPluginLoader(unittest.TestCase):
-# 	def test_plugin_loader(self):
-# 		mock = {
-# 					'hostname': '10.0.0.1',
-# 					'role': 'spine1',
-# 					'plugin_package': 'cumulus'
-# 				}
-# 		appl = Appliance("00-00-00-00-00-00",  mock)
-# 		inst = appl.load_plugin()
-# 		self.assertEqual(inst.is_plugin(), True)
-
-
-if __name__ == '__main__':
-	unittest.main()
