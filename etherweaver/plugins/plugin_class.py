@@ -66,6 +66,7 @@ class NetWeaverPlugin:
 		Put anything here that your plugin needs to do after a self.connect is called
 		:return:
 		"""
+		pass
 
 	def _build_ssh_client(self, hostname=None, accept_untrusted=False, username=None, password=None, port=22):
 		"""Returns a paramiko ssh client object"""
