@@ -1,7 +1,4 @@
 from etherweaver.plugins.plugin_class import NetWeaverPlugin, NWConnType
-from etherweaver.core_classes.errors import *
-from functools import wraps
-import logging
 from ipaddress import ip_address, IPv4Address, IPv6Address
 import pytz
 import json
@@ -18,30 +15,10 @@ class CumulusSwitch(NetWeaverPlugin):
 		self.cstate = cstate
 		self.commands = []
 
-
-		"""
-		State cases referenced in below modules:
-		cstate = Current State (stored in plugin)
-		dstate = Desired state (stored in appliance)
-		
-		Case0: exists in cstate but not dstate (ignore)
-		Case1: exists in dstate but not cstate (create dstate)
-		Case2: exists in both, but values do not match (apply dstate)
-		Case3 exists in both, and both match (do nothing)
-		"""
 	def connect(self):
 		self.build_ssh_session()
 		self.portmap = self.pull_port_state()
 		self.cstate = self.pull_state()
-
-	def build_ssh_session(self):
-		self.conn_type = NWConnType
-		self.ssh = self._build_ssh_client(
-			hostname=self.appliance.dstate['connections']['ssh']['hostname'],
-			username=self.appliance.dstate['connections']['ssh']['username'],
-			password=self.appliance.dstate['connections']['ssh']['password'],
-			port=self.port
-		)
 
 	def get_current_config(self):
 		"""

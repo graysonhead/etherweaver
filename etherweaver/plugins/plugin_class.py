@@ -25,6 +25,15 @@ class NetWeaverPlugin:
 		else:
 			self.commands.append(commands)
 
+	def build_ssh_session(self):
+		self.conn_type = NWConnType
+		self.ssh = self._build_ssh_client(
+			hostname=self.appliance.dstate['connections']['ssh']['hostname'],
+			username=self.appliance.dstate['connections']['ssh']['username'],
+			password=self.appliance.dstate['connections']['ssh']['password'],
+			port=self.port
+		)
+
 	def _build_ssh_client(self, hostname=None, accept_untrusted=False, username=None, password=None, port=22):
 		"""Returns a paramiko ssh client object"""
 		ssh = SSHClient()
