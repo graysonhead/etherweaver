@@ -29,8 +29,8 @@ class WeaverConfig(object):
 	def merge_configs(self, config_obj, validate=True):
 		return WeaverConfig(smart_dict_merge(self.config, config_obj.config), validate=validate)
 
-
-	def gen_config_skel(self):
+	@staticmethod
+	def gen_config_skel():
 		return {
 			'hostname': None,
 			'vlans': {},
@@ -101,7 +101,8 @@ class ApplianceConfig(WeaverConfig):
 			'ssh': {
 				'hostname': str,
 				'username': str,
-				'password': str
+				'password': str,
+				'port': int
 			}
 		}
 	}

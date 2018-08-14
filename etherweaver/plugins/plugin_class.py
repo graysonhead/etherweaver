@@ -31,8 +31,14 @@ class NetWeaverPlugin:
 			hostname=self.appliance.dstate['connections']['ssh']['hostname'],
 			username=self.appliance.dstate['connections']['ssh']['username'],
 			password=self.appliance.dstate['connections']['ssh']['password'],
-			port=self.port
+			port=self.appliance.dstate['connections']['ssh']['port']
 		)
+
+	def connect(self):
+		"""
+		Examine protocol attribute and set up connection accordingly
+		:return:
+		"""
 
 	def _build_ssh_client(self, hostname=None, accept_untrusted=False, username=None, password=None, port=22):
 		"""Returns a paramiko ssh client object"""

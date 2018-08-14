@@ -3,14 +3,13 @@ from ipaddress import ip_address, IPv4Address, IPv6Address
 import pytz
 import json
 from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict, compare_dict_keys
+from etherweaver.core_classes.datatypes import WeaverConfig
 
 
 class CumulusSwitch(NetWeaverPlugin):
 
 	def __init__(self, cstate):
 		self.is_plugin = True
-		self.hostname = ''
-		self.port = 22
 		self.portmap = None
 		self.cstate = cstate
 		self.commands = []
@@ -19,15 +18,6 @@ class CumulusSwitch(NetWeaverPlugin):
 		self.build_ssh_session()
 		self.portmap = self.pull_port_state()
 		self.cstate = self.pull_state()
-
-	def get_current_config(self):
-		"""
-		Get_current_config should return a Dict containing the current state of an object.
-		This structure should match the structure of a standard 'role' object.
-		"""
-		config = {}
-		config.update({'hostname': self.get_hostname()})
-		return config
 
 	def command(self, command):
 		"""
@@ -43,37 +33,11 @@ class CumulusSwitch(NetWeaverPlugin):
 		self.cstate = self.pull_state()
 		return ret
 
-	def net_config_parser(self):
-		pass
-
-	def get_dns_nameservers(self):
-		return self.appliance.cstate['protocols']['dns']['nameservers']
-
 	def pull_state(self):
 		pre_parse_commands = self.command('net show configuration commands').split('\n')
 		# This dict is constructed following the yaml structure for a role starting at the hostname level
 		# Watch the pluralization in here, a lot of the things are unplural in cumulus that are plural in weaver
-		conf = {
-			'hostname': None,
-			'vlans': {},
-			'protocols': {
-				'dns': {
-					'nameservers': []
-				},
-				'ntp': {
-					'client': {
-						'servers': []
-					}
-				}
-			},
-			'interfaces': {
-				'1G': {},
-				'10G': {},
-				'40G': {},
-				'100G': {},
-				'mgmt': {}
-			}
-		}
+		conf = WeaverConfig.gen_config_skel()
 		# We have to do some pre-parsing here to expand interface ranges and such
 		commands = []
 		for line in pre_parse_commands:
@@ -93,8 +57,6 @@ class CumulusSwitch(NetWeaverPlugin):
 					commands.append(' '.join(newline))
 			else:
 				commands.append(line)
-
-
 		for line in commands:
 			# Nameservers
 			if line.startswith('net add dns nameserver'):

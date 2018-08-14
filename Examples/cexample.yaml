@@ -25,6 +25,7 @@ appliances:
         hostname: 10.5.5.33
         username: cumulus
         password: CumulusLinux!
+        port: 22
     interfaces:
       1G:
         2-5:
