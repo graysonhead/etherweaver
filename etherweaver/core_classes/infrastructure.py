@@ -123,8 +123,8 @@ class Infrastructure:
 			for app in self.appliances:
 				retvals.update({app.name: app.run_individual_command(func, value)})
 			return retvals
-		appliance = self._parse_target(target)
 		try:
-			return appliance.run_individual_command(func, value)
+			appliance = self._parse_target(target)
 		except AttributeError:
 			raise AttributeError('No appliance with name {} found in config'.format(target))
+		return appliance.run_individual_command(func, value)

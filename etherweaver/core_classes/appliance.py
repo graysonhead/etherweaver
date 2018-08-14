@@ -126,8 +126,10 @@ class Appliance(ConfigObject):
 		return '<Appliance: {}>'.format(self.name)
 
 	def run_individual_command(self, func, value):
+		# Connect via whatever method is specified in protocols
 		self.plugin.connect()
-		self.cstate.update(self.plugin.cstate)
+		# Update current state before building dispatch tree
+		self.cstate.update(self.plugin.pull_state())
 		self._build_dispatch_tree()
 		sfunc = func.split('.')
 		"""

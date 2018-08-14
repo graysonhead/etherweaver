@@ -19,7 +19,8 @@ class NWConnType(IntEnum):
 
 
 class NetWeaverPlugin:
-	protocol = None
+	# Hard coded to SSH for now
+	protocol = 2
 	hostname = None
 	commands = []
 
@@ -55,8 +56,9 @@ class NetWeaverPlugin:
 		Examine protocol attribute and set up connection accordingly
 		:return:
 		"""
-		self.build_ssh_session()
-		self.after_connect()
+		if self.protocol == 2:
+			self.build_ssh_session()
+			self.after_connect()
 
 
 	def after_connect(self):
@@ -77,6 +79,11 @@ class NetWeaverPlugin:
 		return ssh
 
 	def _ssh_command(self, command):
+		"""
+		Runs a command via self.ssh object
+		:param command:
+		:return:
+		"""
 		stdin, stdout, stderr = self.ssh.exec_command(command)
 		if stderr.read():
 			raise SSHCommandError("While running command {} on appliance {}, got error {} {}".format(command, self.hostname, stderr.read(), stdout.read())) #TODO For some reason this line returns empty on error when run from a child instance
@@ -92,30 +99,12 @@ class NetWeaverPlugin:
 	def _not_implemented(self):
 		raise FeatureNotImplemented
 
-	def define_port_layout(self):
-		self._not_supported('port_layout')
-
 	def pre_push(self):
 		self._not_implemented()
 	"""Override these functions to enable each feature"""
 
-	def get_hostname(self):
-		self._not_supported('get_hostname')
-
 	def set_hostname(self, hostname, execute=True):
 		self._not_supported('set_hostname')
-
-	def get_current_config(self):
-		self._not_supported('get_current_config')
-
-	def get_interface(self, speed, interface):
-		self._not_supported('get_interface')
-
-	def get_dns(self):
-		self._not_supported('get_dns')
-
-	def get_dns_nameservers(self):
-		self._not_supported('get_dns_nameservers')
 
 	def set_dns_nameservers(self, nameserverlist, execute=True):
 		self._not_supported('set_dns_nameservers')

@@ -24,7 +24,7 @@ class CumulusSwitch(NetWeaverPlugin):
 		:param command:
 		:return:
 		"""
-		if self.ssh:
+		if self.protocol == 2:
 			return self._ssh_command(command)
 
 	def commit(self):
@@ -124,9 +124,6 @@ class CumulusSwitch(NetWeaverPlugin):
 				self.commit()
 		return command
 
-	def get_dns(self):
-		return self.appliance.cstate['protocols']['dns']
-
 	def set_dns_nameservers(self, nameserverlist, execute=True, commit=True):
 		commandqueue = []
 		try:
@@ -159,9 +156,6 @@ class CumulusSwitch(NetWeaverPlugin):
 			if commit:
 				self.commit()
 		return command
-
-	def get_hostname(self):
-		return self.command('hostname').strip('\n')
 
 	def set_hostname(self, hostname, execute=True, commit=True):
 		command = 'net add hostname {}'.format(hostname)
