@@ -24,3 +24,11 @@ class ConfigKeyError(Exception):
 
 	def __init__(self, key, value=None):
 		super().__init__('Unknown key in \'{}\': \'{}\' in config'.format(key, value))
+
+class ConfigKeyMissing(Exception):
+	"""
+	Raised when a required key is missing
+	"""
+
+	def __init__(selfs, key, section):
+		super().__init__('Required key \'{}\' is missing from config section {}'.format(key, section))
