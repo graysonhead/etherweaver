@@ -12,7 +12,10 @@ class Infrastructure:
 
 	def __init__(self, config_dict):
 		self.appliances_conf = config_dict['appliances']
-		self.roles_conf = self._extrapolate_config_dict('role', config_dict['roles'])
+		if 'roles' in config_dict:
+			self.roles_conf = self._extrapolate_config_dict('role', config_dict['roles'])
+		else:
+			self.roles_conf = None
 		if 'fabrics' in config_dict:
 			self.fabrics_conf = config_dict['fabrics']
 		else:
@@ -49,7 +52,8 @@ class Infrastructure:
 		self._build_appliances()
 		if self.fabrics_conf:
 			self._build_fabrics()
-		self._build_roles()
+		if self.roles_conf:
+			self._build_roles()
 		self._associate_dependencies()
 
 	def _build_appliances(self):
