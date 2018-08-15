@@ -53,8 +53,11 @@ class Appliance(ConfigObject):
 			if self.role:
 				dstate = dstate.merge_configs(RoleConfig(self.role.config))
 		else:
-			dstate = RoleConfig(self.role.config)
-		dstate = dstate.merge_configs(ApplianceConfig(self.config), validate=False)
+			if self.role:
+				dstate = RoleConfig(self.role.config)
+				dstate = dstate.merge_configs(ApplianceConfig(self.config), validate=False)
+			else:
+				dstate = ApplianceConfig(self.config)
 		self.dstate = dstate.get_full_config()
 
 
@@ -120,7 +123,10 @@ class Appliance(ConfigObject):
 		except KeyError:
 			raise NonExistantPlugin
 		except FileNotFoundError:
-			return '{}/../plugins/{}'.format(os.path.dirname(inspect.getfile(Appliance)), self.config['plugin_package'])
+			try:
+				return '{}/../plugins/{}'.format(os.path.dirname(inspect.getfile(Appliance)), self.config['plugin_package'])
+			except KeyError:
+				raise ConfigKeyMissing('plugin_package', 'appliance')
 
 	def __repr__(self):
 		return '<Appliance: {}>'.format(self.name)
