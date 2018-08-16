@@ -54,6 +54,17 @@ class WeaverConfig(object):
 			}
 		}
 
+	@staticmethod
+	def gen_portskel():
+		return {
+			'tagged_vlans': [],
+			'untagged_vlan': None,
+			'ip': {
+				'address': []
+			}
+
+		}
+
 	def validate(self):
 		config_skel = self.gen_config_skel()
 		# Config skel will be overriden by child classes to validate any class specific keys
@@ -116,7 +127,8 @@ class FabricConfig(WeaverConfig):
 	def _type_specific_keys(self):
 		self.type = 'Fabric'
 		return {
-			'fabric': str
+			'fabric': str,
+			'port_profile': {}
 		}
 
 	def _clean_config(self):

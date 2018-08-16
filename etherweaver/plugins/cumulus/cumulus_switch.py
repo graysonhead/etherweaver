@@ -92,7 +92,7 @@ class CumulusSwitch(NetWeaverPlugin):
 					speed = self.portmap['by_name'][portid]['speed']
 					# Bootstrap the interface if it doesn't exist
 				if portnum not in conf['interfaces'][speed]:
-					conf['interfaces'][speed].update({portnum: self._gen_portskel()})
+					conf['interfaces'][speed].update({portnum: WeaverConfig.gen_portskel()})
 				# Parse bridge options
 				if line.startswith('net add interface {} bridge vids'.format(portid)):
 					vids = line.split(' ')[6].split(',')
@@ -276,16 +276,6 @@ class CumulusSwitch(NetWeaverPlugin):
 		elif type(stringordict) is dict:
 			dic = stringordict
 		return dic
-
-	def _gen_portskel(self):
-		return {
-			'tagged_vlans': [],
-			'untagged_vlan': None,
-			'ip': {
-				'address': []
-			}
-
-		}
 
 	def set_interface_tagged_vlans(self, interface, vlans, execute=True, commit=True):
 		commands = []
