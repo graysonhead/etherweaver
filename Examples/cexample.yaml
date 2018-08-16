@@ -13,17 +13,17 @@ fabrics:
 roles:
   dist1:
     fabric: network1
-  interfaces:
-    1G:
-      4-5:
-        profile: access
-      1:
-        profile: wap_trunk
+    interfaces:
+      1G:
+        4-5:
+          profile: access
+        1:
+          profile: wap_trunk
 
 appliances:
   sw1:
-    role: dist1
     hostname: dist1
+    role: dist1
     plugin_package: cumulus
     connections:
       ssh:

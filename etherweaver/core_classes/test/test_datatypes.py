@@ -2,9 +2,9 @@ import unittest
 from etherweaver.core_classes.datatypes import ApplianceConfig, RoleConfig, FabricConfig
 import yaml
 
-role = {'hostname': 'billy2', 'fabric': 'network1', 'interfaces': {'1G': {'1-6': {'untagged_vlan': 2}}}}
+role = {'fabric': 'network1', 'interfaces': {'1G': {'1-6': {'untagged_vlan': 2}}}}
 fabric = {'vlans': {'1-10': None}}
-app = {'role': 'spine1', 'plugin_package': 'cumulus', 'connections': {'ssh': {'hostname': '10.5.5.33', 'username': 'cumulus', 'password': 'CumulusLinux!'}}, 'interfaces': {'1G': {'2-5': {'untagged_vlan': 1, 'tagged_vlans': [1, '2-5']}}}}
+app = {'hostname': 'billy2', 'role': 'spine1', 'plugin_package': 'cumulus', 'connections': {'ssh': {'hostname': '10.5.5.33', 'username': 'cumulus', 'password': 'CumulusLinux!'}}, 'interfaces': {'1G': {'2-5': {'untagged_vlan': 1, 'tagged_vlans': [1, '2-5']}}}}
 
 
 class TestDataTypeMerge(unittest.TestCase):

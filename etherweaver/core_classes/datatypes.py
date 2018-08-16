@@ -107,7 +107,7 @@ class WeaverConfig(object):
 				raise ConfigKeyError(k, value=v)
 
 	def get_full_config(self):
-		return smart_dict_merge(self.config, self.gen_config_skel())
+		return smart_dict_merge(self.gen_config_skel(), self.config)
 
 	def apply_profiles(self):
 		if 'interfaces' in self.config:
