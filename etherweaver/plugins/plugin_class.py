@@ -2,6 +2,16 @@ from paramiko import SSHClient, WarningPolicy
 from enum import IntEnum
 from etherweaver.plugins.plugin_class_errors import *
 
+"""
+This is the best place to start if you plan on building a plugin.
+
+If you are making commits to this file, please be extra careful to add descriptive comments.
+
+The NetWeaverPlugin class must be inherited by any plugin. Any class marked with "PLUGIN_OVERRIDE" 
+is a skeleton method intended to be implemented by a plugin.
+"""
+
+
 class NWConnType(IntEnum):
 	Telnet = 1
 	SSH = 2
@@ -9,14 +19,17 @@ class NWConnType(IntEnum):
 
 
 class NetWeaverPlugin:
-	protocol = None
+	# Hard coded to SSH for now
+	protocol = 2
 	hostname = None
 	commands = []
 
-	def _ssh_request(self):
-		"""Make an ssh request and parse returncode"""
-
 	def add_command(self, commands):
+		"""
+		Adds a command to the command queue
+		:param commands:
+		:return:
+		"""
 		if type(commands) == list:
 			for com in commands:
 				self.commands.append(com)
@@ -24,6 +37,37 @@ class NetWeaverPlugin:
 			return
 		else:
 			self.commands.append(commands)
+
+	def build_ssh_session(self):
+		"""
+		This builds the SSH connection
+		:return:
+		"""
+		self.conn_type = NWConnType
+		self.ssh = self._build_ssh_client(
+			hostname=self.appliance.dstate['connections']['ssh']['hostname'],
+			username=self.appliance.dstate['connections']['ssh']['username'],
+			password=self.appliance.dstate['connections']['ssh']['password'],
+			port=self.appliance.dstate['connections']['ssh']['port']
+		)
+
+	def connect(self):
+		"""
+		Examine protocol attribute and set up connection accordingly
+		:return:
+		"""
+		if self.protocol == 2:
+			self.build_ssh_session()
+			self.after_connect()
+
+	def after_connect(self):
+		"""
+		PLUGIN_OVERRIDE
+
+		Put anything here that your plugin needs to do after a self.connect is called
+		:return:
+		"""
+		pass
 
 	def _build_ssh_client(self, hostname=None, accept_untrusted=False, username=None, password=None, port=22):
 		"""Returns a paramiko ssh client object"""
@@ -34,6 +78,11 @@ class NetWeaverPlugin:
 		return ssh
 
 	def _ssh_command(self, command):
+		"""
+		Runs a command via self.ssh object
+		:param command:
+		:return:
+		"""
 		stdin, stdout, stderr = self.ssh.exec_command(command)
 		if stderr.read():
 			raise SSHCommandError("While running command {} on appliance {}, got error {} {}".format(command, self.hostname, stderr.read(), stdout.read())) #TODO For some reason this line returns empty on error when run from a child instance
@@ -49,30 +98,12 @@ class NetWeaverPlugin:
 	def _not_implemented(self):
 		raise FeatureNotImplemented
 
-	def define_port_layout(self):
-		self._not_supported('port_layout')
-
 	def pre_push(self):
 		self._not_implemented()
 	"""Override these functions to enable each feature"""
 
-	def get_hostname(self):
-		self._not_supported('get_hostname')
-
 	def set_hostname(self, hostname, execute=True):
 		self._not_supported('set_hostname')
-
-	def get_current_config(self):
-		self._not_supported('get_current_config')
-
-	def get_interface(self, speed, interface):
-		self._not_supported('get_interface')
-
-	def get_dns(self):
-		self._not_supported('get_dns')
-
-	def get_dns_nameservers(self):
-		self._not_supported('get_dns_nameservers')
 
 	def set_dns_nameservers(self, nameserverlist, execute=True):
 		self._not_supported('set_dns_nameservers')

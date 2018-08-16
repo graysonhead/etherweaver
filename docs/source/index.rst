@@ -13,6 +13,7 @@ Etherweaver, Config Management for Network Engineers
    license
    install
    getting_started
+   configuration
    poc
 
 
