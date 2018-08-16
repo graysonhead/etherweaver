@@ -6,6 +6,7 @@ role = {'hostname': 'billy2', 'fabric': 'network1', 'interfaces': {'1G': {'1-6':
 fabric = {'vlans': {'1-10': None}}
 app = {'role': 'spine1', 'plugin_package': 'cumulus', 'connections': {'ssh': {'hostname': '10.5.5.33', 'username': 'cumulus', 'password': 'CumulusLinux!'}}, 'interfaces': {'1G': {'2-5': {'untagged_vlan': 1, 'tagged_vlans': [1, '2-5']}}}}
 
+
 class TestDataTypeMerge(unittest.TestCase):
 	def test_dataclass_merge(self):
 		test_dict = {
@@ -24,3 +25,12 @@ class TestDataTypeMerge(unittest.TestCase):
 		inter = self.fabric.merge_configs(self.role)
 		end = inter.merge_configs(self.app, validate=False)
 		self.assertEqual(end.config, test_dict)
+
+class TestInterfaceProfile(unittest.TestCase):
+	def test_interface_profile(self):
+		appliance = {'port_profiles': {'toplel': {'untagged_vlan': 1}},
+						'interfaces': {'1G': {1: {'profile': 'toplel'}}}}
+		end = {'port_profiles': {'toplel': {'untagged_vlan': 1}}, 'interfaces': {'1G': {1: {'untagged_vlan': 1}}}}
+		self.app = ApplianceConfig(appliance)
+		self.app.apply_profiles()
+		self.assertEqual(self.app.config, end)

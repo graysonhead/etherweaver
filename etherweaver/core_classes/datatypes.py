@@ -1,5 +1,5 @@
 from etherweaver.core_classes.utils import extrapolate_dict, extrapolate_list, smart_dict_merge
-from etherweaver.core_classes.errors import ConfigKeyError
+from etherweaver.core_classes.errors import ConfigKeyError, ReferenceNotFound
 
 
 class WeaverConfig(object):
@@ -9,19 +9,26 @@ class WeaverConfig(object):
 		self.type = None
 		self.type_specific_keys = {}
 		self.config = config_dict
+		if 'port_profiles' in self.config:
+			for kp, vp in self.config['port_profiles'].items():
+				vp = self._interface_extrapolate(vp)
 		if 'vlans' in self.config:
 			self.config['vlans'] = extrapolate_dict(self.config['vlans'], int_key=True)
 		if 'interfaces' in self.config:
 			new_int = {}
 			for kspd, vspd in self.config['interfaces'].items():
 				for kint, vint in self.config['interfaces'][kspd].items():
-					if 'tagged_vlans' in vint:
-						vint['tagged_vlans'] = extrapolate_list(vint['tagged_vlans'], int_out=True)
+					vint = self._interface_extrapolate(vint)
 				new_int.update({kspd: extrapolate_dict(vspd, int_key=True)})
 			self.config['interfaces'] = new_int
 		if validate:
 			self.validate()
 		self._clean_config()
+
+	def _interface_extrapolate(self, inter):
+		if 'tagged_vlans' in inter:
+			inter['tagged_vlans'] = extrapolate_list(inter['tagged_vlans'], int_out=True)
+		return inter
 
 	def _clean_config(self):
 		pass
@@ -34,6 +41,7 @@ class WeaverConfig(object):
 		return {
 			'hostname': None,
 			'vlans': {},
+			'port_profiles': {},
 			'protocols': {
 				'dns': {
 					'nameservers': []
@@ -86,7 +94,8 @@ class WeaverConfig(object):
 			# Ensure key is present in the skeleton config, otherwise it is invalid
 			skip_set = [
 				'vlans',
-				'interfaces'
+				'interfaces',
+				'port_profiles'
 			]
 			invalid_keys = {}
 			if k in skip_set:
@@ -99,6 +108,16 @@ class WeaverConfig(object):
 
 	def get_full_config(self):
 		return smart_dict_merge(self.config, self.gen_config_skel())
+
+	def apply_profiles(self):
+		if 'interfaces' in self.config:
+			for kspd, vspd in self.config['interfaces'].items():
+				for kint, vint in self.config['interfaces'][kspd].items():
+					if 'profile' in vint:
+						try:
+							self.config['interfaces'][kspd][kint] = self.config['port_profiles'][vint['profile']]
+						except KeyError:
+							raise ReferenceNotFound(vint['profile'])
 
 
 class ApplianceConfig(WeaverConfig):
@@ -117,6 +136,7 @@ class ApplianceConfig(WeaverConfig):
 			}
 		}
 	}
+
 	def _clean_config(self):
 		if 'role' in self.config:
 			del(self.config['role'])
@@ -127,8 +147,7 @@ class FabricConfig(WeaverConfig):
 	def _type_specific_keys(self):
 		self.type = 'Fabric'
 		return {
-			'fabric': str,
-			'port_profile': {}
+			'fabric': str
 		}
 
 	def _clean_config(self):

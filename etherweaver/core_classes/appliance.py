@@ -57,8 +57,10 @@ class Appliance(ConfigObject):
 				dstate = RoleConfig(self.role.config).config
 		if dstate:
 			dstate = dstate.merge_configs(ApplianceConfig(self.config), validate=False)
+
 		else:
 			dstate = ApplianceConfig(self.config)
+		dstate.apply_profiles()
 		self.dstate = dstate.get_full_config()
 
 
