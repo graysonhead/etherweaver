@@ -50,14 +50,15 @@ class Appliance(ConfigObject):
 			dstate = FabricConfig(self.fabric_tree[-1].config)
 			for fab in self.fabric_tree[:-1]:
 				dstate = dstate.merge_configs(FabricConfig(fab.config))
-			if self.role:
+		if self.role:
+			if dstate:
 				dstate = dstate.merge_configs(RoleConfig(self.role.config))
-		else:
-			if self.role:
-				dstate = RoleConfig(self.role.config)
-				dstate = dstate.merge_configs(ApplianceConfig(self.config), validate=False)
 			else:
-				dstate = ApplianceConfig(self.config)
+				dstate = RoleConfig(self.role.config).config
+		if dstate:
+			dstate = dstate.merge_configs(ApplianceConfig(self.config), validate=False)
+		else:
+			dstate = ApplianceConfig(self.config)
 		self.dstate = dstate.get_full_config()
 
 
