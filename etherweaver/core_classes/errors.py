@@ -24,3 +24,19 @@ class ConfigKeyError(Exception):
 
 	def __init__(self, key, value=None):
 		super().__init__('Unknown key in \'{}\': \'{}\' in config'.format(key, value))
+
+class ReferenceNotFound(Exception):
+	"""
+	Raised when a reference is not found elsewhere in the yaml
+	"""
+
+	def __init__(self, ref):
+		super().__init__('Reference \'{}\' not found in config'.format(ref))
+
+class ConfigKeyMissing(Exception):
+	"""
+	Raised when a required key is missing
+	"""
+
+	def __init__(selfs, key, section):
+		super().__init__('Required key \'{}\' is missing from config section {}'.format(key, section))

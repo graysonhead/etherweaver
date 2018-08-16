@@ -1,56 +1,22 @@
 from etherweaver.plugins.plugin_class import NetWeaverPlugin, NWConnType
-from etherweaver.core_classes.errors import *
-from functools import wraps
-import logging
 from ipaddress import ip_address, IPv4Address, IPv6Address
 import pytz
 import json
 from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict, compare_dict_keys
+from etherweaver.core_classes.datatypes import WeaverConfig
 
 
 class CumulusSwitch(NetWeaverPlugin):
 
 	def __init__(self, cstate):
 		self.is_plugin = True
-		self.hostname = ''
-		self.port = 22
 		self.portmap = None
 		self.cstate = cstate
 		self.commands = []
 
-
-		"""
-		State cases referenced in below modules:
-		cstate = Current State (stored in plugin)
-		dstate = Desired state (stored in appliance)
-		
-		Case0: exists in cstate but not dstate (ignore)
-		Case1: exists in dstate but not cstate (create dstate)
-		Case2: exists in both, but values do not match (apply dstate)
-		Case3 exists in both, and both match (do nothing)
-		"""
-	def connect(self):
-		self.build_ssh_session()
+	def after_connect(self):
 		self.portmap = self.pull_port_state()
 		self.cstate = self.pull_state()
-
-	def build_ssh_session(self):
-		self.conn_type = NWConnType
-		self.ssh = self._build_ssh_client(
-			hostname=self.appliance.dstate['connections']['ssh']['hostname'],
-			username=self.appliance.dstate['connections']['ssh']['username'],
-			password=self.appliance.dstate['connections']['ssh']['password'],
-			port=self.port
-		)
-
-	def get_current_config(self):
-		"""
-		Get_current_config should return a Dict containing the current state of an object.
-		This structure should match the structure of a standard 'role' object.
-		"""
-		config = {}
-		config.update({'hostname': self.get_hostname()})
-		return config
 
 	def command(self, command):
 		"""
@@ -58,7 +24,7 @@ class CumulusSwitch(NetWeaverPlugin):
 		:param command:
 		:return:
 		"""
-		if self.ssh:
+		if self.protocol == 2:
 			return self._ssh_command(command)
 
 	def commit(self):
@@ -66,37 +32,11 @@ class CumulusSwitch(NetWeaverPlugin):
 		self.cstate = self.pull_state()
 		return ret
 
-	def net_config_parser(self):
-		pass
-
-	def get_dns_nameservers(self):
-		return self.appliance.cstate['protocols']['dns']['nameservers']
-
 	def pull_state(self):
 		pre_parse_commands = self.command('net show configuration commands').split('\n')
 		# This dict is constructed following the yaml structure for a role starting at the hostname level
 		# Watch the pluralization in here, a lot of the things are unplural in cumulus that are plural in weaver
-		conf = {
-			'hostname': None,
-			'vlans': {},
-			'protocols': {
-				'dns': {
-					'nameservers': []
-				},
-				'ntp': {
-					'client': {
-						'servers': []
-					}
-				}
-			},
-			'interfaces': {
-				'1G': {},
-				'10G': {},
-				'40G': {},
-				'100G': {},
-				'mgmt': {}
-			}
-		}
+		conf = WeaverConfig.gen_config_skel()
 		# We have to do some pre-parsing here to expand interface ranges and such
 		commands = []
 		for line in pre_parse_commands:
@@ -116,8 +56,6 @@ class CumulusSwitch(NetWeaverPlugin):
 					commands.append(' '.join(newline))
 			else:
 				commands.append(line)
-
-
 		for line in commands:
 			# Nameservers
 			if line.startswith('net add dns nameserver'):
@@ -154,7 +92,7 @@ class CumulusSwitch(NetWeaverPlugin):
 					speed = self.portmap['by_name'][portid]['speed']
 					# Bootstrap the interface if it doesn't exist
 				if portnum not in conf['interfaces'][speed]:
-					conf['interfaces'][speed].update({portnum: self._gen_portskel()})
+					conf['interfaces'][speed].update({portnum: WeaverConfig.gen_portskel()})
 				# Parse bridge options
 				if line.startswith('net add interface {} bridge vids'.format(portid)):
 					vids = line.split(' ')[6].split(',')
@@ -185,9 +123,6 @@ class CumulusSwitch(NetWeaverPlugin):
 			if commit:
 				self.commit()
 		return command
-
-	def get_dns(self):
-		return self.appliance.cstate['protocols']['dns']
 
 	def set_dns_nameservers(self, nameserverlist, execute=True, commit=True):
 		commandqueue = []
@@ -221,9 +156,6 @@ class CumulusSwitch(NetWeaverPlugin):
 			if commit:
 				self.commit()
 		return command
-
-	def get_hostname(self):
-		return self.command('hostname').strip('\n')
 
 	def set_hostname(self, hostname, execute=True, commit=True):
 		command = 'net add hostname {}'.format(hostname)
@@ -338,23 +270,12 @@ class CumulusSwitch(NetWeaverPlugin):
 				commandqueue.append(self.rm_vlan(k, execute=False))
 		return commandqueue
 
-
 	def _dict_input_handler(self, stringordict):
 		if type(stringordict) is str:
 			dic = json.loads(stringordict)
 		elif type(stringordict) is dict:
 			dic = stringordict
 		return dic
-
-	def _gen_portskel(self):
-		return {
-			'tagged_vlans': [],
-			'untagged_vlan': None,
-			'ip': {
-				'address': []
-			}
-
-		}
 
 	def set_interface_tagged_vlans(self, interface, vlans, execute=True, commit=True):
 		commands = []
