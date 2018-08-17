@@ -223,10 +223,16 @@ class CumulusSwitch(NetWeaverPlugin):
 		for k, v in prtjson.items():
 			if v['mode'] == 'Mgmt':
 				portname = k
-				portnum = k.strip('eth')
+				try:
+					portnum = int(k.strip('eth'))
+				except ValueError:
+					portnum = k.strip('eth')
 			else:
 				portname = k
-				portnum = k.strip('swp')
+				try:
+					portnum = int(k.strip('swp'))
+				except ValueError:
+					portnum = k.strip('swp')
 			if v['speed'] == 'N/A':
 				ports_by_name.update({portname: {'portid': portnum, 'speed': '1G', 'mode': v['mode']}})
 			else:
@@ -289,6 +295,20 @@ class CumulusSwitch(NetWeaverPlugin):
 			if commit:
 				self.commit()
 		return commands
+
+	def set_interface_tagged_vlans(self, speed, interface, vlans, execute=True, commit=True):
+		commands = []
+		vlans_to_add = []
+		vlans_to_remove = []
+		# Add vlans not in cstate from dstate
+		for v in vlans:
+			if v not in self.appliance.cstate['interfaces'][speed][interface]['tagged_vlans']:
+				vlans_to_add.append(v)
+		# Remove vlans not in dstate from cstate
+		for v in self.appliance.cstate['interfaces'][speed][interface]['tagged_vlans']:
+			if v not in vlans:
+				vlans_to_remove.append(v)
+
 
 	def _name_port_mapper(self, port):
 		return self.portmap['by_name'][str(port)]['portid']

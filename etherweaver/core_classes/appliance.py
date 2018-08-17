@@ -44,6 +44,7 @@ class Appliance(ConfigObject):
 		self.plugin.appliance = self
 
 	def build_dstate(self):
+		dstate = None
 		if self.fabric:
 			self.fabric_tree.append(self.fabric)
 			self.return_fabrics(self.fabric)
@@ -259,7 +260,7 @@ class Appliance(ConfigObject):
 		try:
 			cstate = set(cstate['interfaces'][speed][str(interface)]['tagged_vlans'])
 		except KeyError:
-			self.plugin.add_command(self.plugin.set_interface_tagged_vlans(interface, dstate, execute=False))
+			self.plugin.add_command(self.plugin.set_interface_tagged_vlans(speed, interface, dstate, execute=False))
 		# Case0
 		try:
 			dstate
@@ -270,7 +271,7 @@ class Appliance(ConfigObject):
 			return
 		# Case 2
 		elif dstate != cstate:
-			self.plugin.add_command(self.plugin.set_interface_tagged_vlans(interface, dstate, execute=False))
+			self.plugin.add_command(self.plugin.set_interface_tagged_vlans(speed, interface, dstate, execute=False))
 
 	def _protocol_ntpclient_timezone_push(self, dstate, cstate):
 		cstate = cstate['protocols']['ntp']['client']['timezone']
