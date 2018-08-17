@@ -255,9 +255,9 @@ class Appliance(ConfigObject):
 
 	def _interface_tagged_vlans_push(self, cstate, dstate, speed, interface):
 		# Case 3
-		dstate = extrapolate_list(dstate['interfaces'][speed][interface]['tagged_vlans'], int_out=False)
+		dstate = set(dstate['interfaces'][speed][interface]['tagged_vlans'])
 		try:
-			cstate = extrapolate_list(cstate['interfaces'][speed][str(interface)]['tagged_vlans'], int_out=False)
+			cstate = set(cstate['interfaces'][speed][str(interface)]['tagged_vlans'])
 		except KeyError:
 			self.plugin.add_command(self.plugin.set_interface_tagged_vlans(interface, dstate, execute=False))
 		# Case0

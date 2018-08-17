@@ -8,7 +8,7 @@ fabrics:
         untagged_vlan: 1
       wap_trunk:
         untagged_vlan: 2
-        tagged_vlans: [4-6, 10]
+        tagged_vlans: [4-6, 11, 10]
 
 roles:
   dist1:
