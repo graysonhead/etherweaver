@@ -279,7 +279,7 @@ class CumulusSwitch(NetWeaverPlugin):
 
 	def set_interface_tagged_vlans(self, interface, vlans, execute=True, commit=True):
 		commands = []
-		vids_to_add = ','.join(vlans)
+		vids_to_add = ','.join(str(x) for x in vlans)
 		interface = self._number_port_mapper(interface)
 		commands.append('net del interface {} bridge vids'.format(interface))
 		commands.append('net add interface {} bridge vids {}'.format(interface, vids_to_add))
