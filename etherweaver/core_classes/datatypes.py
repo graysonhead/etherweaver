@@ -28,6 +28,9 @@ class WeaverConfig(object):
 	def _interface_extrapolate(self, inter):
 		if 'tagged_vlans' in inter:
 			inter['tagged_vlans'] = extrapolate_list(inter['tagged_vlans'], int_out=True)
+		if 'untagged_vlan' in inter:
+			if inter['untagged_vlan']:
+				inter['untagged_vlan'] = int(inter['untagged_vlan'])
 		return inter
 
 	def _clean_config(self):

@@ -235,10 +235,10 @@ class Appliance(ConfigObject):
 					self._interface_untagged_vlan_push(cstate, dstate, kspd, kint)
 
 	def _interface_untagged_vlan_push(self, cstate, dstate, speed, interface):
-		dstate = str(dstate['interfaces'][speed][interface]['untagged_vlan'])
+		dstate = dstate['interfaces'][speed][interface]['untagged_vlan']
 		# Case 3
 		try:
-			cstate = str(cstate['interfaces'][speed][str(interface)]['untagged_vlan'])
+			cstate = cstate['interfaces'][speed][interface]['untagged_vlan']
 		except KeyError:
 			self.plugin.add_command(self.plugin.set_interface_untagged_vlan(interface, dstate, execute=False))
 		# Case0
@@ -258,7 +258,7 @@ class Appliance(ConfigObject):
 		# Case 3
 		dstate = set(dstate['interfaces'][speed][interface]['tagged_vlans'])
 		try:
-			cstate = set(cstate['interfaces'][speed][str(interface)]['tagged_vlans'])
+			cstate = set(cstate['interfaces'][speed][interface]['tagged_vlans'])
 		except KeyError:
 			self.plugin.add_command(self.plugin.set_interface_tagged_vlans(speed, interface, dstate, execute=False))
 		# Case0
