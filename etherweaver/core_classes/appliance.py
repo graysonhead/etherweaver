@@ -4,7 +4,7 @@ from etherweaver.server_config_loader import get_server_config
 from importlib.machinery import SourceFileLoader
 from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict, smart_dict_merge
 from etherweaver.plugins.plugin_class_errors import *
-from etherweaver.core_classes.datatypes import ApplianceConfig, FabricConfig, RoleConfig
+from etherweaver.core_classes.datatypes import ApplianceConfig, FabricConfig, RoleConfig, WeaverConfig
 import os
 import inspect
 from .errors import *
@@ -188,26 +188,27 @@ class Appliance(ConfigObject):
 		# self.plugin.reload_state()
 		return self.plugin.commands
 
-	def _compare_state(self, dstate, cstate, func):
+	def _compare_state(self, dstate, cstate, func, interface=None, int_speed=None):
 		# Case0
 		try:
 			dstate
 		except KeyError:
 			return
-		if dstate is False or dstate is None or bool(dstate) is False:
+		#if dstate is False or dstate is None or bool(dstate) is False:
+		if dstate == [] or dstate == '' or dstate == {} or dstate is None:
 			return
 		# Case1
 		if dstate == cstate:
 			return
 		# Case2 and 3 create
 		elif dstate != cstate:
-			return func(dstate, execute=False)
+			if not int or not int_speed:
+				return func(dstate, execute=False)
+			elif int and int_speed:
+				return func(int_speed, interface, dstate, execute=False)
 
 	def _protocol_ntpclient_servers(self, dstate, cstate):
-		try:
-			dstate = dstate['protocols']['ntp']['client']['servers']
-		except KeyError:
-			dstate = None
+		dstate = dstate['protocols']['ntp']['client']['servers']
 		cstate = cstate['protocols']['ntp']['client']['servers']
 		return self._compare_state(dstate, cstate, self.plugin.set_ntp_client_servers)
 
@@ -233,6 +234,17 @@ class Appliance(ConfigObject):
 					self._interface_tagged_vlans_push(cstate, dstate, kspd, kint)
 				if 'untagged_vlan' in vint:
 					self._interface_untagged_vlan_push(cstate, dstate, kspd, kint)
+				if 'stp' in vint:
+					self._stp_options_push(cstate, dstate, kspd, kint)
+
+	def _stp_options_push(self, cstate, dstate, kspd, kint):
+		for v in WeaverConfig.gen_portskel()['stp']:
+			ds = dstate['interfaces'][kspd][kint]['stp'][v]
+			cs = cstate['interfaces'][kspd][kint]['stp'][v]
+			if v == 'port_fast':
+				self.plugin.add_command(self._compare_state(ds, cs, self.plugin.set_portfast, interface=kint, int_speed=kspd))
+
+
 
 	def _interface_untagged_vlan_push(self, cstate, dstate, speed, interface):
 		dstate = dstate['interfaces'][speed][interface]['untagged_vlan']

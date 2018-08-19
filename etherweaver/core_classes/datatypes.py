@@ -72,6 +72,9 @@ class WeaverConfig(object):
 			'untagged_vlan': None,
 			'ip': {
 				'address': []
+			},
+			'stp': {
+				'port_fast': False
 			}
 
 		}

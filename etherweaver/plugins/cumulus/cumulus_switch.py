@@ -98,6 +98,10 @@ class CumulusSwitch(NetWeaverPlugin):
 					conf['interfaces'][speed][portnum]['tagged_vlans'] = extrapolate_list(vids, int_out=True)
 				if line.startswith('net add interface {} bridge pvid'.format(portid)):
 					conf['interfaces'][speed][portnum]['untagged_vlan'] = line.split(' ')[6]
+				# Parse STP options
+				if line.startswith('net add interface {} stp portadminedge'.format(portid)):
+					conf['interfaces'][speed][portnum]['stp']['port_fast'] = True
+
 		wc = WeaverConfig(conf)
 		return wc.get_full_config()
 
@@ -320,6 +324,16 @@ class CumulusSwitch(NetWeaverPlugin):
 				self.commit()
 		return commands
 
+	def set_portfast(self, speed, interface, enable_bool, execute=True, commit=True):
+		if enable_bool:
+			command = 'net add interface {} stp portadminedge'.format(self._number_port_mapper(interface))
+		else:
+			command = 'net del interface {} stp portadminedge'.format(self._number_port_mapper(interface))
+		if execute:
+			self.command(command)
+			if commit:
+				self.commit()
+		return command
 
 	def _name_port_mapper(self, port):
 		return self.portmap['by_name'][str(port)]['portid']
