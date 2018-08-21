@@ -306,13 +306,16 @@ class CumulusSwitch(NetWeaverPlugin):
 		vlans_to_add = []
 		vlans_to_remove = []
 		# Add vlans not in cstate from dstate
-		for v in vlans:
-			if v not in self.appliance.cstate['interfaces'][speed][interface]['tagged_vlans']:
-				vlans_to_add.append(v)
-		# Remove vlans not in dstate from cstate
-		for v in self.appliance.cstate['interfaces'][speed][interface]['tagged_vlans']:
-			if v not in vlans:
-				vlans_to_remove.append(v)
+		if interface in self.appliance.cstate['interfaces'][speed]:
+			for v in vlans:
+				if v not in self.appliance.cstate['interfaces'][speed][interface]['tagged_vlans']:
+					vlans_to_add.append(v)
+			# Remove vlans not in dstate from cstate
+			for v in self.appliance.cstate['interfaces'][speed][interface]['tagged_vlans']:
+				if v not in vlans:
+					vlans_to_remove.append(v)
+		else:
+			vlans_to_add = vlans
 		for v in vlans_to_remove:
 			commands.append('net del interface {} bridge vids {}'.format(cumulus_interface, v))
 		for v in vlans_to_add:
