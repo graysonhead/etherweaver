@@ -84,6 +84,6 @@ class TestPlugin(unittest.TestCase):
 		dstate = {'vlans': {1: None, 2: None}}
 		cstate = {'vlans': {}}
 		self.plugin.appliance.cstate = cstate
-		self.assertEqual(self.plugin.appliance._vlans_push(dstate, cstate), ['net add bridge bridge vids 1', 'net add bridge bridge vids 2'])
+		self.assertEqual(self.plugin.appliance._vlans_push(dstate, cstate), ['net add bridge bridge vids 1-2'])
 if __name__ == '__main__':
 	unittest.main()
