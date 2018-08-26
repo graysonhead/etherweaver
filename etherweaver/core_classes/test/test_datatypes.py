@@ -10,6 +10,8 @@ app = {'hostname': 'billy2', 'role': 'spine1', 'plugin_package': 'cumulus', 'con
 class TestDataTypeMerge(unittest.TestCase):
 	def test_dataclass_merge(self):
 		test_dict = {
+			'fabric': 'network1',
+			'role': 'spine1',
 			'vlans': {1: None, 2: None, 3: None, 4: None, 5: None, 6: None, 7: None, 8: None, 9: None, 10: None},
 			'hostname': 'billy2', 'interfaces': {
 				'1G': {1: {'untagged_vlan': 2}, 2: {'untagged_vlan': 1, 'tagged_vlans': [1, 2, 3, 4, 5]},

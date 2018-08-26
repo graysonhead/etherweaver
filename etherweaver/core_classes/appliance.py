@@ -4,7 +4,7 @@ from etherweaver.server_config_loader import get_server_config
 from importlib.machinery import SourceFileLoader
 from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict, smart_dict_merge
 from etherweaver.plugins.plugin_class_errors import *
-from etherweaver.core_classes.datatypes import ApplianceConfig, FabricConfig, RoleConfig
+from etherweaver.core_classes.datatypes import ApplianceConfig, FabricConfig, RoleConfig, WeaverConfig
 import os
 import inspect
 from .errors import *
@@ -44,12 +44,13 @@ class Appliance(ConfigObject):
 		self.plugin.appliance = self
 
 	def build_dstate(self):
+		dstate = None
 		if self.fabric:
 			self.fabric_tree.append(self.fabric)
 			self.return_fabrics(self.fabric)
-			dstate = FabricConfig(self.fabric_tree[-1].config)
+			dstate = FabricConfig(self.fabric_tree[-1].config, validate=False)
 			for fab in self.fabric_tree[:-1]:
-				dstate = dstate.merge_configs(FabricConfig(fab.config))
+				dstate = dstate.merge_configs(FabricConfig(fab.config, validate=False))
 		if self.role:
 			if dstate:
 				dstate = dstate.merge_configs(RoleConfig(self.role.config))
@@ -62,6 +63,7 @@ class Appliance(ConfigObject):
 			dstate = ApplianceConfig(self.config)
 		dstate.apply_profiles()
 		self.dstate = dstate.get_full_config()
+
 
 
 	def return_fabrics(self, fabric):
@@ -187,26 +189,27 @@ class Appliance(ConfigObject):
 		# self.plugin.reload_state()
 		return self.plugin.commands
 
-	def _compare_state(self, dstate, cstate, func):
+	def _compare_state(self, dstate, cstate, func, interface=None, int_speed=None):
 		# Case0
 		try:
 			dstate
 		except KeyError:
 			return
-		if dstate is False or dstate is None or bool(dstate) is False:
+		#if dstate is False or dstate is None or bool(dstate) is False:
+		if dstate == [] or dstate == '' or dstate == {} or dstate is None:
 			return
 		# Case1
 		if dstate == cstate:
 			return
 		# Case2 and 3 create
 		elif dstate != cstate:
-			return func(dstate, execute=False)
+			if not int or not int_speed:
+				return func(dstate, execute=False)
+			elif int and int_speed:
+				return func(int_speed, interface, dstate, execute=False)
 
 	def _protocol_ntpclient_servers(self, dstate, cstate):
-		try:
-			dstate = dstate['protocols']['ntp']['client']['servers']
-		except KeyError:
-			dstate = None
+		dstate = dstate['protocols']['ntp']['client']['servers']
 		cstate = cstate['protocols']['ntp']['client']['servers']
 		return self._compare_state(dstate, cstate, self.plugin.set_ntp_client_servers)
 
@@ -232,12 +235,23 @@ class Appliance(ConfigObject):
 					self._interface_tagged_vlans_push(cstate, dstate, kspd, kint)
 				if 'untagged_vlan' in vint:
 					self._interface_untagged_vlan_push(cstate, dstate, kspd, kint)
+				if 'stp' in vint:
+					self._stp_options_push(cstate, dstate, kspd, kint)
+
+	def _stp_options_push(self, cstate, dstate, kspd, kint):
+		for v in WeaverConfig.gen_portskel()['stp']:
+			ds = dstate['interfaces'][kspd][kint]['stp'][v]
+			cs = cstate['interfaces'][kspd][kint]['stp'][v]
+			if v == 'port_fast':
+				self.plugin.add_command(self._compare_state(ds, cs, self.plugin.set_portfast, interface=kint, int_speed=kspd))
+
+
 
 	def _interface_untagged_vlan_push(self, cstate, dstate, speed, interface):
-		dstate = str(dstate['interfaces'][speed][interface]['untagged_vlan'])
+		dstate = dstate['interfaces'][speed][interface]['untagged_vlan']
 		# Case 3
 		try:
-			cstate = str(cstate['interfaces'][speed][str(interface)]['untagged_vlan'])
+			cstate = cstate['interfaces'][speed][interface]['untagged_vlan']
 		except KeyError:
 			self.plugin.add_command(self.plugin.set_interface_untagged_vlan(interface, dstate, execute=False))
 		# Case0
@@ -255,11 +269,11 @@ class Appliance(ConfigObject):
 
 	def _interface_tagged_vlans_push(self, cstate, dstate, speed, interface):
 		# Case 3
-		dstate = extrapolate_list(dstate['interfaces'][speed][interface]['tagged_vlans'], int_out=False)
+		dstate = set(dstate['interfaces'][speed][interface]['tagged_vlans'])
 		try:
-			cstate = extrapolate_list(cstate['interfaces'][speed][str(interface)]['tagged_vlans'], int_out=False)
+			cstate = set(cstate['interfaces'][speed][interface]['tagged_vlans'])
 		except KeyError:
-			self.plugin.add_command(self.plugin.set_interface_tagged_vlans(interface, dstate, execute=False))
+			self.plugin.add_command(self.plugin.set_interface_tagged_vlans(speed, interface, dstate, execute=False))
 		# Case0
 		try:
 			dstate
@@ -270,7 +284,7 @@ class Appliance(ConfigObject):
 			return
 		# Case 2
 		elif dstate != cstate:
-			self.plugin.add_command(self.plugin.set_interface_tagged_vlans(interface, dstate, execute=False))
+			self.plugin.add_command(self.plugin.set_interface_tagged_vlans(speed, interface, dstate, execute=False))
 
 	def _protocol_ntpclient_timezone_push(self, dstate, cstate):
 		cstate = cstate['protocols']['ntp']['client']['timezone']
