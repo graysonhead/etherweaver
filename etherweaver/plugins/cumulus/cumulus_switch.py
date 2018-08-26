@@ -338,10 +338,6 @@ class CumulusSwitch(NetWeaverPlugin):
 				','.join(str(x) for x in compact_list(vlans_to_add))
 				)
 			)
-		# for v in vlans_to_remove:
-		# 	commands.append('net del interface {} bridge vids {}'.format(cumulus_interface, v))
-		# for v in vlans_to_add:
-		# 	commands.append('net add interface {} bridge vids {}'.format(cumulus_interface, v))
 		if execute:
 			for com in commands:
 				self.command(com)
