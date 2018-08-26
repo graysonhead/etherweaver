@@ -2,7 +2,7 @@ from etherweaver.plugins.plugin_class import NetWeaverPlugin, NWConnType
 from ipaddress import ip_address, IPv4Address, IPv6Address
 import pytz
 import json
-from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict, compare_dict_keys
+from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict, compare_dict_keys, compact_list
 from etherweaver.core_classes.datatypes import WeaverConfig
 
 class CumulusSwitch(NetWeaverPlugin):
@@ -270,14 +270,24 @@ class CumulusSwitch(NetWeaverPlugin):
 		return command
 
 	def set_vlans(self, vlandictlist, execute=True, commit=True):
-		cvl = self.appliance.cstate['vlans']
 		commandqueue = []
+		vlans_to_add = []
+		vlans_to_remove = []
 		for k, v in vlandictlist.items():
-			if k not in cvl:
-				commandqueue.append(self.add_vlan(k, execute=False))
-		for k, v in cvl.items():
+			# Comparing vlan keys and values to existing ones in cstate
+			if k not in self.appliance.cstate['vlans']:
+				vlans_to_add.append(k)
+		for k, v in self.appliance.cstate['vlans'].items():
 			if k not in vlandictlist:
-				commandqueue.append(self.rm_vlan(k, execute=False))
+				vlans_to_remove.append(k)
+		if vlans_to_add:
+			commandqueue.append('net add bridge bridge vids {}'.format(
+				','.join(str(x) for x in compact_list(vlans_to_add))
+			))
+		if vlans_to_remove:
+			commandqueue.append('net add bridge bridge vids {}'.format(
+				','.join(str(x) for x in compact_list(vlans_to_remove))
+			))
 		return commandqueue
 
 	def _dict_input_handler(self, stringordict):
@@ -316,10 +326,22 @@ class CumulusSwitch(NetWeaverPlugin):
 					vlans_to_remove.append(v)
 		else:
 			vlans_to_add = vlans
-		for v in vlans_to_remove:
-			commands.append('net del interface {} bridge vids {}'.format(cumulus_interface, v))
-		for v in vlans_to_add:
-			commands.append('net add interface {} bridge vids {}'.format(cumulus_interface, v))
+		if vlans_to_remove:
+			commands.append('net del interface {} bridge vids {}'.format(
+				cumulus_interface,
+				','.join(str(x) for x in compact_list(vlans_to_remove))
+				)
+			)
+		if vlans_to_add:
+			commands.append('net add interface {} bridge vids {}'.format(
+				cumulus_interface,
+				','.join(str(x) for x in compact_list(vlans_to_add))
+				)
+			)
+		# for v in vlans_to_remove:
+		# 	commands.append('net del interface {} bridge vids {}'.format(cumulus_interface, v))
+		# for v in vlans_to_add:
+		# 	commands.append('net add interface {} bridge vids {}'.format(cumulus_interface, v))
 		if execute:
 			for com in commands:
 				self.command(com)
