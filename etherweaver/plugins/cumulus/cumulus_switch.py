@@ -5,7 +5,6 @@ import json
 from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict, compare_dict_keys
 from etherweaver.core_classes.datatypes import WeaverConfig
 
-
 class CumulusSwitch(NetWeaverPlugin):
 
 	def __init__(self, cstate):
@@ -99,7 +98,12 @@ class CumulusSwitch(NetWeaverPlugin):
 					conf['interfaces'][speed][portnum]['tagged_vlans'] = extrapolate_list(vids, int_out=True)
 				if line.startswith('net add interface {} bridge pvid'.format(portid)):
 					conf['interfaces'][speed][portnum]['untagged_vlan'] = line.split(' ')[6]
-		return conf
+				# Parse STP options
+				if line.startswith('net add interface {} stp portadminedge'.format(portid)):
+					conf['interfaces'][speed][portnum]['stp']['port_fast'] = True
+
+		wc = WeaverConfig(conf)
+		return wc.get_full_config()
 
 	def _check_atrib(self, atrib):
 		try:
@@ -223,10 +227,16 @@ class CumulusSwitch(NetWeaverPlugin):
 		for k, v in prtjson.items():
 			if v['mode'] == 'Mgmt':
 				portname = k
-				portnum = k.strip('eth')
+				try:
+					portnum = int(k.strip('eth'))
+				except ValueError:
+					portnum = k.strip('eth')
 			else:
 				portname = k
-				portnum = k.strip('swp')
+				try:
+					portnum = int(k.strip('swp'))
+				except ValueError:
+					portnum = k.strip('swp')
 			if v['speed'] == 'N/A':
 				ports_by_name.update({portname: {'portid': portnum, 'speed': '1G', 'mode': v['mode']}})
 			else:
@@ -290,11 +300,49 @@ class CumulusSwitch(NetWeaverPlugin):
 				self.commit()
 		return commands
 
+	def set_interface_tagged_vlans(self, speed, interface, vlans, execute=True, commit=True):
+		cumulus_interface = self._number_port_mapper(interface)
+		commands = []
+		vlans_to_add = []
+		vlans_to_remove = []
+		# Add vlans not in cstate from dstate
+		if interface in self.appliance.cstate['interfaces'][speed]:
+			for v in vlans:
+				if v not in self.appliance.cstate['interfaces'][speed][interface]['tagged_vlans']:
+					vlans_to_add.append(v)
+			# Remove vlans not in dstate from cstate
+			for v in self.appliance.cstate['interfaces'][speed][interface]['tagged_vlans']:
+				if v not in vlans:
+					vlans_to_remove.append(v)
+		else:
+			vlans_to_add = vlans
+		for v in vlans_to_remove:
+			commands.append('net del interface {} bridge vids {}'.format(cumulus_interface, v))
+		for v in vlans_to_add:
+			commands.append('net add interface {} bridge vids {}'.format(cumulus_interface, v))
+		if execute:
+			for com in commands:
+				self.command(com)
+			if commit:
+				self.commit()
+		return commands
+
+	def set_portfast(self, speed, interface, enable_bool, execute=True, commit=True):
+		if enable_bool:
+			command = 'net add interface {} stp portadminedge'.format(self._number_port_mapper(interface))
+		else:
+			command = 'net del interface {} stp portadminedge'.format(self._number_port_mapper(interface))
+		if execute:
+			self.command(command)
+			if commit:
+				self.commit()
+		return command
+
 	def _name_port_mapper(self, port):
 		return self.portmap['by_name'][str(port)]['portid']
 
 	def _number_port_mapper(self, port):
-		return self.portmap['by_number'][str(port)]['portname']
+		return self.portmap['by_number'][port]['portname']
 
 	def set_interface_untagged_vlan(self, interface, vlan, execute=True):
 		command = 'net add interface {} bridge pvid {}'.format(self._number_port_mapper(interface), vlan)

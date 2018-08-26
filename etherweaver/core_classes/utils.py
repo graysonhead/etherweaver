@@ -1,4 +1,5 @@
 import collections.abc
+import copy
 
 
 def extrapolate_dict(numdict, int_key=False):
@@ -60,10 +61,19 @@ def compare_dict_keys(d1, d2):
 	return True
 
 
-def smart_dict_merge(d, u):
-	for k, v in u.items():
-		if isinstance(v, collections.abc.Mapping):
-			d[k] = smart_dict_merge(d.get(k, {}), v)
-		else:
-			d[k] = v
-	return d
+def smart_dict_merge(d, u, in_place=False):
+	if in_place:
+		for k, v in u.items():
+			if isinstance(v, collections.abc.Mapping, in_place=in_place):
+				d[k] = smart_dict_merge(d.get(k, {}), v)
+			else:
+				d[k] = v
+		return d
+	else:
+		dn = copy.deepcopy(d)
+		for k, v in u.items():
+			if isinstance(v, collections.abc.Mapping):
+				dn[k] = smart_dict_merge(dn.get(k, {}), v, in_place=in_place)
+			else:
+				dn[k] = v
+		return dn

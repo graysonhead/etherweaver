@@ -4,7 +4,7 @@ from etherweaver.core_classes.errors import ConfigKeyError, ReferenceNotFound
 
 class WeaverConfig(object):
 
-	def __init__(self, config_dict, name=None, validate=True):
+	def __init__(self, config_dict, name=None, validate=False):
 		self.name = name
 		self.type = None
 		self.type_specific_keys = {}
@@ -23,22 +23,27 @@ class WeaverConfig(object):
 			self.config['interfaces'] = new_int
 		if validate:
 			self.validate()
-		self._clean_config()
+		#self._clean_config()
 
 	def _interface_extrapolate(self, inter):
 		if 'tagged_vlans' in inter:
 			inter['tagged_vlans'] = extrapolate_list(inter['tagged_vlans'], int_out=True)
+		if 'untagged_vlan' in inter:
+			if inter['untagged_vlan']:
+				inter['untagged_vlan'] = int(inter['untagged_vlan'])
 		return inter
 
 	def _clean_config(self):
 		pass
 
-	def merge_configs(self, config_obj, validate=True):
-		return WeaverConfig(smart_dict_merge(self.config, config_obj.config), validate=validate)
+	def merge_configs(self, config_obj, validate=True, in_place=False):
+		return WeaverConfig(smart_dict_merge(self.config, config_obj.config, in_place=in_place), validate=False)
 
 	@staticmethod
 	def gen_config_skel():
 		return {
+			'fabric': None,
+			'role': None,
 			'hostname': None,
 			'vlans': {},
 			'port_profiles': {},
@@ -69,6 +74,9 @@ class WeaverConfig(object):
 			'untagged_vlan': None,
 			'ip': {
 				'address': []
+			},
+			'stp': {
+				'port_fast': False
 			}
 
 		}
