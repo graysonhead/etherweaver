@@ -166,6 +166,7 @@ class Appliance(ConfigObject):
 			else:
 				level = level[com]
 
+
 	# State comparison methods
 
 	def push_state(self, execute=True):
@@ -187,6 +188,7 @@ class Appliance(ConfigObject):
 			self.plugin.command(com)
 		self.plugin.commit()
 		# self.plugin.reload_state()
+		self.plugin.ssh.close()
 		return self.plugin.commands
 
 	def _compare_state(self, dstate, cstate, func, interface=None, int_speed=None):
