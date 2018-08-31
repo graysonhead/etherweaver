@@ -41,7 +41,7 @@ class CLIApp:
 
 
 
-if __name__ == '__main__':
+def main():
 	pass
 	#TODO move this to init for the class
 	parser = argparse.ArgumentParser(
@@ -60,3 +60,5 @@ if __name__ == '__main__':
 	print(cli.run(target=args.target, func=args.func, value=args.value))
 
 
+if __name__ == '__main__':
+	main()
