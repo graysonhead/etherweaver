@@ -3,6 +3,10 @@ from etherweaver.core_classes.appliance import Appliance
 from etherweaver.core_classes.role import NetworkRole
 from etherweaver.core_classes.errors import MissingRequiredAttribute
 from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict
+import sys
+import pprint
+
+pp = pprint.PrettyPrinter(indent=4)
 
 
 class Infrastructure:
@@ -123,12 +127,46 @@ class Infrastructure:
 
 	def run_command(self, target, func, value):
 		if target == '*':
+			# This contains the commands required to make any state changes
 			retvals = {}
-			for app in self.appliances:
-				retvals.update({app.name: app.run_individual_command(func, value)})
-			return retvals
-		try:
-			appliance = self._parse_target(target)
-		except AttributeError:
-			raise AttributeError('No appliance with name {} found in config'.format(target))
-		return appliance.run_individual_command(func, value)
+			# This contains a list of objects with pending commands
+			apps_with_commands = []
+			if func == 'state.apply':
+				for app in self.appliances:
+						# Set up appliance
+						app.set_up()
+						state = app.push_state(execute=False)
+						if state:
+							retvals.update({app.name: state})
+							apps_with_commands.append(app)
+				if apps_with_commands:
+					print("If you continue, the following changes will be applied:")
+					print("###################################")
+					pp.pprint(retvals)
+					prompt_to_continue = input("Do you want to continue? y/[n]")
+					if prompt_to_continue.lower() == 'y':
+						for app in apps_with_commands:
+							# Build progress bars
+							app.build_progress_bar(apps_with_commands.index(app))
+						for app in apps_with_commands:
+							# Run commands
+							app.run_command_queue()
+							app.close()
+						print("\n\n\n")
+						print("Run complete")
+						sys.exit(0)
+				else:
+					# TODO: Exit gracefully
+					print("All systems up to date")
+					sys.exit()
+				return
+			else:
+				for app in self.appliances:
+					retvals.update({app.name: app.run_individual_command(func, value)})
+				return retvals
+		else:
+			try:
+				appliance = self._parse_target(target)
+			except AttributeError:
+				raise AttributeError('No appliance with name {} found in config'.format(target))
+			return appliance.run_individual_command(func, value)

@@ -7,6 +7,8 @@ from etherweaver.plugins.plugin_class_errors import *
 from etherweaver.core_classes.datatypes import ApplianceConfig, FabricConfig, RoleConfig, WeaverConfig
 import os
 import inspect
+from tqdm import tqdm
+
 from .errors import *
 
 
@@ -18,7 +20,7 @@ class Appliance(ConfigObject):
 		self.fabric = None
 		self.role = None
 		self.plugin = None
-
+		self.progress_bar = None
 		self.dtree = None
 		self.dstate = {}
 		self.cstate = {}
@@ -63,7 +65,6 @@ class Appliance(ConfigObject):
 			dstate = ApplianceConfig(self.config)
 		dstate.apply_profiles()
 		self.dstate = dstate.get_full_config()
-
 
 
 	def return_fabrics(self, fabric):
@@ -136,6 +137,12 @@ class Appliance(ConfigObject):
 	def __repr__(self):
 		return '<Appliance: {}>'.format(self.name)
 
+	def set_up(self):
+		self.plugin.connect()
+		# Update current state before building dispatch tree
+		self.cstate.update(self.plugin.pull_state())
+
+
 	def run_individual_command(self, func, value):
 		# Connect via whatever method is specified in protocols
 		self.plugin.connect()
@@ -184,12 +191,29 @@ class Appliance(ConfigObject):
 		self.plugin.add_command(self._vlans_push(dstate, cstate))
 		self.plugin.add_command(self._interfaces_push(dstate, cstate))
 
+		if execute:
+			for com in self.plugin.commands:
+				self.plugin.command(com)
+			self.plugin.commit()
+			# self.plugin.reload_state()
+			self.plugin.ssh.close()
+		return self.plugin.commands
+
+	def build_progress_bar(self, number):
+		self.progress_bar = tqdm(total=self.plugin.commands.__len__(), position=number, desc=self.name)
+
+	def run_command_queue(self):
 		for com in self.plugin.commands:
 			self.plugin.command(com)
+			if self.progress_bar:
+				self.progress_bar.update(1)
 		self.plugin.commit()
+		self.progress_bar.close()
 		# self.plugin.reload_state()
-		self.plugin.ssh.close()
-		return self.plugin.commands
+
+	def close(self):
+		if self.plugin.ssh:
+			self.plugin.ssh.close()
 
 	def _compare_state(self, dstate, cstate, func, interface=None, int_speed=None):
 		# Case0

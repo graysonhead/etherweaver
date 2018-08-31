@@ -4,6 +4,7 @@ import pytz
 import json
 from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict, compare_dict_keys, compact_list
 from etherweaver.core_classes.datatypes import WeaverConfig
+from etherweaver.core_classes.errors import ConfigKeyError
 
 class CumulusSwitch(NetWeaverPlugin):
 
@@ -285,7 +286,7 @@ class CumulusSwitch(NetWeaverPlugin):
 				','.join(str(x) for x in compact_list(vlans_to_add))
 			))
 		if vlans_to_remove:
-			commandqueue.append('net add bridge bridge vids {}'.format(
+			commandqueue.append('net del bridge bridge vids {}'.format(
 				','.join(str(x) for x in compact_list(vlans_to_remove))
 			))
 		return commandqueue
@@ -329,13 +330,13 @@ class CumulusSwitch(NetWeaverPlugin):
 		if vlans_to_remove:
 			commands.append('net del interface {} bridge vids {}'.format(
 				cumulus_interface,
-				','.join(str(x) for x in compact_list(vlans_to_remove))
+				','.join(str(x) for x in compact_list(list(vlans_to_remove)))
 				)
 			)
 		if vlans_to_add:
 			commands.append('net add interface {} bridge vids {}'.format(
 				cumulus_interface,
-				','.join(str(x) for x in compact_list(vlans_to_add))
+				','.join(str(x) for x in compact_list(list(vlans_to_add)))
 				)
 			)
 		if execute:
@@ -360,7 +361,10 @@ class CumulusSwitch(NetWeaverPlugin):
 		return self.portmap['by_name'][str(port)]['portid']
 
 	def _number_port_mapper(self, port):
-		return self.portmap['by_number'][port]['portname']
+		try:
+			return self.portmap['by_number'][port]['portname']
+		except KeyError:
+			raise ValueError("Referenced non-existent interface {} on appliance {}".format(port, self.appliance.name))
 
 	def set_interface_untagged_vlan(self, interface, vlan, execute=True):
 		command = 'net add interface {} bridge pvid {}'.format(self._number_port_mapper(interface), vlan)
