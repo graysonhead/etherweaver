@@ -1,10 +1,13 @@
-from setuptools import setup, find_packages
+import setuptools
 
 
-setup(
-	name='EtherWeaver',
-	version='0.1dev',
-	packages=find_packages(),
+setuptools.setup(
+	name='etherweaver',
+	version='0.1.1dev',
+	author='Grayson Head',
+	author_email='grayson@graysonhead.net',
+	url="https://github.com/graysonhead/etherweaver",
+	packages=setuptools.find_packages(),
 	license='GPL V3',
 	long_description=open('README.md').read(),
 	entry_points={
