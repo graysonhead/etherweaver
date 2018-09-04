@@ -46,6 +46,14 @@ class WeaverConfig(object):
 			'role': None,
 			'hostname': None,
 			'vlans': {},
+			'clag': {
+				'shared_mac': None,
+				'priority': None,
+				'backup_ip': None,
+				'peer_ip': None,
+				'clag_cidr': None
+
+			},
 			'port_profiles': {},
 			'protocols': {
 				'dns': {
@@ -70,6 +78,7 @@ class WeaverConfig(object):
 	@staticmethod
 	def gen_portskel():
 		return {
+			'peerlink': False,
 			'tagged_vlans': [],
 			'untagged_vlan': None,
 			'ip': {
@@ -77,7 +86,7 @@ class WeaverConfig(object):
 			},
 			'stp': {
 				'port_fast': False
-			}
+			},
 
 		}
 

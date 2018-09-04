@@ -39,23 +39,69 @@ class CumulusSwitch(NetWeaverPlugin):
 		conf = WeaverConfig.gen_config_skel()
 		# We have to do some pre-parsing here to expand interface ranges and such
 		commands = []
-		for line in pre_parse_commands:
-			# This handles lines like: net add interface swp3,5 bridge vids 2-5
-			if line.startswith('net add interface') and ',' in line.split(' ')[3]\
-					or line.startswith('net add interface') and '-' in line.split(' ')[3]:
-				components = line.split(' ')
-				int_iter = line.split(' ')[3].strip('swp').split(',')
-				int_iter = extrapolate_list(int_iter, int_out=False)
-				for interface in int_iter:
-					newline = []
-					for comp in components[0:3]:
-						newline.append(comp)
-					newline.append('swp' + interface)
-					for comp in components[4:]:
-						newline.append(comp)
-					commands.append(' '.join(newline))
+
+		def pre_parse():
+			for line in pre_parse_commands:
+				# This handles lines like: net add interface swp3,5 bridge vids 2-5
+				if line.startswith('net add interface') and ',' in line.split(' ')[3]\
+						or line.startswith('net add interface') and '-' in line.split(' ')[3]:
+					components = line.split(' ')
+					int_iter = line.split(' ')[3].strip('swp').split(',')
+					int_iter = extrapolate_list(int_iter, int_out=False)
+					for interface in int_iter:
+						newline = []
+						for comp in components[0:3]:
+							newline.append(comp)
+						newline.append('swp' + interface)
+						for comp in components[4:]:
+							newline.append(comp)
+						commands.append(' '.join(newline))
+				else:
+					commands.append(line)
+
+		def parse_interfaces(line):
+			portid = line.split(' ')[3]
+			# lookup port
+			portnum = self.portmap['by_name'][portid]['portid']
+			if self.portmap['by_name'][portid]['mode'] == 'Mgmt':
+				speed = 'mgmt'
 			else:
-				commands.append(line)
+				speed = self.portmap['by_name'][portid]['speed']
+			# Bootstrap the interface if it doesn't exist
+			if speed in [ '1G', '10G', '100M']:
+				if portnum not in conf['interfaces'][speed]:
+					conf['interfaces'][speed].update({portnum: WeaverConfig.gen_portskel()})
+				# Parse bridge options
+				if line.startswith('net add interface {} bridge vids'.format(portid)):
+					vids = line.split(' ')[6].split(',')
+					conf['interfaces'][speed][portnum]['tagged_vlans'] = extrapolate_list(vids, int_out=True)
+				elif line.startswith('net add interface {} bridge pvid'.format(portid)):
+					conf['interfaces'][speed][portnum]['untagged_vlan'] = line.split(' ')[6]
+				# Parse STP options
+				elif line.startswith('net add interface {} stp portadminedge'.format(portid)):
+					conf['interfaces'][speed][portnum]['stp']['port_fast'] = True
+
+		def clag_parse(line):
+			# Parses clag statements
+			# parse backup-ip
+			if line.startswith('net add interface peerlink.4094 clag backup-ip'):
+				conf['clag']['backup_ip'] = line.split(' ')[6]
+				# parse peer ip
+			elif line.startswith('net add interface peerlink.4094 clag peer-ip'):
+				conf['clag']['peer_ip'] = line.split(' ')[6]
+			# parse priority
+			elif line.startswith('net add interface peerlink.4094 clag priority'):
+				conf['clag']['priority'] = int(line.split(' ')[6])
+			# parse sys-mac
+			elif line.startswith('net add interface peerlink.4094 clag sys-mac'):
+				conf['clag']['shared_mac'] = line.split(' ')[6]
+			# parse ip address
+			elif line.startswith('net add interface peerlink.4094 ip address'):
+				conf['clag']['clag_cidr'] = line.split(' ')[6]
+
+
+
+		pre_parse()
 		for line in commands:
 			# Nameservers
 			if line.startswith('net add dns nameserver'):
@@ -82,26 +128,11 @@ class CumulusSwitch(NetWeaverPlugin):
 				for vid in vids:
 					conf['vlans'].update({int(vid): None})
 			# Interfaces
-			elif line.startswith('net add interface'):
-				portid = line.split(' ')[3]
-				# lookup port
-				portnum = self.portmap['by_name'][portid]['portid']
-				if self.portmap['by_name'][portid]['mode'] == 'Mgmt':
-					speed = 'mgmt'
-				else:
-					speed = self.portmap['by_name'][portid]['speed']
-					# Bootstrap the interface if it doesn't exist
-				if portnum not in conf['interfaces'][speed]:
-					conf['interfaces'][speed].update({portnum: WeaverConfig.gen_portskel()})
-				# Parse bridge options
-				if line.startswith('net add interface {} bridge vids'.format(portid)):
-					vids = line.split(' ')[6].split(',')
-					conf['interfaces'][speed][portnum]['tagged_vlans'] = extrapolate_list(vids, int_out=True)
-				if line.startswith('net add interface {} bridge pvid'.format(portid)):
-					conf['interfaces'][speed][portnum]['untagged_vlan'] = line.split(' ')[6]
-				# Parse STP options
-				if line.startswith('net add interface {} stp portadminedge'.format(portid)):
-					conf['interfaces'][speed][portnum]['stp']['port_fast'] = True
+			elif line.startswith('net add interface') and not line.startswith('net add interface peerlink.4094'):
+				parse_interfaces(line)
+			# CLAG
+			elif line.startswith('net add interface peerlink.4094'):
+				clag_parse(line)
 
 		wc = WeaverConfig(conf)
 		return wc.get_full_config()
