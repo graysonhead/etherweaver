@@ -79,40 +79,40 @@ def smart_dict_merge(d, u, in_place=False):
 		return dn
 
 
-def compact_list(list, single_item_out=str):
+def compact_list(uncompacted_list, single_item_out=str):
 	"""
 	This takes a list like [1, 2, 3, 5, 7] and turns it into ['1-3', 5, 7]
-	:param list:
+	:param uncompacted_list:
 	:return:
 	"""
 	new_list = []
 	startrange = None
-	for i in range(0, list.__len__()):
+	for i in range(0, uncompacted_list.__len__()):
 		# Make sure we aren't going to overrun the index of the list
-		if i + 1 < list.__len__():
-			if list[i] + 1 == list[i + 1]:
+		if i + 1 < uncompacted_list.__len__():
+			if uncompacted_list[i] + 1 == uncompacted_list[i + 1]:
 				if startrange == None:
-					startrange = list[i]
+					startrange = uncompacted_list[i]
 				else:
 					pass
 			else:
 				if startrange:
-					new_list.append('{}-{}'.format(str(startrange), list[i]))
+					new_list.append('{}-{}'.format(str(startrange), uncompacted_list[i]))
 					startrange = None
 				else:
 					if single_item_out == str:
-						new_list.append(str(list[i]))
+						new_list.append(str(uncompacted_list[i]))
 					if single_item_out == int:
-						new_list.append(list[i])
+						new_list.append(uncompacted_list[i])
 		# This is the last item in the list
 		else:
 			# If startrange isn't none, then we were iterating through contigous numbers
 			if startrange:
-				new_list.append('{}-{}'.format(str(startrange), list[i]))
+				new_list.append('{}-{}'.format(str(startrange), uncompacted_list[i]))
 				startrange = None
 			else:
 				if single_item_out == str:
-					new_list.append(str(list[i]))
+					new_list.append(str(uncompacted_list[i]))
 				if single_item_out == int:
-					new_list.append(list[i])
+					new_list.append(uncompacted_list[i])
 	return new_list
