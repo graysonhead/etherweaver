@@ -1,7 +1,6 @@
 import collections.abc
 import copy
 
-
 def extrapolate_dict(numdict, int_key=False):
 		newnumdict = {}
 		if type(numdict) is not dict:

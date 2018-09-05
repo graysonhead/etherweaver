@@ -17,9 +17,14 @@ class WeaverConfig(object):
 		if 'interfaces' in self.config:
 			new_int = {}
 			for kspd, vspd in self.config['interfaces'].items():
-				for kint, vint in self.config['interfaces'][kspd].items():
-					vint = self._interface_extrapolate(vint)
-				new_int.update({kspd: extrapolate_dict(vspd, int_key=True)})
+					for kint, vint in self.config['interfaces'][kspd].items():
+						# We can't extrapolate bonds as they are all strings
+						if kspd != 'bond':
+							vint = self._interface_extrapolate(vint)
+					if kspd != 'bond':
+						new_int.update({kspd: extrapolate_dict(vspd, int_key=True)})
+					elif kspd == 'bond':
+						new_int.update({kspd: vspd})
 			self.config['interfaces'] = new_int
 		if validate:
 			self.validate()
@@ -71,7 +76,8 @@ class WeaverConfig(object):
 				'10G': {},
 				'40G': {},
 				'100G': {},
-				'mgmt': {}
+				'mgmt': {},
+				'bond': {}
 			}
 		}
 

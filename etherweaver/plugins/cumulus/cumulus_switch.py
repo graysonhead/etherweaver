@@ -99,7 +99,25 @@ class CumulusSwitch(NetWeaverPlugin):
 			elif line.startswith('net add interface peerlink.4094 ip address'):
 				conf['clag']['clag_cidr'] = line.split(' ')[6]
 
+		def create_bond_inter(name, slaves):
+			# Create the bond node
+			conf['interfaces']['bond'].update({name: {}})
+			for interface in slaves:
+				# Get the speed of the interface
+				speed = self.portmap['by_name']['swp{}'.format(str(interface))]['speed']
+				# Create or update the interface
+				if interface not in conf['interfaces'][speed]:
+					conf['interfaces'][speed].update({interface: {}})
+				conf['interfaces'][speed][interface].update({'bond': name})
 
+		def bond_parse(line):
+			# This should be the first reference of any bond
+			if 'slaves' in line:
+				name = line.split(' ')[3]
+				# Parse the interfaces and extrapolate them
+				interfaces = extrapolate_list(line.split(' ')[6].replace("swp", '').split(','), int_out=True)
+				# Create the bond and references to slave interfaces
+				create_bond_inter(name, interfaces)
 
 		pre_parse()
 		for line in commands:
@@ -133,6 +151,9 @@ class CumulusSwitch(NetWeaverPlugin):
 			# CLAG
 			elif line.startswith('net add interface peerlink.4094'):
 				clag_parse(line)
+			# bond parsing
+			elif line.startswith('net add bond'):
+				bond_parse(line)
 
 		wc = WeaverConfig(conf)
 		return wc.get_full_config()
@@ -270,7 +291,7 @@ class CumulusSwitch(NetWeaverPlugin):
 				except ValueError:
 					portnum = k.strip('swp')
 			if v['speed'] == 'N/A':
-				ports_by_name.update({portname: {'portid': portnum, 'speed': '1G', 'mode': v['mode']}})
+				ports_by_name.update({portname: {'portdid': portnum, 'speed': '1G', 'mode': v['mode']}})
 			else:
 				ports_by_name.update({portname: {'portid': portnum, 'speed': v['speed'], 'mode': v['mode']}})
 			ports_by_number.update({portnum: {'portname': portname, 'speed': v['speed'], 'mode': v['mode']}})
@@ -408,6 +429,8 @@ class CumulusSwitch(NetWeaverPlugin):
 		if execute:
 			self.command(command)
 		return command
+
+
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		if self.ssh:
