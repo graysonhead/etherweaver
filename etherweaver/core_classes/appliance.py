@@ -284,7 +284,11 @@ class Appliance(ConfigObject):
 	def _stp_options_push(self, cstate, dstate, kspd, kint):
 		for v in WeaverConfig.gen_portskel()['stp']:
 			ds = dstate['interfaces'][kspd][kint]['stp'][v]
-			cs = cstate['interfaces'][kspd][kint]['stp'][v]
+			# Assume false on keyerror
+			try:
+				cs = cstate['interfaces'][kspd][kint]['stp'][v]
+			except KeyError:
+				cs = False
 			if v == 'port_fast':
 				self.plugin.add_command(self._compare_state(ds, cs, self.plugin.set_portfast, interface=kint, int_speed=kspd))
 

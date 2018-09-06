@@ -404,6 +404,8 @@ class CumulusSwitch(NetWeaverPlugin):
 				self.commit()
 		return commands
 
+
+
 	def set_portfast(self, speed, interface, enable_bool, execute=True, commit=True):
 		if enable_bool:
 			command = 'net add interface {} stp portadminedge'.format(self._number_port_mapper(interface))
