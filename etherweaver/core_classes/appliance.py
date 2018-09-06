@@ -272,14 +272,16 @@ class Appliance(ConfigObject):
 	def _interfaces_push(self, dstate, cstate):
 		# Todo, this wont work for other plugins
 		i_dstate = dstate['interfaces']
+		commands = []
 		for kspd, vspd in i_dstate.items():
 			for kint, vint in vspd.items():
 				if 'tagged_vlans' in vint:
-					self._interface_tagged_vlans_push(cstate, dstate, kspd, kint)
+					commands.append(self._interface_tagged_vlans_push(cstate, dstate, kspd, kint))
 				if 'untagged_vlan' in vint:
-					self._interface_untagged_vlan_push(cstate, dstate, kspd, kint)
+					commands.append(self._interface_untagged_vlan_push(cstate, dstate, kspd, kint))
 				if 'stp' in vint:
-					self._stp_options_push(cstate, dstate, kspd, kint)
+					commands.append(self._stp_options_push(cstate, dstate, kspd, kint))
+		return commands
 
 	def _stp_options_push(self, cstate, dstate, kspd, kint):
 		for v in WeaverConfig.gen_portskel()['stp']:
@@ -290,7 +292,7 @@ class Appliance(ConfigObject):
 			except KeyError:
 				cs = False
 			if v == 'port_fast':
-				self.plugin.add_command(self._compare_state(ds, cs, self.plugin.set_portfast, interface=kint, int_speed=kspd))
+				return self._compare_state(ds, cs, self.plugin.set_portfast, interface=kint, int_speed=kspd)
 
 
 
@@ -300,7 +302,7 @@ class Appliance(ConfigObject):
 		try:
 			cstate = cstate['interfaces'][speed][interface]['untagged_vlan']
 		except KeyError:
-			self.plugin.add_command(self.plugin.set_interface_untagged_vlan(interface, dstate, execute=False))
+			return self.plugin.set_interface_untagged_vlan(interface, dstate, execute=False)
 		# Case0
 		try:
 			dstate
@@ -311,8 +313,7 @@ class Appliance(ConfigObject):
 			return
 		# Case 2
 		elif dstate != cstate:
-			self.plugin.add_command(
-				self.plugin.set_interface_untagged_vlan(interface, dstate, execute=False))
+			return self.plugin.set_interface_untagged_vlan(interface, dstate, execute=False)
 
 	def _interface_tagged_vlans_push(self, cstate, dstate, speed, interface):
 		# Case 3
@@ -320,7 +321,7 @@ class Appliance(ConfigObject):
 		try:
 			cstate = set(cstate['interfaces'][speed][interface]['tagged_vlans'])
 		except KeyError:
-			self.plugin.add_command(self.plugin.set_interface_tagged_vlans(speed, interface, dstate, execute=False))
+			return self.plugin.set_interface_tagged_vlans(speed, interface, dstate, execute=False)
 		# Case0
 		try:
 			dstate
@@ -331,7 +332,7 @@ class Appliance(ConfigObject):
 			return
 		# Case 2
 		elif dstate != cstate:
-			self.plugin.add_command(self.plugin.set_interface_tagged_vlans(speed, interface, dstate, execute=False))
+			return self.plugin.set_interface_tagged_vlans(speed, interface, dstate, execute=False)
 
 	def _protocol_ntpclient_timezone_push(self, dstate, cstate):
 		cstate = cstate['protocols']['ntp']['client']['timezone']
