@@ -19,8 +19,10 @@ class WeaverConfig(object):
 			for kspd, vspd in self.config['interfaces'].items():
 					for kint, vint in self.config['interfaces'][kspd].items():
 						# We can't extrapolate bonds as they are all strings
+						kspd_ints = {}
 						if kspd != 'bond':
-							vint = self._interface_extrapolate(vint)
+							kspd_ints = self.gen_portskel()
+							kspd_ints.update(self._interface_extrapolate(vint))
 					if kspd != 'bond':
 						new_int.update({kspd: extrapolate_dict(vspd, int_key=True)})
 					elif kspd == 'bond':
@@ -84,7 +86,7 @@ class WeaverConfig(object):
 	@staticmethod
 	def gen_portskel():
 		return {
-			'peerlink': False,
+			'bond': None,
 			'tagged_vlans': [],
 			'untagged_vlan': None,
 			'ip': {
@@ -94,6 +96,12 @@ class WeaverConfig(object):
 				'port_fast': False
 			},
 
+		}
+
+	@staticmethod
+	def gen_bondskel():
+		return {
+			'clag_id': None
 		}
 
 	def validate(self):

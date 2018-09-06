@@ -118,6 +118,11 @@ class CumulusSwitch(NetWeaverPlugin):
 				interfaces = extrapolate_list(line.split(' ')[6].replace("swp", '').split(','), int_out=True)
 				# Create the bond and references to slave interfaces
 				create_bond_inter(name, interfaces)
+			if 'clag id' in line:
+				# Get the name and ID of the interface
+				name = line.split(' ')[3]
+				clag_id = line.split(' ')[6]
+
 
 		pre_parse()
 		for line in commands:
