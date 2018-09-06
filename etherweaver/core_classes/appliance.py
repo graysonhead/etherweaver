@@ -57,7 +57,7 @@ class Appliance(ConfigObject):
 			if dstate:
 				dstate = dstate.merge_configs(RoleConfig(self.role.config))
 			else:
-				dstate = RoleConfig(self.role.config).config
+				dstate = RoleConfig(self.role.config)
 		if dstate:
 			dstate = dstate.merge_configs(ApplianceConfig(self.config), validate=False)
 
