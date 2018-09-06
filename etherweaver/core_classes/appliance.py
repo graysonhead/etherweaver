@@ -189,7 +189,9 @@ class Appliance(ConfigObject):
 		self.plugin.add_command(self._protocol_ntpclient_timezone_push(dstate, cstate))
 		self.plugin.add_command(self._protocol_ntpclient_servers(dstate, cstate))
 		self.plugin.add_command(self._vlans_push(dstate, cstate))
+		# Interfaces depend on vlans, so they are run after vlans
 		self.plugin.add_command(self._interfaces_push(dstate, cstate))
+		# Bonds depend on interfaces, so they are run after interfaces
 
 		if execute:
 			for com in self.plugin.commands:

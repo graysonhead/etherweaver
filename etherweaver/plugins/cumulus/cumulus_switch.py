@@ -68,6 +68,7 @@ class CumulusSwitch(NetWeaverPlugin):
 			else:
 				speed = self.portmap['by_name'][portid]['speed']
 			# Bootstrap the interface if it doesn't exist
+			# TODO the datatypes class needs to do this
 			if speed in [ '1G', '10G', '100M']:
 				if portnum not in conf['interfaces'][speed]:
 					conf['interfaces'][speed].update({portnum: WeaverConfig.gen_portskel()})
