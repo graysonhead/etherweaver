@@ -32,7 +32,8 @@ class NetWeaverPlugin:
 		"""
 		if type(commands) == list:
 			for com in commands:
-				self.commands.append(com)
+				if com is not None:
+					self.commands.append(com)
 		elif commands is None:
 			return
 		else:
@@ -158,3 +159,18 @@ class NetWeaverPlugin:
 
 	def rm_interface_untagged_vlan(self, interface, execute=True):
 		self._not_supported('rm_interface_untagged_vlan')
+
+	def set_clag_backup_ip(self, backup_ip, execute=True):
+		self._not_supported('set_clag_backup_ip')
+
+	def set_clag_cidr(self, cidr, execute=True):
+		self._not_supported('set_clag_cidr')
+
+	def set_clag_peer_ip(self, peer_ip, execute=True):
+		self._not_supported('set_clag_peer_ip')
+
+	def set_clag_priority(self, priority, execute=True):
+		self._not_supported('set_clag_priority')
+
+	def set_clag_shared_mac(self, shared_mac, execute=True):
+		self._not_supported('set_clag_shared_mac')

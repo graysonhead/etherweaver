@@ -192,7 +192,7 @@ class Appliance(ConfigObject):
 		# Interfaces depend on vlans, so they are run after vlans
 		self.plugin.add_command(self._interfaces_push(dstate, cstate))
 		# Bonds depend on interfaces, so they are run after interfaces
-
+		self.plugin.add_command(self._clag_push(dstate, cstate))
 		if execute:
 			for com in self.plugin.commands:
 				self.plugin.command(com)
@@ -241,6 +241,21 @@ class Appliance(ConfigObject):
 		cstate = cstate['protocols']['ntp']['client']['servers']
 		return self._compare_state(dstate, cstate, self.plugin.set_ntp_client_servers)
 
+	def _clag_push(self, dstate, cstate):
+		# TODO Make all the push functions look like this one, I like it. It's pretty.
+		commands = []
+		dstate = dstate['clag']
+		cstate = cstate['clag']
+		dispatcher = {
+			'backup_ip': self.plugin.set_clag_backup_ip,
+			'clag_cidr': self.plugin.set_clag_cidr,
+			'peer_ip': self.plugin.set_clag_peer_ip,
+			'priority': self.plugin.set_clag_priority,
+			'shared_mac': self.plugin.set_clag_shared_mac
+		}
+		for key, func in dispatcher.items():
+			commands.append(self._compare_state(dstate[key], cstate[key], func))
+		return commands
 	def _hostname_push(self, dstate, cstate):
 		try:
 			dstate = dstate['hostname']

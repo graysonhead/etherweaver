@@ -436,7 +436,35 @@ class CumulusSwitch(NetWeaverPlugin):
 			self.command(command)
 		return command
 
+	def set_clag_backup_ip(self, backup_ip, execute=True):
+		command = 'net add interface peerlink.4094 clag backup-ip {}'.format(backup_ip)
+		if execute:
+			self.command(command)
+		return command
 
+	def set_clag_cidr(self, cidr, execute=True):
+		command = 'net add interface peerlink.4094 ip address {}'.format(cidr)
+		if execute:
+			self.command(command)
+		return command
+
+	def set_clag_peer_ip(self, peer_ip, execute=True):
+		command = 'net add interface peerlink.4094 clag peer-ip {}'.format(peer_ip)
+		if execute:
+			self.command(command)
+		return command
+
+	def set_clag_priority(self, priority, execute=True):
+		command = 'net add interface peerlink.4094 clag priority {}'.format(priority)
+		if execute:
+			self.command(command)
+		return command
+
+	def set_clag_shared_mac(self, shared_mac, execute=True):
+		command = 'net add interface peerlink.4094 clag sys-mac {}'.format(shared_mac)
+		if execute:
+			self.command(command)
+		return command
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		if self.ssh:
