@@ -11,7 +11,9 @@ class CLIApp:
 		self.config = None  # This is defined by the parsers below
 		if yaml:
 			self.config = self._parse_yaml_file(yaml)
-
+			for k, v in self.config.items():
+				if k not in ['roles', 'fabrics', 'appliances']:
+					raise KeyError('Key \'{}\' not allowed at top level'.format(k))
 		self._build_infrastructure_object()
 
 	def _parse_yaml_file(self, yamlfile):
