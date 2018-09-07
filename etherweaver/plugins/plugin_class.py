@@ -177,3 +177,6 @@ class NetWeaverPlugin:
 
 	def set_clag_shared_mac(self, shared_mac, execute=True):
 		self._not_supported('set_clag_shared_mac')
+
+	def set_bond_clag_id(self, int_type, interface, clag_id, execute=True):
+		self._not_supported('set_bond_clag_id')

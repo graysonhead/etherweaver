@@ -88,7 +88,7 @@ class WeaverConfig(object):
 	@staticmethod
 	def gen_portskel():
 		return {
-			'bond': None,
+			'bond_slave': None,
 			'tagged_vlans': [],
 			'untagged_vlan': None,
 			'ip': {
@@ -103,7 +103,12 @@ class WeaverConfig(object):
 	@staticmethod
 	def gen_bondskel():
 		return {
-			'clag_id': None
+			'clag_id': None,
+			'tagged_vlans': [],
+			'untagged_vlan': None,
+			'ip': {
+				'address': []
+			}
 		}
 
 	def validate(self):

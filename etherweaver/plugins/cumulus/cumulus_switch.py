@@ -109,7 +109,7 @@ class CumulusSwitch(NetWeaverPlugin):
 				# Create or update the interface
 				if interface not in conf['interfaces'][speed]:
 					conf['interfaces'][speed].update({interface: {}})
-				conf['interfaces'][speed][interface].update({'bond': name})
+				conf['interfaces'][speed][interface].update({'bond_slave': name})
 
 		def bond_parse(line):
 			# This should be the first reference of any bond
@@ -464,6 +464,25 @@ class CumulusSwitch(NetWeaverPlugin):
 
 	def set_clag_shared_mac(self, shared_mac, execute=True):
 		command = 'net add interface peerlink.4094 clag sys-mac {}'.format(shared_mac)
+		if execute:
+			self.command(command)
+		return command
+
+	def set_bond_slaves(self, int_type, interface, bond, execute=True):
+		# Find interfaces belonging to this bond, since cumulus defines interfces on the bond
+		# bond_slaves = []
+		# for ktyp, vtyp in self.appliance.cstate['interfaces'].items():
+		# 	if ktyp in ['10G', '1G', '40G', '100G']:
+		# 		for kint, vint in vtyp.items():
+		# 			if vint['bond'] == interface:
+		# 				bond_slaves.append(self._number_port_mapper(kint))
+		command = 'net add bond {} bond slaves {}'.format(bond, self._number_port_mapper(interface))
+		if execute:
+			self.command(command)
+		return command
+
+	def set_bond_clag_id(self, int_type, interface, clag_id, execute=True):
+		command = 'net add bond {} clag id {}'.format(interface, clag_id)
 		if execute:
 			self.command(command)
 		return command

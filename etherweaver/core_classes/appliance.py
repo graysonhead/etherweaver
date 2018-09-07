@@ -192,6 +192,7 @@ class Appliance(ConfigObject):
 		self._interfaces_push(dstate, cstate)
 		# Bonds depend on interfaces, so they are run after interfaces
 		self.plugin.add_command(self._clag_push(dstate, cstate))
+		self._bonds_push(dstate, cstate)
 		if execute:
 			for com in self.plugin.commands:
 				self.plugin.command(com)
@@ -216,7 +217,7 @@ class Appliance(ConfigObject):
 		if self.plugin.ssh:
 			self.plugin.ssh.close()
 
-	def _compare_state(self, dstate, cstate, func, interface=None, int_speed=None, data_type=str):
+	def _compare_state(self, dstate, cstate, func, interface=None, int_type=None, data_type=str):
 		# Case0
 		try:
 			dstate
@@ -232,19 +233,19 @@ class Appliance(ConfigObject):
 				return
 			# Case2 and 3 create
 			elif set(dstate) != set(cstate):
-				if not int or not int_speed:
+				if not int or not int_type:
 					return func(dstate, execute=False)
-				elif int and int_speed:
-					return func(int_speed, interface, dstate, execute=False)
+				elif int and int_type:
+					return func(int_type, interface, dstate, execute=False)
 		elif data_type == str:
 			if dstate == cstate:
 				return
 			# Case2 and 3 create
 			elif dstate != cstate:
-				if not int or not int_speed:
+				if not int or not int_type:
 					return func(dstate, execute=False)
-				elif int and int_speed:
-					return func(int_speed, interface, dstate, execute=False)
+				elif int and int_type:
+					return func(int_type, interface, dstate, execute=False)
 
 
 	def _protocol_ntpclient_push(self, dstate, cstate):
@@ -289,18 +290,47 @@ class Appliance(ConfigObject):
 		return self._compare_state(dstate, cstate, self.plugin.set_vlans)
 
 	def _interfaces_push(self, dstate, cstate):
-		# Todo, this wont work for other plugins
+		# TODO: This probably could be consolidated under the new convention
 		i_dstate = dstate['interfaces']
 		commands = []
 		for kspd, vspd in i_dstate.items():
-			for kint, vint in vspd.items():
-				if 'tagged_vlans' in vint:
-					smart_append(commands, self._interface_tagged_vlans_push(cstate, dstate, kspd, kint))
-				if 'untagged_vlan' in vint:
-					smart_append(commands, self._interface_untagged_vlan_push(cstate, dstate, kspd, kint))
-				if 'stp' in vint:
-					smart_append(commands, self._stp_options_push(cstate, dstate, kspd, kint))
-		self.plugin.add_command(commands)
+			if kspd in ['1G', '10G', '100G', '40G', 'mgmt']:
+				for kint, vint in vspd.items():
+					if 'tagged_vlans' in vint:
+						smart_append(commands, self._interface_tagged_vlans_push(cstate, dstate, kspd, kint))
+					if 'untagged_vlan' in vint:
+						smart_append(commands, self._interface_untagged_vlan_push(cstate, dstate, kspd, kint))
+					if 'stp' in vint:
+						smart_append(commands, self._stp_options_push(cstate, dstate, kspd, kint))
+					if 'bond_slave':
+						smart_append(commands, self._bond_slave_push(cstate, dstate, kspd, kint))
+			self.plugin.add_command(commands)
+
+	def _bond_slave_push(self, cstate, dstate, kspd, kint):
+		inter_dstate = dstate['interfaces'][kspd][kint]
+		try:
+			inter_cstate = cstate['interfaces'][kspd][kint]['bond_slave']
+		except KeyError:
+			inter_cstate = None
+		return self._compare_state(inter_dstate, inter_cstate, self.plugin.set_bond_slaves, int_type='bond', interface=kint)
+
+
+	def _bonds_push(self, dstate, cstate):
+		bonds_dstate = dstate['interfaces']['bond']
+		commands = []
+		for kbnd, vbnd in bonds_dstate.items():
+			bnd_dstate = bonds_dstate[kbnd]
+			try:
+				bnd_cstate = cstate['interfaces']['bond'][kbnd]
+			except KeyError:
+				bnd_cstate = None
+			dispatcher = {
+				'clag_id': self.plugin.set_bond_clag_id,
+			}
+			for key, func in dispatcher.items():
+				smart_append(commands, self._compare_state(bnd_dstate[key], bnd_cstate[key], func, int_type='bond', interface=kbnd))
+			return commands
+
 
 	def _stp_options_push(self, cstate, dstate, kspd, kint):
 		# TODO: update this function to follow conventions
@@ -312,7 +342,7 @@ class Appliance(ConfigObject):
 			except KeyError:
 				cs = False
 			if v == 'port_fast':
-				return self._compare_state(ds, cs, self.plugin.set_portfast, interface=kint, int_speed=kspd)
+				return self._compare_state(ds, cs, self.plugin.set_portfast, interface=kint, int_type=kspd)
 
 	def _interface_untagged_vlan_push(self, cstate, dstate, speed, interface):
 		dstate = dstate['interfaces'][speed][interface]['untagged_vlan']
@@ -321,7 +351,7 @@ class Appliance(ConfigObject):
 			cstate = cstate['interfaces'][speed][interface]['untagged_vlan']
 		except KeyError:
 			cstate = None
-		return self._compare_state(dstate, cstate, self.plugin.set_interface_untagged_vlan, interface=interface, int_speed=speed)
+		return self._compare_state(dstate, cstate, self.plugin.set_interface_untagged_vlan, interface=interface, int_type=speed)
 
 	def _interface_tagged_vlans_push(self, cstate, dstate, speed, interface):
 		# Case 3
@@ -335,7 +365,7 @@ class Appliance(ConfigObject):
 			cstate,
 			self.plugin.set_interface_tagged_vlans,
 			interface=interface,
-			int_speed=speed,
+			int_type=speed,
 			data_type=list
 		)
 
