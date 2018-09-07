@@ -115,3 +115,12 @@ def compact_list(uncompacted_list, single_item_out=str):
 				if single_item_out == int:
 					new_list.append(uncompacted_list[i])
 	return new_list
+
+
+def smart_append(li, item, filter_list=[None]):
+	if type(item) is list:
+		for i in item:
+			if i not in filter_list:
+				li.append(i)
+	elif item not in filter_list:
+		li.append(item)

@@ -69,10 +69,10 @@ class TestPlugin(unittest.TestCase):
 		self.assertEqual(self.plugin.appliance._protocol_ntpclient_timezone_push(dstate, cstate), 'net add time zone Etc/UTC')
 
 	def test_ntpclient_server_push_case1(self):
-		dstate = {'protocols': {'ntp': {'client': {'servers': ['server1.server.com']}}}}
-		cstate = {'protocols': {'ntp': {'client': {'servers': []}}}}
+		dstate = {'protocols': {'ntp': {'client': {'servers': ['server1.server.com'], 'timezone': None}}}}
+		cstate = {'protocols': {'ntp': {'client': {'servers': [], 'timezone': None}}}}
 		self.plugin.appliance.cstate = cstate
-		self.assertEqual(self.plugin.appliance._protocol_ntpclient_servers(dstate, cstate), ['net add time ntp server server1.server.com iburst'])
+		self.assertEqual(self.plugin.appliance._protocol_ntpclient_push(dstate, cstate), ['net add time ntp server server1.server.com iburst'])
 
 	def test_vlan_push_case1(self):
 		dstate = {'vlans': {1: None, 2: None}}

@@ -186,8 +186,9 @@ class Appliance(ConfigObject):
 		cstate = self.cstate
 		self.plugin.add_command(self._hostname_push(dstate, cstate))
 		self.plugin.add_command(self._protocol_dns_nameservers_push(dstate, cstate))
-		self.plugin.add_command(self._protocol_ntpclient_timezone_push(dstate, cstate))
-		self.plugin.add_command(self._protocol_ntpclient_servers(dstate, cstate))
+		self.plugin.add_command(self._protocol_ntpclient_push(dstate, cstate))
+		# self.plugin.add_command(self._protocol_ntpclient_timezone_push(dstate, cstate))
+		# self.plugin.add_command(self._protocol_ntpclient_servers(dstate, cstate))
 		self.plugin.add_command(self._vlans_push(dstate, cstate))
 		# Interfaces depend on vlans, so they are run after vlans
 		self._interfaces_push(dstate, cstate)
@@ -247,12 +248,27 @@ class Appliance(ConfigObject):
 				elif int and int_speed:
 					return func(int_speed, interface, dstate, execute=False)
 
+	# def _protocol_ntpclient_timezone_push(self, dstate, cstate):
+	# 	cstate = cstate['protocols']['ntp']['client']['timezone']
+	# 	dstate = dstate['protocols']['ntp']['client']['timezone']
+	# 	return self._compare_state(dstate, cstate, self.plugin.set_ntp_client_timezone)
+	#
+	# def _protocol_ntpclient_servers(self, dstate, cstate):
+	# 	dstate = dstate['protocols']['ntp']['client']['servers']
+	# 	cstate = cstate['protocols']['ntp']['client']['servers']
+	# 	return self._compare_state(dstate, cstate, self.plugin.set_ntp_client_servers)
 
-
-	def _protocol_ntpclient_servers(self, dstate, cstate):
-		dstate = dstate['protocols']['ntp']['client']['servers']
-		cstate = cstate['protocols']['ntp']['client']['servers']
-		return self._compare_state(dstate, cstate, self.plugin.set_ntp_client_servers)
+	def _protocol_ntpclient_push(self, dstate, cstate):
+		commands = []
+		dstate = dstate['protocols']['ntp']['client']
+		cstate = cstate['protocols']['ntp']['client']
+		dispatcher = {
+			'timezone': self.plugin.set_ntp_client_timezone,
+			'servers': self.plugin.set_ntp_client_servers
+		}
+		for key, func in dispatcher.items():
+			commands.append(self._compare_state(dstate[key], cstate[key], func))
+		return commands
 
 	def _clag_push(self, dstate, cstate):
 		# TODO Make all the push functions look like this one, I like it. It's pretty.
@@ -269,6 +285,7 @@ class Appliance(ConfigObject):
 		for key, func in dispatcher.items():
 			commands.append(self._compare_state(dstate[key], cstate[key], func))
 		return commands
+
 	def _hostname_push(self, dstate, cstate):
 		try:
 			dstate = dstate['hostname']
@@ -307,8 +324,6 @@ class Appliance(ConfigObject):
 			if v == 'port_fast':
 				return self._compare_state(ds, cs, self.plugin.set_portfast, interface=kint, int_speed=kspd)
 
-
-
 	def _interface_untagged_vlan_push(self, cstate, dstate, speed, interface):
 		dstate = dstate['interfaces'][speed][interface]['untagged_vlan']
 		# Case 3
@@ -333,11 +348,6 @@ class Appliance(ConfigObject):
 			int_speed=speed,
 			data_type=list
 		)
-
-	def _protocol_ntpclient_timezone_push(self, dstate, cstate):
-		cstate = cstate['protocols']['ntp']['client']['timezone']
-		dstate = dstate['protocols']['ntp']['client']['timezone']
-		return self._compare_state(dstate, cstate, self.plugin.set_ntp_client_timezone)
 
 	def _protocol_dns_nameservers_push(self, dstate, cstate):
 		try:
