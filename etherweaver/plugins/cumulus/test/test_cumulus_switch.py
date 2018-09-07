@@ -59,14 +59,14 @@ class TestPlugin(unittest.TestCase):
 		                 set(['net add dns nameserver ipv4 4.4.4.4', 'net add dns nameserver ipv4 8.8.8.8']))
 
 	def test_ntpclient_tz_push_case1(self):
-		dstate = {'protocols': {'ntp': {'client': {'timezone': 'America/Chicago'}}}}
-		cstate = {'protocols': {'ntp': {'client': {'timezone': 'America/Chicago'}}}}
-		self.assertEqual(self.plugin.appliance._protocol_ntpclient_timezone_push(dstate, cstate), None)
+		dstate = {'protocols': {'ntp': {'client': {'timezone': 'America/Chicago', 'servers': []}}}}
+		cstate = {'protocols': {'ntp': {'client': {'timezone': 'America/Chicago', 'servers': []}}}}
+		self.assertEqual(self.plugin.appliance._protocol_ntpclient_push(dstate, cstate), [])
 
 	def test_ntpclient_tz_push_case2(self):
-		dstate = {'protocols': {'ntp': {'client': {'timezone': 'Etc/UTC'}}}}
-		cstate = {'protocols': {'ntp': {'client': {'timezone': None}}}}
-		self.assertEqual(self.plugin.appliance._protocol_ntpclient_timezone_push(dstate, cstate), 'net add time zone Etc/UTC')
+		dstate = {'protocols': {'ntp': {'client': {'timezone': 'Etc/UTC', 'servers': []}}}}
+		cstate = {'protocols': {'ntp': {'client': {'timezone': None, 'servers': []}}}}
+		self.assertEqual(self.plugin.appliance._protocol_ntpclient_push(dstate, cstate), ['net add time zone Etc/UTC'])
 
 	def test_ntpclient_server_push_case1(self):
 		dstate = {'protocols': {'ntp': {'client': {'servers': ['server1.server.com'], 'timezone': None}}}}

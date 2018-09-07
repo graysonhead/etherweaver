@@ -2,7 +2,7 @@ from etherweaver.core_classes.config_object import ConfigObject
 import unittest
 from etherweaver.server_config_loader import get_server_config
 from importlib.machinery import SourceFileLoader
-from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict, smart_dict_merge
+from etherweaver.core_classes.utils import smart_append
 from etherweaver.plugins.plugin_class_errors import *
 from etherweaver.core_classes.datatypes import ApplianceConfig, FabricConfig, RoleConfig, WeaverConfig
 import os
@@ -267,7 +267,7 @@ class Appliance(ConfigObject):
 			'servers': self.plugin.set_ntp_client_servers
 		}
 		for key, func in dispatcher.items():
-			commands.append(self._compare_state(dstate[key], cstate[key], func))
+			smart_append(commands, self._compare_state(dstate[key], cstate[key], func))
 		return commands
 
 	def _clag_push(self, dstate, cstate):
