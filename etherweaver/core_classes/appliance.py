@@ -190,7 +190,7 @@ class Appliance(ConfigObject):
 		self.plugin.add_command(self._protocol_ntpclient_servers(dstate, cstate))
 		self.plugin.add_command(self._vlans_push(dstate, cstate))
 		# Interfaces depend on vlans, so they are run after vlans
-		self.plugin.add_command(self._interfaces_push(dstate, cstate))
+		self._interfaces_push(dstate, cstate)
 		# Bonds depend on interfaces, so they are run after interfaces
 		self.plugin.add_command(self._clag_push(dstate, cstate))
 		if execute:
@@ -217,7 +217,7 @@ class Appliance(ConfigObject):
 		if self.plugin.ssh:
 			self.plugin.ssh.close()
 
-	def _compare_state(self, dstate, cstate, func, interface=None, int_speed=None):
+	def _compare_state(self, dstate, cstate, func, interface=None, int_speed=None, data_type=str):
 		# Case0
 		try:
 			dstate
@@ -227,14 +227,27 @@ class Appliance(ConfigObject):
 		if dstate == [] or dstate == '' or dstate == {} or dstate is None:
 			return
 		# Case1
-		if dstate == cstate:
-			return
-		# Case2 and 3 create
-		elif dstate != cstate:
-			if not int or not int_speed:
-				return func(dstate, execute=False)
-			elif int and int_speed:
-				return func(int_speed, interface, dstate, execute=False)
+		# If data_type is set to list, we cast the list to a set while comparing it so order doesn't matter
+		if data_type == list:
+			if set(dstate) == set(cstate):
+				return
+			# Case2 and 3 create
+			elif set(dstate) != set(cstate):
+				if not int or not int_speed:
+					return func(dstate, execute=False)
+				elif int and int_speed:
+					return func(int_speed, interface, dstate, execute=False)
+		elif data_type == str:
+			if dstate == cstate:
+				return
+			# Case2 and 3 create
+			elif dstate != cstate:
+				if not int or not int_speed:
+					return func(dstate, execute=False)
+				elif int and int_speed:
+					return func(int_speed, interface, dstate, execute=False)
+
+
 
 	def _protocol_ntpclient_servers(self, dstate, cstate):
 		dstate = dstate['protocols']['ntp']['client']['servers']
@@ -281,7 +294,7 @@ class Appliance(ConfigObject):
 					commands.append(self._interface_untagged_vlan_push(cstate, dstate, kspd, kint))
 				if 'stp' in vint:
 					commands.append(self._stp_options_push(cstate, dstate, kspd, kint))
-		return commands
+		self.plugin.add_command(commands)
 
 	def _stp_options_push(self, cstate, dstate, kspd, kint):
 		for v in WeaverConfig.gen_portskel()['stp']:
@@ -302,37 +315,37 @@ class Appliance(ConfigObject):
 		try:
 			cstate = cstate['interfaces'][speed][interface]['untagged_vlan']
 		except KeyError:
-			return self.plugin.set_interface_untagged_vlan(interface, dstate, execute=False)
-		# Case0
-		try:
-			dstate
-		except KeyError:
-			return
-		# Case1
-		if dstate == cstate:
-			return
-		# Case 2
-		elif dstate != cstate:
-			return self.plugin.set_interface_untagged_vlan(interface, dstate, execute=False)
+			cstate = None
+		return self._compare_state(dstate, cstate, self.plugin.set_interface_untagged_vlan, interface=interface, int_speed=speed)
 
 	def _interface_tagged_vlans_push(self, cstate, dstate, speed, interface):
 		# Case 3
-		dstate = set(dstate['interfaces'][speed][interface]['tagged_vlans'])
+		dstate = dstate['interfaces'][speed][interface]['tagged_vlans']
 		try:
-			cstate = set(cstate['interfaces'][speed][interface]['tagged_vlans'])
+			cstate = cstate['interfaces'][speed][interface]['tagged_vlans']
 		except KeyError:
-			return self.plugin.set_interface_tagged_vlans(speed, interface, dstate, execute=False)
-		# Case0
-		try:
-			dstate
-		except KeyError:
-			return
-		# Case1
-		if dstate == cstate:
-			return
-		# Case 2
-		elif dstate != cstate:
-			return self.plugin.set_interface_tagged_vlans(speed, interface, dstate, execute=False)
+			# return self.plugin.set_interface_tagged_vlans(speed, interface, dstate, execute=False)
+			return None
+		return self._compare_state(
+			dstate,
+			cstate,
+			self.plugin.set_interface_tagged_vlan,
+			interface=interface,
+			int_speed=speed,
+			data_type=list
+		)
+		# # Case0
+		# try:
+		# 	dstate
+		# except KeyError:
+		# 	return
+		# # Case1
+		# # We compare everything below here as sets because order doesn't matter
+		# if set(dstate) == set(cstate):
+		# 	return
+		# # Case 2
+		# elif set(dstate) != set(cstate):
+		# 	return self.plugin.set_interface_tagged_vlans(speed, interface, dstate, execute=False)
 
 	def _protocol_ntpclient_timezone_push(self, dstate, cstate):
 		cstate = cstate['protocols']['ntp']['client']['timezone']

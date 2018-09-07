@@ -30,12 +30,15 @@ class NetWeaverPlugin:
 		:param commands:
 		:return:
 		"""
-		if type(commands) == list:
+		# This function can expect to receive a single command, a list of commands,
+		# or non-commands ([], None, etc). This is done to simplify upstream functions
+		# In the latter case, we don't apppend it
+		if commands == [] or commands == None or commands == '':
+			return
+		elif type(commands):
 			for com in commands:
 				if com is not None:
 					self.commands.append(com)
-		elif commands is None:
-			return
 		else:
 			self.commands.append(commands)
 
