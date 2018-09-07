@@ -329,7 +329,7 @@ class Appliance(ConfigObject):
 		return self._compare_state(
 			dstate,
 			cstate,
-			self.plugin.set_interface_tagged_vlan,
+			self.plugin.set_interface_tagged_vlans,
 			interface=interface,
 			int_speed=speed,
 			data_type=list
