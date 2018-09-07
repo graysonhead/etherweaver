@@ -187,8 +187,6 @@ class Appliance(ConfigObject):
 		self.plugin.add_command(self._hostname_push(dstate, cstate))
 		self.plugin.add_command(self._protocol_dns_nameservers_push(dstate, cstate))
 		self.plugin.add_command(self._protocol_ntpclient_push(dstate, cstate))
-		# self.plugin.add_command(self._protocol_ntpclient_timezone_push(dstate, cstate))
-		# self.plugin.add_command(self._protocol_ntpclient_servers(dstate, cstate))
 		self.plugin.add_command(self._vlans_push(dstate, cstate))
 		# Interfaces depend on vlans, so they are run after vlans
 		self._interfaces_push(dstate, cstate)
@@ -248,15 +246,6 @@ class Appliance(ConfigObject):
 				elif int and int_speed:
 					return func(int_speed, interface, dstate, execute=False)
 
-	# def _protocol_ntpclient_timezone_push(self, dstate, cstate):
-	# 	cstate = cstate['protocols']['ntp']['client']['timezone']
-	# 	dstate = dstate['protocols']['ntp']['client']['timezone']
-	# 	return self._compare_state(dstate, cstate, self.plugin.set_ntp_client_timezone)
-	#
-	# def _protocol_ntpclient_servers(self, dstate, cstate):
-	# 	dstate = dstate['protocols']['ntp']['client']['servers']
-	# 	cstate = cstate['protocols']['ntp']['client']['servers']
-	# 	return self._compare_state(dstate, cstate, self.plugin.set_ntp_client_servers)
 
 	def _protocol_ntpclient_push(self, dstate, cstate):
 		commands = []
@@ -283,7 +272,7 @@ class Appliance(ConfigObject):
 			'shared_mac': self.plugin.set_clag_shared_mac
 		}
 		for key, func in dispatcher.items():
-			commands.append(self._compare_state(dstate[key], cstate[key], func))
+			smart_append(commands, self._compare_state(dstate[key], cstate[key], func))
 		return commands
 
 	def _hostname_push(self, dstate, cstate):
@@ -306,14 +295,15 @@ class Appliance(ConfigObject):
 		for kspd, vspd in i_dstate.items():
 			for kint, vint in vspd.items():
 				if 'tagged_vlans' in vint:
-					commands.append(self._interface_tagged_vlans_push(cstate, dstate, kspd, kint))
+					smart_append(commands, self._interface_tagged_vlans_push(cstate, dstate, kspd, kint))
 				if 'untagged_vlan' in vint:
-					commands.append(self._interface_untagged_vlan_push(cstate, dstate, kspd, kint))
+					smart_append(commands, self._interface_untagged_vlan_push(cstate, dstate, kspd, kint))
 				if 'stp' in vint:
-					commands.append(self._stp_options_push(cstate, dstate, kspd, kint))
+					smart_append(commands, self._stp_options_push(cstate, dstate, kspd, kint))
 		self.plugin.add_command(commands)
 
 	def _stp_options_push(self, cstate, dstate, kspd, kint):
+		# TODO: update this function to follow conventions
 		for v in WeaverConfig.gen_portskel()['stp']:
 			ds = dstate['interfaces'][kspd][kint]['stp'][v]
 			# Assume false on keyerror
