@@ -324,7 +324,6 @@ class Appliance(ConfigObject):
 		try:
 			cstate = cstate['interfaces'][speed][interface]['tagged_vlans']
 		except KeyError:
-			# return self.plugin.set_interface_tagged_vlans(speed, interface, dstate, execute=False)
 			return None
 		return self._compare_state(
 			dstate,
@@ -334,18 +333,6 @@ class Appliance(ConfigObject):
 			int_speed=speed,
 			data_type=list
 		)
-		# # Case0
-		# try:
-		# 	dstate
-		# except KeyError:
-		# 	return
-		# # Case1
-		# # We compare everything below here as sets because order doesn't matter
-		# if set(dstate) == set(cstate):
-		# 	return
-		# # Case 2
-		# elif set(dstate) != set(cstate):
-		# 	return self.plugin.set_interface_tagged_vlans(speed, interface, dstate, execute=False)
 
 	def _protocol_ntpclient_timezone_push(self, dstate, cstate):
 		cstate = cstate['protocols']['ntp']['client']['timezone']
