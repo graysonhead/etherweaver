@@ -304,10 +304,10 @@ class Appliance(ConfigObject):
 						smart_append(commands, self._stp_options_push(cstate, dstate, kspd, kint))
 					if 'bond_slave':
 						smart_append(commands, self._bond_slave_push(cstate, dstate, kspd, kint))
-			self.plugin.add_command(commands)
+		self.plugin.add_command(commands)
 
 	def _bond_slave_push(self, cstate, dstate, kspd, kint):
-		inter_dstate = dstate['interfaces'][kspd][kint]
+		inter_dstate = dstate['interfaces'][kspd][kint]['bond_slave']
 		try:
 			inter_cstate = cstate['interfaces'][kspd][kint]['bond_slave']
 		except KeyError:
@@ -328,7 +328,15 @@ class Appliance(ConfigObject):
 				'clag_id': self.plugin.set_bond_clag_id,
 			}
 			for key, func in dispatcher.items():
-				smart_append(commands, self._compare_state(bnd_dstate[key], bnd_cstate[key], func, int_type='bond', interface=kbnd))
+				if bnd_dstate is not None:
+					ds = bnd_dstate[key]
+				else:
+					ds = bnd_dstate
+				if bnd_cstate is not None:
+					cs = bnd_cstate[key]
+				else:
+					cs = bnd_cstate
+				smart_append(commands, self._compare_state(ds, cs, func, int_type='bond', interface=kbnd))
 			return commands
 
 
