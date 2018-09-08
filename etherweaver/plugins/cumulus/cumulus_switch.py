@@ -123,6 +123,12 @@ class CumulusSwitch(NetWeaverPlugin):
 				# Get the name and ID of the interface
 				name = line.split(' ')[3]
 				clag_id = line.split(' ')[6]
+				conf['interfaces']['bond'][name]['clag_id'] = int(clag_id)
+			if 'bridge vids' in line:
+				name = line.split(' ')[3]
+				vids = line.split(' ')[6].split(',')
+				conf['interfaces']['bond'][name]['tagged_vlans'] = extrapolate_list(vids, int_out=True)
+
 
 
 		pre_parse()
@@ -297,7 +303,7 @@ class CumulusSwitch(NetWeaverPlugin):
 				except ValueError:
 					portnum = k.strip('swp')
 			if v['speed'] == 'N/A':
-				ports_by_name.update({portname: {'portdid': portnum, 'speed': '1G', 'mode': v['mode']}})
+				ports_by_name.update({portname: {'portid': portnum, 'speed': '1G', 'mode': v['mode']}})
 			else:
 				ports_by_name.update({portname: {'portid': portnum, 'speed': v['speed'], 'mode': v['mode']}})
 			ports_by_number.update({portnum: {'portname': portname, 'speed': v['speed'], 'mode': v['mode']}})
@@ -370,7 +376,10 @@ class CumulusSwitch(NetWeaverPlugin):
 		return commands
 
 	def set_interface_tagged_vlans(self, speed, interface, vlans, execute=True, commit=True):
-		cumulus_interface = self._number_port_mapper(interface)
+		if speed != 'bond':
+			cumulus_interface = self._number_port_mapper(interface)
+		else:
+			cumulus_interface = interface
 		commands = []
 		vlans_to_add = []
 		vlans_to_remove = []
@@ -385,14 +394,20 @@ class CumulusSwitch(NetWeaverPlugin):
 					vlans_to_remove.append(v)
 		else:
 			vlans_to_add = vlans
+		if speed == 'bond':
+			interface_type_name = 'bond'
+		else:
+			interface_type_name = 'interface'
 		if vlans_to_remove:
-			commands.append('net del interface {} bridge vids {}'.format(
+			commands.append('net del {} {} bridge vids {}'.format(
+				interface_type_name,
 				cumulus_interface,
 				','.join(str(x) for x in compact_list(list(vlans_to_remove)))
 				)
 			)
 		if vlans_to_add:
-			commands.append('net add interface {} bridge vids {}'.format(
+			commands.append('net add {} {} bridge vids {}'.format(
+				interface_type_name,
 				cumulus_interface,
 				','.join(str(x) for x in compact_list(list(vlans_to_add)))
 				)

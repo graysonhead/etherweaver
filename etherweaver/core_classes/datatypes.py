@@ -23,7 +23,7 @@ class WeaverConfig(object):
 					for kint, vint in self.config['interfaces'][kspd].items():
 						# We can't extrapolate bonds as they are all strings
 						kspd_ints = {}
-						if kspd != 'bond':
+						if kspd:
 							kspd_ints.update(self._interface_extrapolate(vint))
 					if kspd != 'bond':
 						new_int.update({kspd: extrapolate_dict(vspd, int_key=True)})

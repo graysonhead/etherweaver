@@ -192,7 +192,7 @@ class Appliance(ConfigObject):
 		self._interfaces_push(dstate, cstate)
 		# Bonds depend on interfaces, so they are run after interfaces
 		self.plugin.add_command(self._clag_push(dstate, cstate))
-		self._bonds_push(dstate, cstate)
+		self.plugin.add_command(self._bonds_push(dstate, cstate))
 		if execute:
 			for com in self.plugin.commands:
 				self.plugin.command(com)
@@ -312,7 +312,13 @@ class Appliance(ConfigObject):
 			inter_cstate = cstate['interfaces'][kspd][kint]['bond_slave']
 		except KeyError:
 			inter_cstate = None
-		return self._compare_state(inter_dstate, inter_cstate, self.plugin.set_bond_slaves, int_type='bond', interface=kint)
+		return self._compare_state(
+			inter_dstate,
+			inter_cstate,
+			self.plugin.set_bond_slaves,
+			int_type='bond',
+			interface=kint
+		)
 
 
 	def _bonds_push(self, dstate, cstate):
@@ -326,6 +332,7 @@ class Appliance(ConfigObject):
 				bnd_cstate = None
 			dispatcher = {
 				'clag_id': self.plugin.set_bond_clag_id,
+				'tagged_vlans': self.plugin.set_interface_tagged_vlans,
 			}
 			for key, func in dispatcher.items():
 				if bnd_dstate is not None:
@@ -337,7 +344,7 @@ class Appliance(ConfigObject):
 				else:
 					cs = bnd_cstate
 				smart_append(commands, self._compare_state(ds, cs, func, int_type='bond', interface=kbnd))
-			return commands
+		return commands
 
 
 	def _stp_options_push(self, cstate, dstate, kspd, kint):
