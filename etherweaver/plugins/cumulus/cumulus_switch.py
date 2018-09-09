@@ -179,6 +179,10 @@ class CumulusSwitch(NetWeaverPlugin):
 				name = line.split(' ')[3]
 				vids = line.split(' ')[6].split(',')
 				conf['interfaces']['bond'][name]['tagged_vlans'] = extrapolate_list(vids, int_out=True)
+			if 'bridge pvid' in line:
+				name = line.split(' ')[3]
+				vid = line.split(' ')[6]
+				conf['interfaces']['bond'][name]['untagged_vlan'] = int(vid)
 
 
 
