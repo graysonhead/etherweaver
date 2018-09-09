@@ -229,7 +229,9 @@ class Appliance(ConfigObject):
 		# Case1
 		# If data_type is set to list, we cast the list to a set while comparing it so order doesn't matter
 		if data_type == list:
-			if set(dstate) == set(cstate):
+			if cstate is None:
+				return func(int_type, interface, dstate, execute=False)
+			elif set(dstate) == set(cstate):
 				return
 			# Case2 and 3 create
 			elif set(dstate) != set(cstate):
@@ -333,6 +335,7 @@ class Appliance(ConfigObject):
 			dispatcher = {
 				'clag_id': self.plugin.set_bond_clag_id,
 				'tagged_vlans': self.plugin.set_interface_tagged_vlans,
+				'untagged_vlan': self.plugin.set_interface_untagged_vlan,
 			}
 			for key, func in dispatcher.items():
 				if bnd_dstate is not None:
@@ -374,7 +377,7 @@ class Appliance(ConfigObject):
 		try:
 			cstate = cstate['interfaces'][speed][interface]['tagged_vlans']
 		except KeyError:
-			return None
+			cstate = None
 		return self._compare_state(
 			dstate,
 			cstate,

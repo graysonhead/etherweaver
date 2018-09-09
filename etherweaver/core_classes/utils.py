@@ -124,3 +124,22 @@ def smart_append(li, item, filter_list=[None]):
 				li.append(i)
 	elif item not in filter_list:
 		li.append(item)
+
+
+def multi_port_parse(prt):
+	# Populate this list with the complete list of interface names
+	int_names = []
+	# We may have an abbreviation like this 'po1-3,pol2-4'
+	if ',' in prt:
+		ports_list = prt.split(',')
+	else:
+		ports_list = [prt]
+	# Split it into ['pol1-3', 'pol2-4']
+	for ports in ports_list:
+		# Take 'po1-3' and turn it into [ 'po1', 'po2', 'po3' ]
+		prt_name = ports.strip('1234567890-')
+		compact_list = ports.strip(prt_name)
+		prt_list = extrapolate_list([compact_list])
+		for pn in prt_list:
+			int_names.append(prt_name + pn)
+	return int_names

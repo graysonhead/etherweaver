@@ -2,7 +2,10 @@ from etherweaver.plugins.plugin_class import NetWeaverPlugin, NWConnType
 from ipaddress import ip_address, IPv4Address, IPv6Address
 import pytz
 import json
-from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict, compare_dict_keys, compact_list
+from etherweaver.core_classes.utils import \
+	extrapolate_list, \
+	compact_list, \
+	multi_port_parse
 from etherweaver.core_classes.datatypes import WeaverConfig
 from etherweaver.core_classes.errors import ConfigKeyError
 
@@ -32,6 +35,38 @@ class CumulusSwitch(NetWeaverPlugin):
 		self.cstate = self.pull_state()
 		return ret
 
+	def multi_port_parse(self, prt):
+		# Populate this list with the complete list of interface names
+		int_names = []
+		# We may have an abbreviation like this 'po1-3,pol2-4'
+		if ',' in prt:
+			ports_list = prt.split(',')
+		else:
+			ports_list = [prt]
+		# Split it into ['pol1-3', 'pol2-4']
+		for ports in ports_list:
+			prt_name = None
+			# Take 'po1-3' and turn it into [ 'po1', 'po2', 'po3' ]
+			prt_name = ports.strip('1234567890-')
+			compact_list = ports.strip(prt_name)
+			prt_list = extrapolate_list([compact_list])
+			# This is for some really ugly edge-cases like 'po1-3,6,pol4' where a number can appear without an ID
+			# It seems safe to assume that the last ID can be used in all cases
+			for pn in prt_list:
+				if prt_name is None or prt_name == '':
+					if last_name is not None:
+						# prt_list[prt_list.index(pn)] = last_name + pn
+						int_names.append(last_name + pn)
+					else:
+						raise ValueError(
+							"The name of the port could not be determined, this is probably due to a malformed"
+							" name string")
+				else:
+					int_names.append(prt_name + pn)
+			if bool(prt_name) is True:
+				last_name = prt_name
+		return int_names
+
 	def pull_state(self):
 		pre_parse_commands = self.command('net show configuration commands').split('\n')
 		# This dict is constructed following the yaml structure for a role starting at the hostname level
@@ -46,18 +81,34 @@ class CumulusSwitch(NetWeaverPlugin):
 				if line.startswith('net add interface') and ',' in line.split(' ')[3]\
 						or line.startswith('net add interface') and '-' in line.split(' ')[3]:
 					components = line.split(' ')
-					int_iter = line.split(' ')[3].strip('swp').split(',')
-					int_iter = extrapolate_list(int_iter, int_out=False)
+					int_iter = self.multi_port_parse(components[3])
+					# int_iter = line.split(' ')[3].strip('swp').split(',')
+					# int_iter = extrapolate_list(int_iter, int_out=False)
 					for interface in int_iter:
 						newline = []
 						for comp in components[0:3]:
 							newline.append(comp)
-						newline.append('swp' + interface)
+						newline.append(interface)
+						for comp in components[4:]:
+							newline.append(comp)
+						commands.append(' '.join(newline))
+				# Same thing but for bonds
+				# TODO: This and the above could probably be a function
+				elif line.startswith('net add bond') and ',' in line.split(' ')[3]\
+						or line.startswith('net add bond') and '-' in line.split(' ')[3]:
+					components = line.split(' ')
+					int_iter = self.multi_port_parse(components[3])
+					for interface in int_iter:
+						newline = []
+						for comp in components[0:3]:
+							newline.append(comp)
+						newline.append(interface)
 						for comp in components[4:]:
 							newline.append(comp)
 						commands.append(' '.join(newline))
 				else:
 					commands.append(line)
+
 
 		def parse_interfaces(line):
 			portid = line.split(' ')[3]
@@ -362,18 +413,18 @@ class CumulusSwitch(NetWeaverPlugin):
 			dic = stringordict
 		return dic
 
-	def set_interface_tagged_vlans(self, interface, vlans, execute=True, commit=True):
-		commands = []
-		vids_to_add = ','.join(str(x) for x in vlans)
-		interface = self._number_port_mapper(interface)
-		commands.append('net del interface {} bridge vids'.format(interface))
-		commands.append('net add interface {} bridge vids {}'.format(interface, vids_to_add))
-		if execute:
-			for com in commands:
-				self.command(com)
-			if commit:
-				self.commit()
-		return commands
+	# def set_interface_tagged_vlans(self, interface, vlans, execute=True, commit=True):
+	# 	commands = []
+	# 	vids_to_add = ','.join(str(x) for x in vlans)
+	# 	interface = self._number_port_mapper(interface)
+	# 	commands.append('net del interface {} bridge vids'.format(interface))
+	# 	commands.append('net add interface {} bridge vids {}'.format(interface, vids_to_add))
+	# 	if execute:
+	# 		for com in commands:
+	# 			self.command(com)
+	# 		if commit:
+	# 			self.commit()
+	# 	return commands
 
 	def set_interface_tagged_vlans(self, speed, interface, vlans, execute=True, commit=True):
 		if speed != 'bond':
@@ -441,8 +492,11 @@ class CumulusSwitch(NetWeaverPlugin):
 		except KeyError:
 			raise ValueError("Referenced non-existent interface {} on appliance {}".format(port, self.appliance.name))
 
-	def set_interface_untagged_vlan(self, interface, vlan, execute=True):
-		command = 'net add interface {} bridge pvid {}'.format(self._number_port_mapper(interface), vlan)
+	def set_interface_untagged_vlan(self, type, interface, vlan, execute=True):
+		if type == 'bond':
+			command = 'net add bond {} bridge pvid {}'.format(interface, vlan)
+		else:
+			command = 'net add interface {} bridge pvid {}'.format(self._number_port_mapper(interface), vlan)
 		if execute:
 			self.command(command)
 		return command
