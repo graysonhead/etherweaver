@@ -9,6 +9,37 @@ If you are making commits to this file, please be extra careful to add descripti
 
 The NetWeaverPlugin class must be inherited by any plugin. Any class marked with "PLUGIN_OVERRIDE" 
 is a skeleton method intended to be implemented by a plugin.
+
+There are a few different archetypes of each set function:
+
+All methods must have execute and it must default to True. IF execute is true, run and apply the command immediately
+Otherwise just return the line(s) needed to run the command
+
+Set methods that set a single string value per appliance (I.E. setting NTP timezone)
+
+These methods must accept the following arguments:
+:param timezone_value:
+The string that the timezone will be set to
+:param delete:
+Removes the string if True, defaults to false
+
+Set methods that set a single list value per appliance (I.E. setting DNS server list)
+:param dns_servers_value:
+List of DNS servers to add
+:param delete:
+If delete is true, and value parameter is empty, remove the whole list.
+IF delete is true, and value parameter contains values, delete only the values in the list
+
+Set methods that operate on interfaces have additional positional paraemeters:
+:param speed: 
+The speed or type of interface (I.E. 1G, 10G, bond, etc)
+:interface:
+The number of the interface in dstate (you will probably need a mapper function as part of your plugin to translate this
+to the value utilized by your appliance)
+vlans
+
+
+Boolean functions 
 """
 
 

@@ -248,7 +248,7 @@ class CumulusSwitch(NetWeaverPlugin):
 				self.commit()
 		return command
 
-	def set_dns_nameservers(self, nameserverlist, execute=True, commit=True):
+	def set_dns_nameservers(self, nameserverlist, execute=True, commit=True, delete=False):
 		commandqueue = []
 		try:
 			nslist = self.appliance.cstate['protocols']['dns']['nameservers']
@@ -281,7 +281,7 @@ class CumulusSwitch(NetWeaverPlugin):
 				self.commit()
 		return command
 
-	def set_hostname(self, hostname, execute=True, commit=True):
+	def set_hostname(self, hostname, execute=True, commit=True, delete=False):
 		command = 'net add hostname {}'.format(hostname)
 		if execute:
 			self.command(command)
@@ -289,7 +289,7 @@ class CumulusSwitch(NetWeaverPlugin):
 				self.commit()
 		return command
 
-	def set_ntp_client_timezone(self, timezone, execute=True):
+	def set_ntp_client_timezone(self, timezone, execute=True, delete=False):
 		if timezone in pytz.all_timezones:
 			command = 'net add time zone {}'.format(timezone)
 		else:
@@ -313,7 +313,7 @@ class CumulusSwitch(NetWeaverPlugin):
 			self.commit()
 		return command
 
-	def set_ntp_client_servers(self, ntpserverlist, execute=True, commit=True):
+	def set_ntp_client_servers(self, ntpserverlist, execute=True, commit=True, delete=False):
 		commandqueue = []
 		try:
 			slist = self.appliance.cstate['protocols']['ntp']['client']['servers']
@@ -364,9 +364,6 @@ class CumulusSwitch(NetWeaverPlugin):
 			ports_by_number.update({portnum: {'portname': portname, 'speed': v['speed'], 'mode': v['mode']}})
 		return {'by_name': ports_by_name, 'by_number': ports_by_number}
 
-	def set_interface_config(self, interfaces, profile=None, execute=True):
-		pass
-
 	def add_vlan(self, vlan, execute=True, commit=True):
 		"""
 		Config objects like {1: {'description': 'Data'}}
@@ -389,7 +386,7 @@ class CumulusSwitch(NetWeaverPlugin):
 				self.commit()
 		return command
 
-	def set_vlans(self, vlandictlist, execute=True, commit=True):
+	def set_vlans(self, vlandictlist, execute=True, commit=True, delete=False):
 		commandqueue = []
 		vlans_to_add = []
 		vlans_to_remove = []
@@ -430,7 +427,7 @@ class CumulusSwitch(NetWeaverPlugin):
 	# 			self.commit()
 	# 	return commands
 
-	def set_interface_tagged_vlans(self, speed, interface, vlans, execute=True, commit=True):
+	def set_interface_tagged_vlans(self, speed, interface, vlans, execute=True, commit=True, delete=False):
 		if speed != 'bond':
 			cumulus_interface = self._number_port_mapper(interface)
 		else:
@@ -476,7 +473,7 @@ class CumulusSwitch(NetWeaverPlugin):
 
 
 
-	def set_portfast(self, speed, interface, enable_bool, execute=True, commit=True):
+	def set_portfast(self, speed, interface, enable_bool, execute=True, commit=True, delete=False):
 		if enable_bool:
 			command = 'net add interface {} stp portadminedge'.format(self._number_port_mapper(interface))
 		else:
@@ -496,7 +493,7 @@ class CumulusSwitch(NetWeaverPlugin):
 		except KeyError:
 			raise ValueError("Referenced non-existent interface {} on appliance {}".format(port, self.appliance.name))
 
-	def set_interface_untagged_vlan(self, type, interface, vlan, execute=True):
+	def set_interface_untagged_vlan(self, type, interface, vlan, execute=True, delete=False):
 		if type == 'bond':
 			command = 'net add bond {} bridge pvid {}'.format(interface, vlan)
 		else:
@@ -505,38 +502,41 @@ class CumulusSwitch(NetWeaverPlugin):
 			self.command(command)
 		return command
 
-	def rm_interface_untagged_vlan(self, interface, execute=True):
+	def rm_interface_untagged_vlan(self, interface, execute=True, delete=False):
 		command = 'net del interface {} bridge pvid'.format(self._number_port_mapper(interface))
 		if execute:
 			self.command(command)
 		return command
 
-	def set_clag_backup_ip(self, backup_ip, execute=True):
+	def set_clag_backup_ip(self, backup_ip, execute=True, delete=False):
 		command = 'net add interface peerlink.4094 clag backup-ip {}'.format(backup_ip)
 		if execute:
 			self.command(command)
 		return command
 
-	def set_clag_cidr(self, cidr, execute=True):
+	def set_clag_cidr(self, cidr, execute=True, delete=False):
 		command = 'net add interface peerlink.4094 ip address {}'.format(cidr)
 		if execute:
 			self.command(command)
 		return command
 
-	def set_clag_peer_ip(self, peer_ip, execute=True):
+	def set_clag_peer_ip(self, peer_ip, execute=True, delete=False):
 		command = 'net add interface peerlink.4094 clag peer-ip {}'.format(peer_ip)
 		if execute:
 			self.command(command)
 		return command
 
-	def set_clag_priority(self, priority, execute=True):
+	def set_clag_priority(self, priority, execute=True, delete=False):
 		command = 'net add interface peerlink.4094 clag priority {}'.format(priority)
 		if execute:
 			self.command(command)
 		return command
 
-	def set_clag_shared_mac(self, shared_mac, execute=True):
-		command = 'net add interface peerlink.4094 clag sys-mac {}'.format(shared_mac)
+	def set_clag_shared_mac(self, shared_mac, execute=True, delete=False):
+		if delete is True:
+			command = 'net del interface peerlink.4094 clag sys-mac'
+		else:
+			command = 'net add interface peerlink.4094 clag sys-mac {}'.format(shared_mac)
 		if execute:
 			self.command(command)
 		return command

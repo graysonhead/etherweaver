@@ -75,18 +75,27 @@ class Appliance(ConfigObject):
 
 	def _build_dispatch_tree(self):
 		self.dtree = {
-			'state': {
+			'dstate': {
 				'apply': self.push_state,
-				'get': self.cstate,
+				'get': self.dstate,
+			},
+			'cstate': {
+				'get': self.cstate
 			},
 			'hostname': {
-				'set': self.plugin.set_hostname,
+				'set': self._not_implemented,
 				'get': self.plugin.cstate['hostname'],
 			},
 			'vlans': {
 				'get': self.plugin.cstate['vlans'],
-				'set': self.plugin.set_vlans,
-				'add': self.plugin.add_vlan
+				'set': self._not_implemented,
+				'add': self._not_implemented
+			},
+			'clag': {
+				'shared_mac': {
+					'get': self.cstate['clag']['shared_mac'],
+					'set': self._not_implemented
+				}
 			},
 			'protocols': {
 				'ntp': {
@@ -94,13 +103,13 @@ class Appliance(ConfigObject):
 						{
 							'timezone': {
 								'get': self.plugin.cstate['protocols']['ntp']['client']['timezone'],
-								'set': self.plugin.set_ntp_client_timezone
+								'set': self._not_implemented
 							},
 							'servers': {
-								'add': self.plugin.add_ntp_client_server,
+								'add': self._not_implemented,
 								'get': self.plugin.cstate['protocols']['ntp']['client']['servers'],
-								'del': self.plugin.rm_ntp_client_server,
-								'set': self.plugin.set_ntp_client_servers
+								'del': self._not_implemented,
+								'set': self._not_implemented
 							},
 							'get': self.plugin.cstate['protocols']['ntp']['client'],
 						}
@@ -109,9 +118,9 @@ class Appliance(ConfigObject):
 					'get': self.plugin.cstate['protocols']['dns'],
 					'nameservers': {
 						'get': self.plugin.cstate['protocols']['dns']['nameservers'],
-						'set': self.plugin.set_dns_nameservers,
-						'add': self.plugin.add_dns_nameserver,
-						'del': self.plugin.rm_dns_nameserver
+						'set': self._not_implemented,
+						'add': self._not_implemented,
+						'del': self._not_implemented
 					}
 				}
 			},
@@ -226,6 +235,10 @@ class Appliance(ConfigObject):
 		#if dstate is False or dstate is None or bool(dstate) is False:
 		if dstate == [] or dstate == '' or dstate == {} or dstate is None:
 			return
+		# If the dstate specifies a value shouldn't exist with False, but the cstate is None, we have already done our
+		# job
+		if dstate is False and cstate is None:
+			return
 		# Case1
 		# If data_type is set to list, we cast the list to a set while comparing it so order doesn't matter
 		if data_type == list:
@@ -236,18 +249,30 @@ class Appliance(ConfigObject):
 			# Case2 and 3 create
 			elif set(dstate) != set(cstate):
 				if not int or not int_type:
-					return func(dstate, execute=False)
+					if dstate is False:
+						return func(dstate, execute=False, delete=True)
+					else:
+						return func(dstate, execute=False)
 				elif int and int_type:
-					return func(int_type, interface, dstate, execute=False)
+					if dstate is False:
+						return func(int_type, interface, dstate, execute=False, delete=True)
+					else:
+						return func(int_type, interface, dstate, execute=False)
 		elif data_type == str:
 			if dstate == cstate:
 				return
 			# Case2 and 3 create
 			elif dstate != cstate:
 				if not int or not int_type:
-					return func(dstate, execute=False)
+					if dstate is False:
+						return func(dstate, execute=False, delete=True)
+					else:
+						return func(dstate, execute=False)
 				elif int and int_type:
-					return func(int_type, interface, dstate, execute=False)
+					if dstate is False:
+						return func(int_type, interface, dstate, execute=False, delete=True)
+					else:
+						return func(int_type, interface, dstate, execute=False)
 
 
 	def _protocol_ntpclient_push(self, dstate, cstate):
