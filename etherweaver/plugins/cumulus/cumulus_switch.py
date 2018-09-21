@@ -435,6 +435,17 @@ class CumulusSwitch(NetWeaverPlugin):
 		commands = []
 		vlans_to_add = []
 		vlans_to_remove = []
+		# If the delete value is set, we are adding vlans from the 'vlans' param into the delete set instead of adding
+		# If delete and the value is set, we are deleting a single vlan or a list of vlans
+		if delete and vlans:
+			for v in vlans:
+				# Delete the vlans in the list
+				if v in self.appliance.cstate['interfaces'][speed][interface]['tagged_vlans']:
+					vlans_to_remove.append(v)
+		elif delete and not vlans:
+			# Delete all of them
+			for v in self.appliance.cstate['interfaces'][speed][interface]['tagged_vlans']:
+				vlans_to_remove.append(v)
 		# Add vlans not in cstate from dstate
 		if interface in self.appliance.cstate['interfaces'][speed]:
 			for v in vlans:
@@ -472,8 +483,7 @@ class CumulusSwitch(NetWeaverPlugin):
 		return commands
 
 
-
-	def set_portfast(self, speed, interface, enable_bool, execute=True, commit=True, delete=False):
+	def set_portfast(self, speed, interface, enable_bool, execute=True, commit=True):
 		if enable_bool:
 			command = 'net add interface {} stp portadminedge'.format(self._number_port_mapper(interface))
 		else:
@@ -495,39 +505,57 @@ class CumulusSwitch(NetWeaverPlugin):
 
 	def set_interface_untagged_vlan(self, type, interface, vlan, execute=True, delete=False):
 		if type == 'bond':
-			command = 'net add bond {} bridge pvid {}'.format(interface, vlan)
+			if delete:
+				command = 'net del bond {} bridge pvid'.format(interface)
+			else:
+				command = 'net add bond {} bridge pvid {}'.format(interface, vlan)
 		else:
-			command = 'net add interface {} bridge pvid {}'.format(self._number_port_mapper(interface), vlan)
+			if delete:
+				command = 'net del interface {} bridge pvid'.format(interface)
+			else:
+				command = 'net add interface {} bridge pvid {}'.format(self._number_port_mapper(interface), vlan)
 		if execute:
 			self.command(command)
 		return command
 
-	def rm_interface_untagged_vlan(self, interface, execute=True, delete=False):
-		command = 'net del interface {} bridge pvid'.format(self._number_port_mapper(interface))
-		if execute:
-			self.command(command)
-		return command
+	# def rm_interface_untagged_vlan(self, interface, execute=True, delete=False):
+	# 	command = 'net del interface {} bridge pvid'.format(self._number_port_mapper(interface))
+	# 	if execute:
+	# 		self.command(command)
+	# 	return command
 
 	def set_clag_backup_ip(self, backup_ip, execute=True, delete=False):
-		command = 'net add interface peerlink.4094 clag backup-ip {}'.format(backup_ip)
+		if delete:
+			command = 'net del interface peerlink.4094 clag backup-ip'
+		else:
+			command = 'net add interface peerlink.4094 clag backup-ip {}'.format(backup_ip)
 		if execute:
 			self.command(command)
 		return command
 
 	def set_clag_cidr(self, cidr, execute=True, delete=False):
-		command = 'net add interface peerlink.4094 ip address {}'.format(cidr)
+		if delete:
+			command = 'net del interface peerlink.4094 ip address'
+		else:
+			command = 'net add interface peerlink.4094 ip address {}'.format(cidr)
 		if execute:
 			self.command(command)
 		return command
 
 	def set_clag_peer_ip(self, peer_ip, execute=True, delete=False):
-		command = 'net add interface peerlink.4094 clag peer-ip {}'.format(peer_ip)
+		if delete:
+			command = 'net del interface peerlink.4094 clag peer-ip'
+		else:
+			command = 'net add interface peerlink.4094 clag peer-ip {}'.format(peer_ip)
 		if execute:
 			self.command(command)
 		return command
 
 	def set_clag_priority(self, priority, execute=True, delete=False):
-		command = 'net add interface peerlink.4094 clag priority {}'.format(priority)
+		if delete:
+			command = 'net del interface peerlink.4094 clag priority'
+		else:
+			command = 'net add interface peerlink.4094 clag priority {}'.format(priority)
 		if execute:
 			self.command(command)
 		return command

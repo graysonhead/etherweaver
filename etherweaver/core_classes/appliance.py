@@ -97,6 +97,24 @@ class Appliance(ConfigObject):
 					'set': self._not_implemented
 				}
 			},
+			'interfaces': {
+				'get': self.cstate['interfaces'],
+				'1G': {
+					'get': self.cstate['interfaces']['1G']
+				},
+				'10G': {
+					'get': self.cstate['interfaces']['10G']
+				},
+				'40G': {
+					'get': self.cstate['interfaces']['40G']
+				},
+				'100G': {
+					'get': self.cstate['interfaces']['100G']
+				},
+				'bond': {
+					'get': self.cstate['interfaces']['bond']
+				}
+			},
 			'protocols': {
 				'ntp': {
 					'client':
@@ -123,14 +141,74 @@ class Appliance(ConfigObject):
 						'del': self._not_implemented
 					}
 				}
-			},
-			'interface': {
-				'1g': {
-					'get': self._not_implemented,
-					'set': self._not_implemented,
-				}
 			}
 		}
+
+	def interface_dispatch(self, int_type, int_id):
+		""" This builds a dispatch dict with the correct get values for the specified interface """
+		# In cstate, bonds are strings (names) and interfaces are always integers
+		int_cstate = self.cstate['interfaces'][int_type][int_id]
+		int_dispatch_dict = {
+				'get': int_cstate,
+				'ip': {
+					'get': int_cstate['ip']
+				},
+			}
+		# Some of these don't apply to bonds, so we append physical interface specific ones afterwords
+		if int_type != 'bond':
+			physical_specific_dict = {
+				'stp': {
+					'get': int_cstate['stp'],
+					'port_fast': {
+						'get': int_cstate['stp']['port_fast'],
+						'set': self.plugin.set_portfast
+					}
+				}
+			}
+			int_dispatch_dict.update(physical_specific_dict)
+		return int_dispatch_dict
+
+
+	def run_individual_command(self, func, value):
+		# Connect via whatever method is specified in protocols
+		self.plugin.connect()
+		# Update current state before building dispatch tree
+		self.cstate.update(self.plugin.pull_state())
+		self._build_dispatch_tree()
+		sfunc = func.split('.')
+		"""
+		Iterate through each level of the config and stop when you get to a command (get, set, etc.)
+		"""
+		level = self.dtree
+		is_int = False
+		skip_count = 0
+		int_type = None
+		int_id = None
+		for com in sfunc:
+			if skip_count > 0:
+				skip_count = skip_count - 1
+				continue
+			elif com == 'apply':
+				return level[com]()
+			elif com == 'get':
+				return level[com]
+			elif com == 'set' or com == 'add':
+				if is_int:
+					return level[com](int_type, int_id, value)
+				else:
+					return level[com](value)
+			elif com == 'interfaces' and sfunc[1] != 'get' and sfunc[2] != 'get':
+				int_type = sfunc[1]
+				if int_type != 'bond':
+					int_id = int(sfunc[2])
+				else:
+					int_id = sfunc[2]
+				# Since we consumed the next two values in the loop, we need to skip the next 2 iterations
+				skip_count = 2
+				is_int = True
+				level = self.interface_dispatch(int_type, int_id)
+			else:
+				level = level[com]
 
 	def get_plugin_path(self):
 		try:
@@ -150,38 +228,6 @@ class Appliance(ConfigObject):
 		self.plugin.connect()
 		# Update current state before building dispatch tree
 		self.cstate.update(self.plugin.pull_state())
-
-
-	def run_individual_command(self, func, value):
-		# Connect via whatever method is specified in protocols
-		self.plugin.connect()
-		# Update current state before building dispatch tree
-		self.cstate.update(self.plugin.pull_state())
-		self._build_dispatch_tree()
-		sfunc = func.split('.')
-		"""
-		Iterate through each level of the config and stop when you get to a command (get, set, etc.)
-		"""
-		level = self.dtree
-		for com in sfunc:
-			if com == 'apply':
-				return level[com]()
-			elif com == 'get':
-				return level[com]
-			elif com == 'set' or com == 'add':
-				return level[com](value)
-			elif com == 'interfaces':
-				try:
-					return self.plugin.cstate['interfaces'][sfunc[1]][sfunc[2]]
-				except KeyError:
-					return "Interface {}/{} does not exist on {}".format(
-						sfunc[1],
-						sfunc[2],
-						self.plugin.hostname
-					)
-			else:
-				level = level[com]
-
 
 	# State comparison methods
 

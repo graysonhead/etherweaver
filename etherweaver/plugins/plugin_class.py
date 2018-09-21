@@ -18,28 +18,38 @@ Otherwise just return the line(s) needed to run the command
 Set methods that set a single string value per appliance (I.E. setting NTP timezone)
 
 These methods must accept the following arguments:
+
 :param timezone_value:
-The string that the timezone will be set to
+	The string that the timezone will be set to
+
 :param delete:
-Removes the string if True, defaults to false
+	Removes the string if True, defaults to false
 
 Set methods that set a single list value per appliance (I.E. setting DNS server list)
+
 :param dns_servers_value:
-List of DNS servers to add
+	List of DNS servers to add
+
 :param delete:
-If delete is true, and value parameter is empty, remove the whole list.
-IF delete is true, and value parameter contains values, delete only the values in the list
+	If delete is true, and value parameter is empty, remove the whole list.
+	IF delete is true, and value parameter a list or dict (depending on the datatype of the function) delete the values in it
+	Even if a single value is requested to be deleted, it will be marshaled into the datatype the method usually accpets (List, Dict, etc)
 
 Set methods that operate on interfaces have additional positional paraemeters:
+
 :param speed: 
-The speed or type of interface (I.E. 1G, 10G, bond, etc)
+	The speed or type of interface (I.E. 1G, 10G, bond, etc)
+
 :interface:
-The number of the interface in dstate (you will probably need a mapper function as part of your plugin to translate this
-to the value utilized by your appliance)
-vlans
+	The number of the interface in dstate (you will probably need a mapper function as part of your plugin to translate this
+	to the value utilized by your appliance)
+	vlans
 
 
-Boolean functions 
+Boolean functions
+
+Boolean functions only have a True or False, so they inherently handle deletions on their own. Their state is either 
+true or false (I.E. set_portfast) 
 """
 
 
