@@ -170,6 +170,9 @@ class Appliance(ConfigObject):
 
 
 	def run_individual_command(self, func, value):
+		# If value is a string named "False" convert that to a python False
+		if value == 'False':
+			value = False
 		# Connect via whatever method is specified in protocols
 		self.plugin.connect()
 		# Update current state before building dispatch tree

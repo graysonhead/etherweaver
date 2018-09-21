@@ -159,7 +159,7 @@ class CumulusSwitch(NetWeaverPlugin):
 				speed = self.portmap['by_name']['swp{}'.format(str(interface))]['speed']
 				# Create or update the interface
 				if interface not in conf['interfaces'][speed]:
-					conf['interfaces'][speed].update({interface: {}})
+					conf['interfaces'][speed].update({interface: WeaverConfig.gen_portskel()})
 				conf['interfaces'][speed][interface].update({'bond_slave': name})
 
 		def bond_parse(line):
