@@ -146,6 +146,15 @@ class Appliance(ConfigObject):
 				'ip': {
 					'get': int_cstate['ip']
 				},
+				'untagged_vlan': {
+					'get': int_cstate['untagged_vlan'],
+					'set': self.plugin.set_interface_untagged_vlan,
+				},
+				'tagged_vlans': {
+					'get': int_cstate['tagged_vlans'],
+					'set': self.plugin.set_interface_tagged_vlans
+					# TODO left off here
+				}
 			}
 		# Some of these don't apply to bonds, so we append physical interface specific ones afterwords
 		if int_type != 'bond':
@@ -193,6 +202,11 @@ class Appliance(ConfigObject):
 					return level[com](int_type, int_id, value)
 				else:
 					return level[com](value)
+			elif com == 'del':
+				if is_int:
+					return level['set'](int_type, int_id, value, delete=True)
+				else:
+					return level['set'](value, delete=True)
 			elif com == 'interfaces' and sfunc[1] != 'get' and sfunc[2] != 'get':
 				int_type = sfunc[1]
 				if int_type != 'bond':
