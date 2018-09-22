@@ -4,7 +4,7 @@ from etherweaver.server_config_loader import get_server_config
 from importlib.machinery import SourceFileLoader
 from etherweaver.core_classes.utils import smart_append
 from etherweaver.plugins.plugin_class_errors import *
-from etherweaver.core_classes.datatypes import ApplianceConfig, FabricConfig, RoleConfig, WeaverConfig
+from etherweaver.core_classes.datatypes import ApplianceConfig, FabricConfig, WeaverConfig #RoleConfig
 import os
 import inspect
 from tqdm import tqdm
@@ -18,14 +18,13 @@ class Appliance(ConfigObject):
 		self.name = name
 		self.config = appliance_dict
 		self.fabric = None
-		self.role = None
+		# self.role = None
 		self.plugin = None
 		self.progress_bar = None
 		self.dtree = None
 		self.dstate = {}
 		self.cstate = {}
 		self.is_appliance = True
-
 		self.fabric_tree = []
 
 	def get_cstate(self):
@@ -53,11 +52,6 @@ class Appliance(ConfigObject):
 			dstate = FabricConfig(self.fabric_tree[-1].config, validate=False)
 			for fab in self.fabric_tree[:-1]:
 				dstate = dstate.merge_configs(FabricConfig(fab.config, validate=False))
-		if self.role:
-			if dstate:
-				dstate = dstate.merge_configs(RoleConfig(self.role.config))
-			else:
-				dstate = RoleConfig(self.role.config)
 		if dstate:
 			dstate = dstate.merge_configs(ApplianceConfig(self.config), validate=False)
 

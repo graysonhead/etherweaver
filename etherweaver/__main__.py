@@ -55,7 +55,7 @@ def main():
 		'--yaml',
 		type=str,
 		dest='yamlfile',
-		help='YAML file containing the roles, appliances, and fabric objects'
+		help='YAML file containing appliances and fabric objects'
 	)
 	args = parser.parse_args()
 	cli = CLIApp(yaml=args.yamlfile)

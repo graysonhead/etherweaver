@@ -207,14 +207,14 @@ class FabricConfig(WeaverConfig):
 			del(self.config['fabric'])
 
 
-class RoleConfig(WeaverConfig):
-
-	def _type_specific_keys(self):
-		self.type = 'Role'
-		return {
-			'fabric': str
-		}
-
-	def _clean_config(self):
-		if 'fabric' in self.config:
-			del(self.config['fabric'])
+# class RoleConfig(WeaverConfig):
+#
+# 	def _type_specific_keys(self):
+# 		self.type = 'Role'
+# 		return {
+# 			'fabric': str
+# 		}
+#
+# 	def _clean_config(self):
+# 		if 'fabric' in self.config:
+# 			del(self.config['fabric'])
