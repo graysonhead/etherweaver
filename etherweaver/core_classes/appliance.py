@@ -77,13 +77,12 @@ class Appliance(ConfigObject):
 				'get': self.cstate
 			},
 			'hostname': {
-				'set': self._not_implemented,
+				'set': self.plugin.set_hostname,
 				'get': self.plugin.cstate['hostname'],
 			},
 			'vlans': {
 				'get': self.plugin.cstate['vlans'],
-				'set': self._not_implemented,
-				'add': self._not_implemented
+				'set': self.plugin.set_vlans
 			},
 			'clag': {
 				'shared_mac': {
