@@ -3,7 +3,9 @@ import copy
 
 def extrapolate_dict(numdict, int_key=False):
 		newnumdict = {}
-		if type(numdict) is not dict:
+		if numdict is False:
+			return False
+		elif type(numdict) is not dict:
 			raise TypeError
 		for k, v in numdict.items():
 			if type(k) is str:
@@ -29,7 +31,10 @@ def extrapolate_dict(numdict, int_key=False):
 
 def extrapolate_list(numlist, int_out=False):
 		newlist = []
-		if type(numlist) is not list:
+		# We need to ensure False values pass through here in order to deset lists
+		if numlist is False:
+			return False
+		elif type(numlist) is not list:
 			raise TypeError
 		for num in numlist:
 			if type(num) is str:

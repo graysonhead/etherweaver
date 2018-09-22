@@ -235,61 +235,79 @@ class CumulusSwitch(NetWeaverPlugin):
 			if atrib:
 				return True
 
-	def add_dns_nameserver(self, ip, commit=True, execute=True):
-		ip = ip_address(ip)
-		if ip._version == 4:
-			version = 'ipv4'
-		elif ip._version == 6:
-			version = 'ipv6'
-		command = 'net add dns nameserver {} {}'.format(version, ip)
-		if execute:
-			self.command(command)
-			if commit:
-				self.commit()
-		return command
+	# def add_dns_nameserver(self, ip, commit=True, execute=True):
+	# 	ip = ip_address(ip)
+	# 	if ip._version == 4:
+	# 		version = 'ipv4'
+	# 	elif ip._version == 6:
+	# 		version = 'ipv6'
+	# 	command = 'net add dns nameserver {} {}'.format(version, ip)
+	# 	if execute:
+	# 		self.command(command)
+	# 		if commit:
+	# 			self.commit()
+	# 	return command
 
 	def set_dns_nameservers(self, nameserverlist, execute=True, commit=True, delete=False):
-		commandqueue = []
-		try:
-			nslist = self.appliance.cstate['protocols']['dns']['nameservers']
-		except KeyError:
-			pass
+		commands = []
+		nameservers_to_delete = []
+		nameservers_to_add = []
+		cstate = self.appliance.cstate['protocols']['dns']['nameservers']
+		if delete:
+			if nameserverlist:
+				nameservers_to_delete = list(filter(lambda srv: srv in cstate, nameserverlist))
+			else:
+				nameservers_to_delete = cstate
 		else:
-			for ns in nslist:
-				if ns not in nameserverlist:
-					commandqueue.append(self.rm_dns_nameserver(ns, execute=False))
-		for ns in nameserverlist:
-				if ns not in self.appliance.cstate['protocols']['dns']['nameservers']:
-					commandqueue.append(self.add_dns_nameserver(ns, commit=False, execute=False))
+			nameservers_to_add = list(filter(lambda srv: srv not in cstate, nameserverlist))
+			nameservers_to_delete = list(filter(lambda srv: srv not in nameserverlist, cstate))
+
+		for server in nameservers_to_add:
+			ip = ip_address(server)
+			if ip._version == 4:
+				version = 'ipv4'
+			elif ip._version == 6:
+				version = 'ipv6'
+			commands.append('net add dns nameserver {} {}'.format(version, server))
+		for server in nameservers_to_delete:
+			ip = ip_address(server)
+			if ip._version == 4:
+				version = 'ipv4'
+			elif ip._version == 6:
+				version = 'ipv6'
+			commands.append('net del dns nameserver {} {}'.format(version, server))
 		if execute:
-			for com in commandqueue:
+			for com in commands:
 				self.command(com)
 			if commit:
 				self.commit()
-		return commandqueue
+		return commands
 
-	def rm_dns_nameserver(self, ip, commit=True, execute=True):
-		ip = ip_address(ip)
-		if ip._version == 4:
-			version = 'ipv4'
-		elif ip._version == 6:
-			version = 'ipv6'
-		command = 'net del dns nameserver {} {}'.format(version, ip)
-		if execute:
-			self.command(command)
-			if commit:
-				self.commit()
-		return command
+	# def rm_dns_nameserver(self, ip, commit=True, execute=True):
+	# 	ip = ip_address(ip)
+	# 	if ip._version == 4:
+	# 		version = 'ipv4'
+	# 	elif ip._version == 6:
+	# 		version = 'ipv6'
+	# 	command = 'net del dns nameserver {} {}'.format(version, ip)
+	# 	if execute:
+	# 		self.command(command)
+	# 		if commit:
+	# 			self.commit()
+	# 	return command
 
 	def set_hostname(self, hostname, execute=True, commit=True, delete=False):
-		command = 'net add hostname {}'.format(hostname)
+		if delete:
+			command = 'net del hostname'
+		else:
+			command = 'net add hostname {}'.format(hostname)
 		if execute:
 			self.command(command)
 			if commit:
 				self.commit()
 		return command
 
-	def set_ntp_client_timezone(self, timezone, execute=True, delete=False):
+	def set_ntp_client_timezone(self, timezone, execute=True):
 		if timezone in pytz.all_timezones:
 			command = 'net add time zone {}'.format(timezone)
 		else:
@@ -299,39 +317,34 @@ class CumulusSwitch(NetWeaverPlugin):
 			self.commit()
 		return command
 
-	def add_ntp_client_server(self, ntpserver, execute=True):
-		command = 'net add time ntp server {} iburst'.format(ntpserver)
-		if execute:
-			self.command(command)
-			self.commit()
-		return command
-
-	def rm_ntp_client_server(self, ntpserver, execute=True):
-		command = 'net del time ntp server {}'.format(ntpserver)
-		if execute:
-			self.command(command)
-			self.commit()
-		return command
-
 	def set_ntp_client_servers(self, ntpserverlist, execute=True, commit=True, delete=False):
-		commandqueue = []
-		try:
-			slist = self.appliance.cstate['protocols']['ntp']['client']['servers']
-		except KeyError:
-			pass
+		ntp_servers_to_add = []
+		ntp_servers_to_delete = []
+		commands = []
+		cstate = self.appliance.cstate['protocols']['ntp']['client']['servers']
+		if delete:
+			if ntpserverlist:
+				ntp_servers_to_delete = list(filter(lambda srv: srv in cstate, ntpserverlist))
+			else:
+				ntp_servers_to_delete = cstate
 		else:
-			for serv in slist:
-				if serv not in ntpserverlist:
-					commandqueue.append(self.rm_ntp_client_server(serv, execute=False))
-		for serv in ntpserverlist:
-			if serv not in self.appliance.cstate['protocols']['ntp']['client']['servers']:
-				commandqueue.append(self.add_ntp_client_server(serv, execute=False))
+			for server in ntpserverlist:
+				# Add servers that exist already
+				if server not in cstate:
+					ntp_servers_to_add.append(server)
+			for server in cstate:
+				if server not in ntpserverlist:
+					ntp_servers_to_delete.append(server)
+		for server in ntp_servers_to_delete:
+			commands.append('net del time ntp server {}'.format(server))
+		for server in ntp_servers_to_add:
+			commands.append('net add time ntp server {} iburst'.format(server))
 		if execute:
-			for com in commandqueue:
+			for com in commands:
 				self.command(com)
 			if commit:
 				self.commit()
-		return commandqueue
+		return commands
 
 	def _get_interface_json(self):
 		return json.loads(self.command('net show interface all json'))
@@ -364,48 +377,40 @@ class CumulusSwitch(NetWeaverPlugin):
 			ports_by_number.update({portnum: {'portname': portname, 'speed': v['speed'], 'mode': v['mode']}})
 		return {'by_name': ports_by_name, 'by_number': ports_by_number}
 
-	def add_vlan(self, vlan, execute=True, commit=True):
-		"""
-		Config objects like {1: {'description': 'Data'}}
-		:param vlans:
-		:param execute:
-		:return:
-		"""
-		command = 'net add bridge bridge vids {}'.format(vlan)
-		if execute:
-			self.command(command)
-			if commit:
-				self.commit()
-		return command
-
-	def rm_vlan(self, vid, execute=True, commit=True):
-		command = 'net del bridge bridge vids {}'.format(vid)
-		if execute:
-			self.command(command)
-			if commit:
-				self.commit()
-		return command
-
 	def set_vlans(self, vlandictlist, execute=True, commit=True, delete=False):
-		commandqueue = []
+		commands = []
 		vlans_to_add = []
 		vlans_to_remove = []
-		for k, v in vlandictlist.items():
-			# Comparing vlan keys and values to existing ones in cstate
-			if k not in self.appliance.cstate['vlans']:
-				vlans_to_add.append(k)
-		for k, v in self.appliance.cstate['vlans'].items():
-			if k not in vlandictlist:
-				vlans_to_remove.append(k)
+		if delete:
+			if vlandictlist:
+				for k, v in vlandictlist.items():
+					if k in self.appliance.cstate['vlans']:
+						vlans_to_remove.append(k)
+			else:
+				for k, v in self.appliance.cstate['vlans'].items():
+					vlans_to_remove.append(k)
+		else:
+			for k, v in vlandictlist.items():
+				# Comparing vlan keys and values to existing ones in cstate
+				if k not in self.appliance.cstate['vlans']:
+					vlans_to_add.append(k)
+			for k, v in self.appliance.cstate['vlans'].items():
+				if k not in vlandictlist:
+					vlans_to_remove.append(k)
 		if vlans_to_add:
-			commandqueue.append('net add bridge bridge vids {}'.format(
+			commands.append('net add bridge bridge vids {}'.format(
 				','.join(str(x) for x in compact_list(vlans_to_add))
 			))
 		if vlans_to_remove:
-			commandqueue.append('net del bridge bridge vids {}'.format(
+			commands.append('net del bridge bridge vids {}'.format(
 				','.join(str(x) for x in compact_list(vlans_to_remove))
 			))
-		return commandqueue
+		if execute:
+			for com in commands:
+				self.command(com)
+			if commit:
+				self.commit()
+		return commands
 
 	def _dict_input_handler(self, stringordict):
 		if type(stringordict) is str:
@@ -446,17 +451,18 @@ class CumulusSwitch(NetWeaverPlugin):
 			# Delete all of them
 			for v in self.appliance.cstate['interfaces'][speed][interface]['tagged_vlans']:
 				vlans_to_remove.append(v)
-		# Add vlans not in cstate from dstate
-		if interface in self.appliance.cstate['interfaces'][speed]:
-			for v in vlans:
-				if v not in self.appliance.cstate['interfaces'][speed][interface]['tagged_vlans']:
-					vlans_to_add.append(v)
-			# Remove vlans not in dstate from cstate
-			for v in self.appliance.cstate['interfaces'][speed][interface]['tagged_vlans']:
-				if v not in vlans:
-					vlans_to_remove.append(v)
 		else:
-			vlans_to_add = vlans
+			# Add vlans not in cstate from dstate
+			if interface in self.appliance.cstate['interfaces'][speed]:
+				for v in vlans:
+					if v not in self.appliance.cstate['interfaces'][speed][interface]['tagged_vlans']:
+						vlans_to_add.append(v)
+				# Remove vlans not in dstate from cstate
+				for v in self.appliance.cstate['interfaces'][speed][interface]['tagged_vlans']:
+					if v not in vlans:
+						vlans_to_remove.append(v)
+			else:
+				vlans_to_add = vlans
 		if speed == 'bond':
 			interface_type_name = 'bond'
 		else:
