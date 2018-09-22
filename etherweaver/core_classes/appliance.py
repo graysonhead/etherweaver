@@ -2,9 +2,9 @@ from etherweaver.core_classes.config_object import ConfigObject
 import unittest
 from etherweaver.server_config_loader import get_server_config
 from importlib.machinery import SourceFileLoader
-from etherweaver.core_classes.utils import smart_append
+from etherweaver.core_classes.utils import smart_append, parse_input_value
 from etherweaver.plugins.plugin_class_errors import *
-from etherweaver.core_classes.datatypes import ApplianceConfig, FabricConfig, WeaverConfig #RoleConfig
+from etherweaver.core_classes.datatypes import ApplianceConfig, FabricConfig, WeaverConfig
 import os
 import inspect
 from tqdm import tqdm
@@ -152,7 +152,9 @@ class Appliance(ConfigObject):
 				},
 				'tagged_vlans': {
 					'get': int_cstate['tagged_vlans'],
-					'set': self.plugin.set_interface_tagged_vlans
+					'set': self.plugin.set_interface_tagged_vlans,
+					'data_type': list,
+					'list_subtype': int
 					# TODO left off here
 				}
 			}
@@ -173,6 +175,17 @@ class Appliance(ConfigObject):
 
 	def run_individual_command(self, func, value):
 		# If value is a string named "False" convert that to a python False
+
+		def value_detect(value):
+			type = None,
+			list_subtype = None
+
+			if 'data_type' in level:
+				type = level['data_type']
+			if 'list_subtype' in level:
+				list_subtype = level['list_subtype']
+			return parse_input_value(value, type, list_subtype=list_subtype)
+
 		if value == 'False':
 			value = False
 		# Connect via whatever method is specified in protocols
@@ -197,9 +210,13 @@ class Appliance(ConfigObject):
 				return level[com]()
 			elif com == 'get':
 				return level[com]
-			elif com == 'set' or com == 'add':
+			elif com == 'set':
 				if is_int:
-					return level[com](int_type, int_id, value)
+					return level[com](
+						int_type,
+						int_id,
+						value_detect(value),
+					)
 				else:
 					return level[com](value)
 			elif com == 'del':
@@ -330,7 +347,6 @@ class Appliance(ConfigObject):
 					else:
 						return func(int_type, interface, dstate, execute=False)
 
-
 	def _protocol_ntpclient_push(self, dstate, cstate):
 		commands = []
 		dstate = dstate['protocols']['ntp']['client']
@@ -402,7 +418,6 @@ class Appliance(ConfigObject):
 			int_type='bond',
 			interface=kint
 		)
-
 
 	def _bonds_push(self, dstate, cstate):
 		bonds_dstate = dstate['interfaces']['bond']

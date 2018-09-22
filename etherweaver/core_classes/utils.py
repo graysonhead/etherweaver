@@ -1,5 +1,56 @@
 import collections.abc
 import copy
+import json
+
+
+def parse_input_value(input, data_type, list_subtype=None):
+	"""
+	This function helps parse input values for ad-hoc commands
+
+	:param input:
+		Accepts either JSON or a string that follows one of the following:
+
+		:lists:
+			Comma seperated lists: "1,3,4,5", "pool.ntp.org,pool.ntp.example.com"
+			Hyphen-expanded lists (integer only): "1-5", "3-4"
+			Mixed lists (integer only): 1,2,3,4,5-8
+
+		:dicts:
+			There is no string representation for dicts, they are defined by JSON only.
+
+	:param data_type:
+		Used to validate the output, I.E., "1,3,4,5" should result in a list, so passing the list object
+		to this argument will raise an error if the output types don't match.
+
+	:list_subtype:
+		List subtype is a conditional value that ensures that the list items are converted to integer if int is
+		passed as an argument.
+
+	:return:
+		The value, list, or dict in question
+	"""
+
+	if list_subtype is int:
+		list_subtype_int = True
+	else:
+		list_subtype_int = False
+
+	try:
+		out = json.loads(input)
+		if type(out) is data_type:
+			return out
+		else:
+			raise ValueError
+	except json.decoder.JSONDecodeError:
+		if "," in input:
+			output_val = input.split(",")
+			output_val = extrapolate_list(output_val, int_out=list_subtype_int)
+		else:
+			output_val = input
+	return output_val
+
+
+
 
 def extrapolate_dict(numdict, int_key=False):
 		newnumdict = {}
