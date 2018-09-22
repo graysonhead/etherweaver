@@ -120,7 +120,7 @@ class CumulusSwitch(NetWeaverPlugin):
 				speed = self.portmap['by_name'][portid]['speed']
 			# Bootstrap the interface if it doesn't exist
 			# TODO the datatypes class needs to do this
-			if speed in [ '1G', '10G', '100M']:
+			if speed in ['1G', '10G', '100G']:
 				if portnum not in conf['interfaces'][speed]:
 					conf['interfaces'][speed].update({portnum: WeaverConfig.gen_portskel()})
 				# Parse bridge options
@@ -436,7 +436,7 @@ class CumulusSwitch(NetWeaverPlugin):
 		vlans_to_add = []
 		vlans_to_remove = []
 		# If the delete value is set, we are adding vlans from the 'vlans' param into the delete set instead of adding
-		# If delete and the value is set, we are deleting a single vlan or a list of vlans
+		# If delete and the value is set, we are deleting a list of vlans
 		if delete and vlans:
 			for v in vlans:
 				# Delete the vlans in the list
