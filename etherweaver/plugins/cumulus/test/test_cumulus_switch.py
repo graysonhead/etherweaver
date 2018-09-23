@@ -92,9 +92,29 @@ class TestPlugin(unittest.TestCase):
 	def test_set_interface_tagged_vlans(self):
 		cstate = {'interfaces': {'1G': {1: {'tagged_vlans': [1, 2]}}}}
 		self.plugin.appliance.cstate = cstate
-		self.assertEqual\
-			(self.plugin.set_interface_tagged_vlans('1G', 1, [2, 3, 4], add=True, execute=False),
+		self.assertEqual(
+			self.plugin.set_interface_tagged_vlans('1G', 1, [2, 3, 4], add=True, execute=False),
 			 ['net add interface swp1 bridge vids 3-4']
 			 )
+		self.assertEqual(
+			self.plugin.set_interface_tagged_vlans('1G', 1, None, delete=True, execute=False),
+			['net del interface swp1 bridge vids 1-2']
+		)
+		self.assertEqual(
+			self.plugin.set_interface_tagged_vlans('1G', 1, [2], delete=True, execute=False),
+			['net del interface swp1 bridge vids 2']
+		)
+	def test_set_set_hostname(self):
+		self.assertEqual(
+			self.plugin.set_hostname('testhostname', execute=False),
+			['net add hostname testhostname']
+		)
+		self.assertEqual(
+			self.plugin.set_hostname(None, delete=True, execute=False),
+			['net del hostname']
+		)
+
+
+
 if __name__ == '__main__':
 	unittest.main()

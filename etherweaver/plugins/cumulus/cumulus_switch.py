@@ -305,16 +305,17 @@ class CumulusSwitch(NetWeaverPlugin):
 			self.command(command)
 			if commit:
 				self.commit()
-		return command
+		return [command]
 
-	def set_ntp_client_timezone(self, timezone, execute=True):
+	def set_ntp_client_timezone(self, timezone, execute=True, delete=True, commit=True):
 		if timezone in pytz.all_timezones:
 			command = 'net add time zone {}'.format(timezone)
 		else:
 			raise ValueError("Invalid timezone string")
 		if execute:
 			self.command(command)
-			self.commit()
+			if commit:
+				self.commit()
 		return command
 
 	def set_ntp_client_servers(self, ntpserverlist, execute=True, commit=True, delete=False):

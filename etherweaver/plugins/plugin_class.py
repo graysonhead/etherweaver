@@ -134,6 +134,12 @@ class NetWeaverPlugin:
 			raise SSHCommandError("While running command {} on appliance {}, got error {} {}".format(command, self.hostname, stderr.read(), stdout.read())) #TODO For some reason this line returns empty on error when run from a child instance
 		return stdout.read().decode('utf-8')
 
+	def pull_state(self):
+		self._not_supported('pull_state')
+
+	def push_state(self, execute=True):
+		self._not_supported('push_state')
+
 	def _generic_command(self, command):
 		if self.protocol == 2:
 			return self._ssh_command(command)
@@ -150,7 +156,7 @@ class NetWeaverPlugin:
 
 	def set_interface_tagged_vlans(self, type, interface, vlans, execute=True, commit=True, delete=False, add=False):
 		"""
-		This function modifies the list of allowed tagged vlans for a given interface.
+		This method modifies the list of allowed tagged vlans for a given interface.
 
 		:param type:
 			This is the type of the interface, for instance: 'bond', '1G', '10G'. Used to determine the group of the
@@ -160,7 +166,7 @@ class NetWeaverPlugin:
 			This is the number of the interface, or text ID of the bond. You will likely need to translate this.
 
 		:param vlans:
-			This parameter will always contain a list, even if there is a single value, and may be empty.
+			This parameter will always contain a list of vlans to add or remove, even if there is a single value, and may be empty.
 
 		:param execute:
 			If execute is True, this method must run and apply the configuration.
@@ -182,34 +188,80 @@ class NetWeaverPlugin:
 		"""
 		self._not_supported('set_interface_tagged_vlans')
 
-	""" Old standard commands below this line"""
+	def set_hostname(self, hostname, execute=True, commit=True, delete=False):
+		"""
+		This method sets the system hostname of the appliance
 
-	def set_hostname(self, hostname, execute=True):
+		:param hostname:
+			A string containing the hostname of the system. Either a FQDN or short name, but not both (as most
+			appliances don't differentiate)
+
+		:param execute:
+			If execute is True, this method must run and apply the configuration.
+
+		:param commit:
+			If commit is true, the appliance must load the new configuration as part of this method.
+
+		:param delete:
+			If delete is true and no value is set, remove all tagged vlans from the interface.
+			If delete is true and there is one or more values, remove only the specified values.
+
+		:return:
+			Return the list of commands that can be run to effect the change.
+			You must return the list EVEN IF execute=True
+		"""
 		self._not_supported('set_hostname')
 
-	def set_dns_nameservers(self, nameserverlist, execute=True):
+	def set_dns_nameservers(self, nameserverlist, execute=True, commit=True, delete=False):
+		"""
+		This method sets the dns resolvers used by the appliance.
+
+		:param nameserverlist:
+			A list of DNS server IPv4 or IPv6 addresses to add to the resolver list.
+
+		:param execute:
+			If execute is True, this method must run and apply the configuration.
+
+		:param commit:
+			If commit is true, the appliance must load the new configuration as part of this method.
+
+		:param delete:
+			If delete is true and no value is set, remove all tagged vlans from the interface.
+			If delete is true and there is one or more values, remove only the specified values.
+
+		:return:
+			Return the list of commands that can be run to effect the change.
+			You must return the list EVEN IF execute=True
+		"""
 		self._not_supported('set_dns_nameservers')
 
-	def add_dns_nameserver(self, ip, execute=True):
-		self._not_supported('add_dns_nameserver')
+	def set_ntp_client_timezone(self, timezone, execute=True, delete=True, commit=True):
+		# TODO: make this pass a pytz object instead of a pytz string?
+		"""
+		Sets the timezone of the NTP client.
 
-	def rm_dns_nameserver(self, ip, execute=True):
-		self._not_supported('rm_dns_nameserver')
+		:param timezone:
+			Contains a string containing a valid timeozne recognized by pytz
 
-	def pull_state(self):
-		self._not_supported('pull_state')
+		:param execute:
+			If execute is True, this method must run and apply the configuration.
 
-	def push_state(self, execute=True):
-		self._not_supported('push_state')
+		:param commit:
+			If commit is true, the appliance must load the new configuration as part of this method.
 
-	def set_ntp_client_timezone(self, timezone, execute=True):
+		:param delete:
+			If delete is true and no value is set, remove all tagged vlans from the interface.
+			If delete is true and there is one or more values, remove only the specified values.
+			If you cannot delete the timezone on your appliance (I.E., one must always be specified), call the inherited
+			self._not_supported(string), with string being an informative error message.
+
+		:return:
+			Return the list of commands that can be run to effect the change.
+			You must return the list EVEN IF execute=True
+		"""
 		self._not_supported('set_ntp_client_timezone')
 
-	def add_ntp_client_server(self, ntpserver, execute=True):
-		self._not_supported('add_ntp_client_server')
-
-	def rm_ntp_client_server(self, ntpserver, execute=True):
-		self._not_supported('rm_ntp_client_server')
+	""" Old standard commands below this line"""
 
 	def set_ntp_client_servers(self, ntpserverlist, execute=True):
 		self._not_supported('set_ntp_client_servers')
