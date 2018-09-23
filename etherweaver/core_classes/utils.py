@@ -18,6 +18,9 @@ def parse_input_value(input, data_type, list_subtype=None):
 		:dicts:
 			There is no string representation for dicts, they are defined by JSON only.
 
+		:ints:
+			If the input can be cast to an int, it will be converted to one
+
 	:param data_type:
 		Used to validate the output, I.E., "1,3,4,5" should result in a list, so passing the list object
 		to this argument will raise an error if the output types don't match.
@@ -29,25 +32,57 @@ def parse_input_value(input, data_type, list_subtype=None):
 	:return:
 		The value, list, or dict in question
 	"""
+	# is_list = False
+	# if list_subtype is int:
+	# 	list_subtype_int = True
+	# 	is_list = True
+	# else:
+	# 	list_subtype_int = False
+	#
+	# try:
+	# 	out = json.loads(input)
+	# except json.decoder.JSONDecodeError:
+	# 	pass
+	#
+	# if "," in input:
+	# 	output_val = input.split(",")
+	# 	output_val = extrapolate_list(output_val, int_out=list_subtype_int)
+	# else:
+	# 	output_val = input
+	# # If we have a single string, and our
+	if data_type is list:
+		if list_subtype is int:
+			list_subtype_int = True
+		else:
+			list_subtype_int = False
+		# See if it converts cleanly to JSON
+		try:
+			out = json.loads(input)
+			if type(out) is data_type:
+				if list_subtype:
+					for v in out:
+						if v != list_subtype:
+							raise TypeError("value {} does match list_subtype:{}".format(v, list_subtype))
+						else:
+							return out
+				else:
+					return out
+			else:
+				raise TypeError("value {} does not match type {}".format(out, list))
+		except:
+			if "," in input or "-" in input:
+				out = input.split(",")
+				out = extrapolate_list(out, int_out=list_subtype_int)
+		# If we have a single value that doesn't match any of the above, convert it to a list
+		if type(out) is not list:
+			out = [out]
 
-	if list_subtype is int:
-		list_subtype_int = True
+
+	if type(out) is data_type:
+		return out
 	else:
-		list_subtype_int = False
+		raise ValueError
 
-	try:
-		out = json.loads(input)
-		if type(out) is data_type:
-			return out
-		else:
-			raise ValueError
-	except json.decoder.JSONDecodeError:
-		if "," in input:
-			output_val = input.split(",")
-			output_val = extrapolate_list(output_val, int_out=list_subtype_int)
-		else:
-			output_val = input
-	return output_val
 
 
 

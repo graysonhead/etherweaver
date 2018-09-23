@@ -432,7 +432,7 @@ class CumulusSwitch(NetWeaverPlugin):
 	# 			self.commit()
 	# 	return commands
 
-	def set_interface_tagged_vlans(self, speed, interface, vlans, execute=True, commit=True, delete=False):
+	def set_interface_tagged_vlans(self, speed, interface, vlans, execute=True, commit=True, delete=False, add=False):
 		if speed != 'bond':
 			cumulus_interface = self._number_port_mapper(interface)
 		else:
@@ -442,7 +442,11 @@ class CumulusSwitch(NetWeaverPlugin):
 		vlans_to_remove = []
 		# If the delete value is set, we are adding vlans from the 'vlans' param into the delete set instead of adding
 		# If delete and the value is set, we are deleting a list of vlans
-		if delete and vlans:
+		if add and vlans:
+			for v in vlans:
+				if v not in self.appliance.cstate['interfaces'][speed][interface]['tagged_vlans']:
+					vlans_to_add.append(v)
+		elif delete and vlans:
 			for v in vlans:
 				# Delete the vlans in the list
 				if v in self.appliance.cstate['interfaces'][speed][interface]['tagged_vlans']:

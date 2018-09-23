@@ -198,7 +198,7 @@ class Appliance(ConfigObject):
 		Iterate through each level of the config and stop when you get to a command (get, set, etc.)
 		"""
 		level = self.dtree
-		is_int = False
+		is_interface = False
 		skip_count = 0
 		int_type = None
 		int_id = None
@@ -210,8 +210,13 @@ class Appliance(ConfigObject):
 				return level[com]()
 			elif com == 'get':
 				return level[com]
+			elif com == 'add':
+				if is_interface:
+					return level['set'](int_type, int_id, value_detect(value), add=True)
+				else:
+					return level['set'](value, add=True)
 			elif com == 'set':
-				if is_int:
+				if is_interface:
 					return level[com](
 						int_type,
 						int_id,
@@ -220,8 +225,8 @@ class Appliance(ConfigObject):
 				else:
 					return level[com](value)
 			elif com == 'del':
-				if is_int:
-					return level['set'](int_type, int_id, value, delete=True)
+				if is_interface:
+					return level['set'](int_type, int_id, value_detect(value), delete=True)
 				else:
 					return level['set'](value, delete=True)
 			elif com == 'interfaces' and sfunc[1] != 'get' and sfunc[2] != 'get':
@@ -232,7 +237,7 @@ class Appliance(ConfigObject):
 					int_id = sfunc[2]
 				# Since we consumed the next two values in the loop, we need to skip the next 2 iterations
 				skip_count = 2
-				is_int = True
+				is_interface = True
 				level = self.interface_dispatch(int_type, int_id)
 			else:
 				level = level[com]

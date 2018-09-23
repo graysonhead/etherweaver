@@ -148,6 +148,42 @@ class NetWeaverPlugin:
 		self._not_implemented()
 	"""Override these functions to enable each feature"""
 
+	def set_interface_tagged_vlans(self, type, interface, vlans, execute=True, commit=True, delete=False, add=False):
+		"""
+		This function modifies the list of allowed tagged vlans for a given interface.
+
+		:param type:
+			This is the type of the interface, for instance: 'bond', '1G', '10G'. Used to determine the group of the
+			interface to be modified.
+
+		:param interface:
+			This is the number of the interface, or text ID of the bond. You will likely need to translate this.
+
+		:param vlans:
+			This parameter will always contain a list, even if there is a single value, and may be empty.
+
+		:param execute:
+			If execute is True, this method must run and apply the configuration.
+
+		:param commit:
+			If commit is true, the appliance must load the new configuration as part of this method.
+
+		:param delete:
+			If delete is true and no value is set, remove all tagged vlans from the interface.
+			If delete is true and there is one or more values, remove only the specified values.
+
+		:param add:
+			If add is true and value is set, add all the tagged vlans in the list without removing any.
+
+		:return:
+			Return the list of commands that can be run to effect the change.
+			You must return the list EVEN IF execute=True
+
+		"""
+		self._not_supported('set_interface_tagged_vlans')
+
+	""" Old standard commands below this line"""
+
 	def set_hostname(self, hostname, execute=True):
 		self._not_supported('set_hostname')
 
@@ -190,8 +226,7 @@ class NetWeaverPlugin:
 	def rm_vlan(self, vlan, execute=True):
 		self._not_supported('rm_vlan')
 
-	def set_interface_tagged_vlans(self, interface, vlans, execute=True):
-		self._not_supported('set_interface_tagged_vlans')
+
 
 	def add_interface_tagged_vlan(self, interface, vlan, execute=True):
 		self._not_supported('add_interface_tagged_vlan')
