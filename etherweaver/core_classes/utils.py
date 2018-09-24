@@ -32,24 +32,9 @@ def parse_input_value(input, data_type, list_subtype=None):
 	:return:
 		The value, list, or dict in question
 	"""
-	# is_list = False
-	# if list_subtype is int:
-	# 	list_subtype_int = True
-	# 	is_list = True
-	# else:
-	# 	list_subtype_int = False
-	#
-	# try:
-	# 	out = json.loads(input)
-	# except json.decoder.JSONDecodeError:
-	# 	pass
-	#
-	# if "," in input:
-	# 	output_val = input.split(",")
-	# 	output_val = extrapolate_list(output_val, int_out=list_subtype_int)
-	# else:
-	# 	output_val = input
-	# # If we have a single string, and our
+	# When deleting things, downstream methods expect None for their value
+	if input is None:
+		return None
 	if data_type is list:
 		if list_subtype is int:
 			list_subtype_int = True
@@ -76,6 +61,10 @@ def parse_input_value(input, data_type, list_subtype=None):
 		# If we have a single value that doesn't match any of the above, convert it to a list
 		if type(out) is not list:
 			out = [out]
+	if data_type is int:
+		out = int(input)
+	if data_type is str:
+		out = input
 
 
 	if type(out) is data_type:

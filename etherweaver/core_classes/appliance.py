@@ -114,13 +114,14 @@ class Appliance(ConfigObject):
 						{
 							'timezone': {
 								'get': self.plugin.cstate['protocols']['ntp']['client']['timezone'],
-								'set': self._not_implemented
+								'set': self.plugin.set_ntp_client_timezone,
+								'data_type': str
 							},
 							'servers': {
-								'add': self._not_implemented,
 								'get': self.plugin.cstate['protocols']['ntp']['client']['servers'],
-								'del': self._not_implemented,
-								'set': self._not_implemented
+								'set': self.plugin.set_ntp_client_servers,
+								'data_type': list,
+								'list_subtype': str
 							},
 							'get': self.plugin.cstate['protocols']['ntp']['client'],
 						}
@@ -149,6 +150,7 @@ class Appliance(ConfigObject):
 				'untagged_vlan': {
 					'get': int_cstate['untagged_vlan'],
 					'set': self.plugin.set_interface_untagged_vlan,
+					'data_type': int
 				},
 				'tagged_vlans': {
 					'get': int_cstate['tagged_vlans'],
@@ -167,9 +169,19 @@ class Appliance(ConfigObject):
 						'get': int_cstate['stp']['port_fast'],
 						'set': self.plugin.set_portfast
 					}
-				}
+				},
 			}
 			int_dispatch_dict.update(physical_specific_dict)
+		# some of these only apply to bonds
+		if int_type == 'bond':
+			bond_specific_dict = {
+				'clag_id': {
+					'get': int_cstate['clag_id'],
+					'set': self.plugin.set_bond_clag_id,
+					'data_type': int
+				}
+			}
+			int_dispatch_dict.update(bond_specific_dict)
 		return int_dispatch_dict
 
 
