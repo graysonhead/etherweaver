@@ -337,20 +337,148 @@ class NetWeaverPlugin:
 
 
 
-	def set_clag_backup_ip(self, backup_ip, execute=True, delete=False):
+	def set_clag_backup_ip(self, backup_ip, execute=True, delete=False, commit=True):
+		"""
+		Sets the backup peer IP for CLAG
+
+		:param backup_ip:
+			IPv4 or IPv6 backup address of CLAG member (call self._not_supported(string) with string as a helpful error
+			message if your plugin's appliance doesn't support IPv6.
+
+		:param commit:
+			If commit is true, the appliance must load the new configuration as part of this method.
+
+		:param delete:
+			If delete is true and no value is set, remove all values.
+			If delete is true and there is one or more values, remove only the specified values.
+
+		:param execute:
+			If execute is True, this method must run and apply the configuration.
+
+		:return:
+			Return the list of commands that can be run to effect the change.
+			You must return the list EVEN IF execute=True
+		"""
 		self._not_supported('set_clag_backup_ip')
 
-	def set_clag_cidr(self, cidr, execute=True, delete=False):
+	def set_clag_cidr(self, cidr, execute=True, delete=False, commit=True):
+		"""
+			Set the IP address and subnet mask of the primary CLAG peer interface
+
+		:param cidr:
+			CIDR of the appliance's CLAG peering interface as a string. EX; '169.254.2.1/30'
+
+		:param commit:
+			If commit is true, the appliance must load the new configuration as part of this method.
+
+		:param delete:
+			If delete is true and no value is set, remove all values.
+			If delete is true and there is one or more values, remove only the specified values.
+
+		:param execute:
+			If execute is True, this method must run and apply the configuration.
+
+		:return:
+			Return the list of commands that can be run to effect the change.
+			You must return the list EVEN IF execute=True
+		"""
 		self._not_supported('set_clag_cidr')
 
-	def set_clag_peer_ip(self, peer_ip, execute=True, delete=False):
+	def set_clag_peer_ip(self, peer_ip, execute=True, delete=False, commit=True):
+		"""
+		Sets CLAG interface peer IP
+
+		:param peer_ip:
+			IP address of the peer as a string I.E. '169.254.2.1'
+
+		:param commit:
+			If commit is true, the appliance must load the new configuration as part of this method.
+
+		:param delete:
+			If delete is true and no value is set, remove all values.
+			If delete is true and there is one or more values, remove only the specified values.
+
+		:param execute:
+			If execute is True, this method must run and apply the configuration.
+
+		:return:
+			Return the list of commands that can be run to effect the change.
+			You must return the list EVEN IF execute=True
+		"""
 		self._not_supported('set_clag_peer_ip')
 
-	def set_clag_priority(self, priority, execute=True, delete=False):
+	def set_clag_priority(self, priority, execute=True, delete=False, commit=True):
+		"""
+		Sets the CLAG priority of the appliance
+
+		:param priority:
+			Non negative integer
+
+		:param commit:
+			If commit is true, the appliance must load the new configuration as part of this method.
+
+		:param delete:
+			If delete is true and no value is set, remove all values.
+			If delete is true and there is one or more values, remove only the specified values.
+
+		:param execute:
+			If execute is True, this method must run and apply the configuration.
+
+		:return:
+			Return the list of commands that can be run to effect the change.
+			You must return the list EVEN IF execute=True
+		"""
 		self._not_supported('set_clag_priority')
 
-	def set_clag_shared_mac(self, shared_mac, execute=True, delete=False):
+	def set_clag_shared_mac(self, shared_mac, execute=True, delete=False, commit=True):
+		"""
+		Sets the shared mac of the CLAG daemon on the appliance
+
+		:param shared_mac:
+			String containing the shared MAC address of the cluster
+
+		:param commit:
+			If commit is true, the appliance must load the new configuration as part of this method.
+
+		:param delete:
+			If delete is true and no value is set, remove all values.
+			If delete is true and there is one or more values, remove only the specified values.
+
+		:param execute:
+			If execute is True, this method must run and apply the configuration.
+
+		:return:
+			Return the list of commands that can be run to effect the change.
+			You must return the list EVEN IF execute=True
+		"""
 		self._not_supported('set_clag_shared_mac')
 
-	def set_bond_clag_id(self, int_type, interface, clag_id, execute=True):
+	def set_bond_clag_id(self, type, interface, clag_id, execute=True, commit=True):
+		"""
+		Sets the CLAG ID of a bond
+
+		:param type:
+			This is the type of the interface, for instance: 'bond', '1G', '10G'. Used to determine the group of the
+			interface to be modified.
+
+		:param interface:
+			This is the number of the interface, or text ID of the bond. You will likely need to translate this.
+
+		:param clag_id:
+			Non negative integer
+
+		:param commit:
+			If commit is true, the appliance must load the new configuration as part of this method.
+
+		:param delete:
+			If delete is true and no value is set, remove all values.
+			If delete is true and there is one or more values, remove only the specified values.
+
+		:param execute:
+			If execute is True, this method must run and apply the configuration.
+
+		:return:
+			Return the list of commands that can be run to effect the change.
+			You must return the list EVEN IF execute=True
+		"""
 		self._not_supported('set_bond_clag_id')

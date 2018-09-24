@@ -122,9 +122,63 @@ class TestPlugin(unittest.TestCase):
 		self.assertEqual(
 			self.plugin.set_interface_untagged_vlan('1G', 1, None, delete=True, execute=False),
 			['net del interface swp1 bridge pvid']
-		),
+		)
 
+	def test_set_clag_backup_ip(self):
+		self.assertEqual(
+			self.plugin.set_clag_backup_ip('192.168.1.1', execute=False),
+			['net add interface peerlink.4094 clag backup-ip 192.168.1.1']
+		)
+		self.assertEqual(
+			self.plugin.set_clag_backup_ip(None, delete=True, execute=False),
+			['net del interface peerlink.4094 clag backup-ip']
+		)
+	def test_set_clag_cidr(self):
+		self.assertEqual(
+			self.plugin.set_clag_cidr('192.168.1.1/24', execute=False),
+			['net add interface peerlink.4094 ip address 192.168.1.1/24']
+		)
+		self.assertEqual(
+			self.plugin.set_clag_cidr(None, delete=True, execute=False),
+			['net del interface peerlink.4094 ip address']
+		)
+	def test_set_clag_peer_ip(self):
+		self.assertEqual(
+			self.plugin.set_clag_peer_ip('192.168.1.1', execute=False),
+			['net add interface peerlink.4094 clag peer-ip 192.168.1.1']
+		)
+		self.assertEqual(
+			self.plugin.set_clag_peer_ip(None, delete=True, execute=False),
+			['net del interface peerlink.4094 clag peer-ip']
+		)
+	def test_set_clag_priority(self):
+		self.assertEqual(
+			self.plugin.set_clag_priority(1001, execute=False),
+			['net add interface peerlink.4094 clag priority 1001']
+		)
+		self.assertEqual(
+			self.plugin.set_clag_priority(None, delete=True, execute=False),
+			['net del interface peerlink.4094 clag priority']
+		)
+	def test_set_clag_shared_mac(self):
+		self.assertEqual(
+			self.plugin.set_clag_shared_mac('ff:ff:ff:ff:ff:ff', execute=False),
+			['net add interface peerlink.4094 clag sys-mac ff:ff:ff:ff:ff:ff']
+		)
+		self.assertEqual(
+			self.plugin.set_clag_shared_mac(None, delete=True, execute=False),
+			['net del interface peerlink.4094 clag sys-mac']
+		)
 
+	def test_set_bond_clag_id(self):
+		self.assertEqual(
+			self.plugin.set_bond_clag_id('1G', 1, 3, execute=False),
+			['net add bond 1 clag id 3']
+		)
+		self.assertEqual(
+			self.plugin.set_bond_clag_id('1G', 1, None, delete=True, execute=False),
+			['net del bond 1 clag id']
+		)
 
 if __name__ == '__main__':
 	unittest.main()
