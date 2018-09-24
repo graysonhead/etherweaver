@@ -30,12 +30,12 @@ class TestPlugin(unittest.TestCase):
 	def test_hostname_case3(self):
 		dstate = {'hostname': 'test'}
 		cstate = {'hostname': None}
-		self.assertEqual(self.plugin.appliance._hostname_push(dstate, cstate), 'net add hostname test')
+		self.assertEqual(self.plugin.appliance._hostname_push(dstate, cstate), ['net add hostname test'])
 
 	def test_hostname_case2(self):
 		dstate = {'hostname': 'newtest'}
 		cstate = {'hostname': 'test'}
-		self.assertEqual(self.plugin.appliance._hostname_push(dstate, cstate), 'net add hostname newtest')
+		self.assertEqual(self.plugin.appliance._hostname_push(dstate, cstate), ['net add hostname newtest'])
 
 	def test_hostname_case1(self):
 		dstate = {'hostname': 'test'}
@@ -104,7 +104,7 @@ class TestPlugin(unittest.TestCase):
 			self.plugin.set_interface_tagged_vlans('1G', 1, [2], delete=True, execute=False),
 			['net del interface swp1 bridge vids 2']
 		)
-	def test_set_set_hostname(self):
+	def test_set_hostname(self):
 		self.assertEqual(
 			self.plugin.set_hostname('testhostname', execute=False),
 			['net add hostname testhostname']
@@ -113,6 +113,16 @@ class TestPlugin(unittest.TestCase):
 			self.plugin.set_hostname(None, delete=True, execute=False),
 			['net del hostname']
 		)
+
+	def test_set_interface_untagged_vlan(self):
+		self.assertEqual(
+			self.plugin.set_interface_untagged_vlan('1G', 1, 10, execute=False),
+			['net add interface swp1 bridge pvid 10']
+		)
+		self.assertEqual(
+			self.plugin.set_interface_untagged_vlan('1G', 1, None, delete=True, execute=False),
+			['net del interface swp1 bridge pvid']
+		),
 
 
 

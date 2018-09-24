@@ -261,50 +261,95 @@ class NetWeaverPlugin:
 		"""
 		self._not_supported('set_ntp_client_timezone')
 
-	""" Old standard commands below this line"""
+	def set_ntp_client_servers(self, ntpserverlist, execute=True, commit=True, delete=False):
+		"""
 
-	def set_ntp_client_servers(self, ntpserverlist, execute=True):
+		:param ntpserverlist:
+			A list of ntp servers to add (IP Addresses or DNS)
+
+		:param execute:
+			If execute is True, this method must run and apply the configuration.
+
+		:param commit:
+			If commit is true, the appliance must load the new configuration as part of this method.
+
+		:param delete:
+			If delete is true and no value is set, remove all values.
+			If delete is true and there is one or more values, remove only the specified values.
+
+
+		:return:
+			Return the list of commands that can be run to effect the change.
+			You must return the list EVEN IF execute=True
+
+		"""
 		self._not_supported('set_ntp_client_servers')
 
-	def set_interface_config(self, interfaces, profile=None, execute=True):
-		self._not_supported('set_interface_config')
+	def set_vlans(self, vlandictlist, execute=True, commit=True, delete=False):
+		"""
+		Add a dict containing vlan interfaces
 
-	def set_vlans(self, vlans, execute=True):
+		:param vlandictlist:
+		:param execute:
+		:param commit:
+		:param delete:
+		:return:
+		"""
 		self._not_supported('set_vlans')
 
-	def add_vlan(self, vlan, execute=True):
-		self._not_supported('add_vlan')
+	def set_interface_untagged_vlan(self, type, interface, vlan, execute=True, delete=False):
+		"""
+		Sets the untagged (PVID) of an interface
 
-	def rm_vlan(self, vlan, execute=True):
-		self._not_supported('rm_vlan')
+		:param type:
+			This is the type of the interface, for instance: 'bond', '1G', '10G'. Used to determine the group of the
+			interface to be modified.
 
+		:param interface:
+			This is the number of the interface, or text ID of the bond. You will likely need to translate this.
 
+		:param vlan:
+			The ID of the vlan to add.
 
-	def add_interface_tagged_vlan(self, interface, vlan, execute=True):
-		self._not_supported('add_interface_tagged_vlan')
+		:param commit:
+			If commit is true, the appliance must load the new configuration as part of this method.
 
-	def rm_interface_tagged_vlan(self, interface, vlan, execute=True):
-		self._not_supported('rm_interface_tagged_vlan')
+		:param delete:
+			If delete is true and no value is set, remove all values.
+			If delete is true and there is one or more values, remove only the specified values.
 
-	def set_interface_untagged_vlan(self, interface, vlan, execute=True):
+		:param execute:
+			If execute is True, this method must run and apply the configuration.
+
+		:return:
+			Return the list of commands that can be run to effect the change.
+			You must return the list EVEN IF execute=True
+
+		"""
 		self._not_supported('set_interface_untagged_vlan')
 
-	def rm_interface_untagged_vlan(self, interface, execute=True):
-		self._not_supported('rm_interface_untagged_vlan')
+	""" Old standard commands below this line"""
 
-	def set_clag_backup_ip(self, backup_ip, execute=True):
+
+	def set_vlans(self, vlandictlist, execute=True, commit=True, delete=False):
+		self._not_supported('set_vlans')
+
+
+
+
+	def set_clag_backup_ip(self, backup_ip, execute=True, delete=False):
 		self._not_supported('set_clag_backup_ip')
 
-	def set_clag_cidr(self, cidr, execute=True):
+	def set_clag_cidr(self, cidr, execute=True, delete=False):
 		self._not_supported('set_clag_cidr')
 
-	def set_clag_peer_ip(self, peer_ip, execute=True):
+	def set_clag_peer_ip(self, peer_ip, execute=True, delete=False):
 		self._not_supported('set_clag_peer_ip')
 
-	def set_clag_priority(self, priority, execute=True):
+	def set_clag_priority(self, priority, execute=True, delete=False):
 		self._not_supported('set_clag_priority')
 
-	def set_clag_shared_mac(self, shared_mac, execute=True):
+	def set_clag_shared_mac(self, shared_mac, execute=True, delete=False):
 		self._not_supported('set_clag_shared_mac')
 
 	def set_bond_clag_id(self, int_type, interface, clag_id, execute=True):

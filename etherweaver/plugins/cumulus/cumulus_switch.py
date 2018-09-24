@@ -514,7 +514,7 @@ class CumulusSwitch(NetWeaverPlugin):
 		except KeyError:
 			raise ValueError("Referenced non-existent interface {} on appliance {}".format(port, self.appliance.name))
 
-	def set_interface_untagged_vlan(self, type, interface, vlan, execute=True, delete=False):
+	def set_interface_untagged_vlan(self, type, interface, vlan, execute=True, delete=False, commit=True):
 		if type == 'bond':
 			if delete:
 				command = 'net del bond {} bridge pvid'.format(interface)
@@ -522,12 +522,14 @@ class CumulusSwitch(NetWeaverPlugin):
 				command = 'net add bond {} bridge pvid {}'.format(interface, vlan)
 		else:
 			if delete:
-				command = 'net del interface {} bridge pvid'.format(interface)
+				command = 'net del interface {} bridge pvid'.format(self._number_port_mapper(interface))
 			else:
 				command = 'net add interface {} bridge pvid {}'.format(self._number_port_mapper(interface), vlan)
 		if execute:
 			self.command(command)
-		return command
+			if commit:
+				self.commit()
+		return [command]
 
 	# def rm_interface_untagged_vlan(self, interface, execute=True, delete=False):
 	# 	command = 'net del interface {} bridge pvid'.format(self._number_port_mapper(interface))
