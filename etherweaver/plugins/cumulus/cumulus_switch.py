@@ -556,7 +556,6 @@ class CumulusSwitch(NetWeaverPlugin):
 		if delete:
 			commands.append('net del interface peerlink.4094 ip address')
 		else:
-			commands.append('net del interface peerlink.4094 ip address')
 			commands.append('net add interface peerlink.4094 ip address {}'.format(cidr))
 		if execute:
 			for com in commands:
@@ -570,7 +569,6 @@ class CumulusSwitch(NetWeaverPlugin):
 		if delete:
 			commands.append('net del interface peerlink.4094 clag peer-ip')
 		else:
-			commands.append('net del interface peerlink.4094 clag peer-ip')
 			commands.append('net add interface peerlink.4094 clag peer-ip {}'.format(peer_ip))
 		if execute:
 			for com in commands:
