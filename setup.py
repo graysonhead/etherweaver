@@ -3,7 +3,7 @@ import setuptools
 
 setuptools.setup(
 	name='etherweaver',
-	version='0.2.0',
+	version='0.2.0dev0',
 	author='Grayson Head',
 	author_email='grayson@graysonhead.net',
 	url="https://github.com/graysonhead/etherweaver",
