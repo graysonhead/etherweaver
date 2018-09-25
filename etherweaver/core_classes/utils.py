@@ -58,6 +58,8 @@ def parse_input_value(input, data_type, list_subtype=None):
 			if "," in input or "-" in input:
 				out = input.split(",")
 				out = extrapolate_list(out, int_out=list_subtype_int)
+			else:
+				out = input
 		# If we have a single value that doesn't match any of the above, convert it to a list
 		if type(out) is not list:
 			out = [out]

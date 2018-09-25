@@ -79,6 +79,7 @@ class Appliance(ConfigObject):
 			'hostname': {
 				'set': self.plugin.set_hostname,
 				'get': self.plugin.cstate['hostname'],
+				'data_type': str
 			},
 			'vlans': {
 				'get': self.plugin.cstate['vlans'],
@@ -87,7 +88,28 @@ class Appliance(ConfigObject):
 			'clag': {
 				'shared_mac': {
 					'get': self.cstate['clag']['shared_mac'],
-					'set': self._not_implemented
+					'set': self.plugin.set_clag_shared_mac,
+					'data_type': str
+				},
+				'priority': {
+					'get': self.cstate['clag']['priority'],
+					'set': self.plugin.set_clag_priority,
+					'data_type': int
+				},
+				'backup_ip': {
+					'get': self.cstate['clag']['backup_ip'],
+					'set': self.plugin.set_clag_backup_ip,
+					'data_type': str
+				},
+				'clag_cidr': {
+					'get': self.cstate['clag']['clag_cidr'],
+					'set': self.plugin.set_clag_cidr,
+					'data_type': str
+				},
+				'peer_ip': {
+					'get': self.cstate['clag']['peer_ip'],
+					'set': self.plugin.set_clag_peer_ip,
+					'data_type': str
 				}
 			},
 			'interfaces': {
@@ -110,6 +132,7 @@ class Appliance(ConfigObject):
 			},
 			'protocols': {
 				'ntp': {
+					'get': self.cstate['protocols']['ntp'],
 					'client':
 						{
 							'timezone': {
@@ -130,9 +153,9 @@ class Appliance(ConfigObject):
 					'get': self.plugin.cstate['protocols']['dns'],
 					'nameservers': {
 						'get': self.plugin.cstate['protocols']['dns']['nameservers'],
-						'set': self._not_implemented,
-						'add': self._not_implemented,
-						'del': self._not_implemented
+						'set': self.plugin.set_dns_nameservers,
+						'data_type': list,
+						'data_subtype': str
 					}
 				}
 			}
@@ -184,7 +207,6 @@ class Appliance(ConfigObject):
 			int_dispatch_dict.update(bond_specific_dict)
 		return int_dispatch_dict
 
-
 	def run_individual_command(self, func, value):
 		# If value is a string named "False" convert that to a python False
 
@@ -223,10 +245,14 @@ class Appliance(ConfigObject):
 			elif com == 'get':
 				return level[com]
 			elif com == 'add':
-				if is_interface:
-					return level['set'](int_type, int_id, value_detect(value), add=True)
-				else:
-					return level['set'](value, add=True)
+				# TODO: More robust error handling for this whole section
+				try:
+					if is_interface:
+						return level['set'](int_type, int_id, value_detect(value), add=True)
+					else:
+						return level['set'](value_detect(value), add=True)
+				except TypeError:
+					raise InvalidNodeFunction(com, ".".join(sfunc[:-1]))
 			elif com == 'set':
 				if is_interface:
 					return level[com](
@@ -235,12 +261,12 @@ class Appliance(ConfigObject):
 						value_detect(value),
 					)
 				else:
-					return level[com](value)
+					return level[com](value_detect(value))
 			elif com == 'del':
 				if is_interface:
 					return level['set'](int_type, int_id, value_detect(value), delete=True)
 				else:
-					return level['set'](value, delete=True)
+					return level['set'](value_detect(value), delete=True)
 			elif com == 'interfaces' and sfunc[1] != 'get' and sfunc[2] != 'get':
 				int_type = sfunc[1]
 				if int_type != 'bond':
@@ -252,7 +278,10 @@ class Appliance(ConfigObject):
 				is_interface = True
 				level = self.interface_dispatch(int_type, int_id)
 			else:
-				level = level[com]
+				try:
+					level = level[com]
+				except KeyError:
+					raise KeyError('Node {} does not exist in {}'.format(com, ".".join(sfunc)))
 
 	def get_plugin_path(self):
 		try:

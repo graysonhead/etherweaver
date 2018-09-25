@@ -248,12 +248,14 @@ class CumulusSwitch(NetWeaverPlugin):
 	# 			self.commit()
 	# 	return command
 
-	def set_dns_nameservers(self, nameserverlist, execute=True, commit=True, delete=False):
+	def set_dns_nameservers(self, nameserverlist, execute=True, commit=True, delete=False, add=False):
 		commands = []
 		nameservers_to_delete = []
 		nameservers_to_add = []
 		cstate = self.appliance.cstate['protocols']['dns']['nameservers']
-		if delete:
+		if add:
+			nameservers_to_add = list(filter(lambda srv: srv not in cstate, nameserverlist))
+		elif delete:
 			if nameserverlist:
 				nameservers_to_delete = list(filter(lambda srv: srv in cstate, nameserverlist))
 			else:
