@@ -539,7 +539,7 @@ class CumulusSwitch(NetWeaverPlugin):
 	# 		self.command(command)
 	# 	return command
 
-	def set_clag_backup_ip(self, backup_ip, execute=True, delete=False):
+	def set_clag_backup_ip(self, backup_ip, execute=True, delete=False, commit=True):
 		if delete:
 			command = 'net del interface peerlink.4094 clag backup-ip'
 		else:
@@ -548,43 +548,60 @@ class CumulusSwitch(NetWeaverPlugin):
 			self.command(command)
 		return [command]
 
-	def set_clag_cidr(self, cidr, execute=True, delete=False):
-		if delete:
-			command = 'net del interface peerlink.4094 ip address'
-		else:
-			command = 'net add interface peerlink.4094 ip address {}'.format(cidr)
-		if execute:
-			self.command(command)
-		return [command]
 
-	def set_clag_peer_ip(self, peer_ip, execute=True, delete=False):
-		if delete:
-			command = 'net del interface peerlink.4094 clag peer-ip'
-		else:
-			command = 'net add interface peerlink.4094 clag peer-ip {}'.format(peer_ip)
-		if execute:
-			self.command(command)
-		return [command]
+	# TODO: both of the below methods need their functionality rolled up into a generic ip addr setter
 
-	def set_clag_priority(self, priority, execute=True, delete=False):
+	def set_clag_cidr(self, cidr, execute=True, delete=False, commit=True):
+		commands = []
+		if delete:
+			commands.append('net del interface peerlink.4094 ip address')
+		else:
+			commands.append('net del interface peerlink.4094 ip address')
+			commands.append('net add interface peerlink.4094 ip address {}'.format(cidr))
+		if execute:
+			for com in commands:
+				self.command(com)
+				if commit:
+					self.commit()
+		return commands
+
+	def set_clag_peer_ip(self, peer_ip, execute=True, delete=False, commit=True):
+		commands = []
+		if delete:
+			commands.append('net del interface peerlink.4094 clag peer-ip')
+		else:
+			commands.append('net del interface peerlink.4094 clag peer-ip')
+			commands.append('net add interface peerlink.4094 clag peer-ip {}'.format(peer_ip))
+		if execute:
+			for com in commands:
+				self.command(com)
+				if commit:
+					self.commit()
+		return commands
+
+	def set_clag_priority(self, priority, execute=True, delete=False, commit=True):
 		if delete:
 			command = 'net del interface peerlink.4094 clag priority'
 		else:
 			command = 'net add interface peerlink.4094 clag priority {}'.format(priority)
 		if execute:
 			self.command(command)
+			if commit:
+				self.commit()
 		return [command]
 
-	def set_clag_shared_mac(self, shared_mac, execute=True, delete=False):
+	def set_clag_shared_mac(self, shared_mac, execute=True, delete=False, commit=True):
 		if delete is True:
 			command = 'net del interface peerlink.4094 clag sys-mac'
 		else:
 			command = 'net add interface peerlink.4094 clag sys-mac {}'.format(shared_mac)
 		if execute:
 			self.command(command)
+			if commit:
+				self.commit()
 		return [command]
 
-	def set_bond_slaves(self, int_type, interface, bond, execute=True):
+	def set_bond_slaves(self, int_type, interface, bond, execute=True, commit=True):
 		# TODO: allow deletion of bonds
 		# Find interfaces belonging to this bond, since cumulus defines interfces on the bond
 		# bond_slaves = []
@@ -596,15 +613,19 @@ class CumulusSwitch(NetWeaverPlugin):
 		command = 'net add bond {} bond slaves {}'.format(bond, self._number_port_mapper(interface))
 		if execute:
 			self.command(command)
+			if commit:
+				self.commit()
 		return [command]
 
-	def set_bond_clag_id(self, int_type, interface, clag_id, execute=True, delete=False):
+	def set_bond_clag_id(self, int_type, interface, clag_id, execute=True, delete=False, commit=True):
 		if delete:
 			command = 'net del bond {} clag id'.format(interface)
 		else:
 			command = 'net add bond {} clag id {}'.format(interface, clag_id)
 		if execute:
 			self.command(command)
+			if commit:
+				self.commit()
 		return [command]
 
 	def __exit__(self, exc_type, exc_val, exc_tb):

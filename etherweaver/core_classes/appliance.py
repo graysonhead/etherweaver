@@ -86,6 +86,7 @@ class Appliance(ConfigObject):
 				'set': self.plugin.set_vlans
 			},
 			'clag': {
+				'get': self.cstate['clag'],
 				'shared_mac': {
 					'get': self.cstate['clag']['shared_mac'],
 					'set': self.plugin.set_clag_shared_mac,
@@ -168,7 +169,7 @@ class Appliance(ConfigObject):
 		int_dispatch_dict = {
 				'get': int_cstate,
 				'ip': {
-					'get': int_cstate['ip']
+					'get': int_cstate['ip'],
 				},
 				'untagged_vlan': {
 					'get': int_cstate['untagged_vlan'],
