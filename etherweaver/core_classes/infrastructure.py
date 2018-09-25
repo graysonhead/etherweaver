@@ -16,38 +16,16 @@ class Infrastructure:
 
 	def __init__(self, config_dict):
 		self.appliances_conf = config_dict['appliances']
-		if 'roles' in config_dict:
-			self.roles_conf = self._extrapolate_config_dict('role', config_dict['roles'])
-		else:
-			self.roles_conf = None
 		if 'fabrics' in config_dict:
 			self.fabrics_conf = config_dict['fabrics']
 		else:
 			self.fabrics_conf = None
 		self.appliances = []
 		self.fabrics = []
-		self.roles = []
+		# self.roles = []
 		self.is_infrastructure = True
 
 		self._build_infrastructure()
-
-	def _extrapolate_config_dict(self, type, config):
-		"""
-		:param type: 'role', 'appliance', or 'dict'
-		:param config:
-		:return:
-		"""
-
-		if type == 'role':
-			for rolek, rolev in config.items():
-				if 'interfaces' in rolev:
-					for spdk, spdv in rolev['interfaces'].items():
-						config[rolek]['interfaces'][spdk] = extrapolate_dict(spdv)
-					for spdk, spdv in rolev['interfaces'].items():
-						for intk, intv in spdv.items():
-							if 'tagged_vlans' in intv:
-								config[rolek]['interfaces'][spdk][intk]['tagged_vlans'] = extrapolate_list(intv['tagged_vlans'])
-		return config
 
 	def _build_infrastructure(self):
 		"""
@@ -56,8 +34,8 @@ class Infrastructure:
 		self._build_appliances()
 		if self.fabrics_conf:
 			self._build_fabrics()
-		if self.roles_conf:
-			self._build_roles()
+		# if self.roles_conf:
+		# 	self._build_roles()
 		self._associate_dependencies()
 
 	def _build_appliances(self):
@@ -71,9 +49,6 @@ class Infrastructure:
 		for fabric_key, fabric_dict in self.fabrics_conf.items():
 			self.fabrics.append(Fabric(fabric_key, fabric_dict))
 
-	def _build_roles(self):
-		for role_key, role_dict in self.roles_conf.items():
-			self.roles.append(NetworkRole(role_key, role_dict))
 
 	def _check_attribute(self, name, dictionary, attribute):
 		try:
@@ -81,42 +56,20 @@ class Infrastructure:
 		except:
 			raise MissingRequiredAttribute(attribute, name)
 
-	def _check_required_attributes(self):
-		"""Check config for missing attribute names"""
-		required_app_atribs = [
-			'role',
-			'hostname',
-			'plugin_package'
-		]
-		for atrib in required_app_atribs:
-			for appkey, appdict in self.appliances_conf.items():
-				self._check_attribute(appkey, appdict, atrib)
-		required_role_atribs = [
-			'fabric'
-		]
-		for atrib in required_role_atribs:
-			for appkey, appdict in self.roles_conf.items():
-				self._check_attribute(appkey, appdict, atrib)
-
 	def _associate_dependencies(self):
-		"""Attach appliances to roles"""
+		#Associate fabrics with their parent fabrics
+		for fabric in self.fabrics:
+			# If fabric is a key in the fabric's config, it has a parent fabric
+			if 'fabric' in fabric.config:
+				# Find the parent fabric based on it's name
+				pfab = list(filter(lambda pf: pf.name == fabric.config['fabric'], self.fabrics))[0]
+				fabric.parent_fabric = pfab
+				pfab.child_fabrics.append(fabric)
 		for app in self.appliances:
-			for role in self.roles:
-				try:
-					if app.config['role'] == role.name:
-						app.role = role
-						role.appliances.append(app)
-				except KeyError:
-					raise SyntaxError('Appliance {} has no associated role'.format(app.name))
-			for fabric in self.fabrics:  # Attach Appliances to fabrics
-				if app.role.config['fabric'] == fabric.name:
-					app.fabric = fabric
-					fabric.appliances.append(app)
-				if 'fabric' in fabric.config:
-					for pfab in self.fabrics:
-						if pfab.name == fabric.config['fabric']:
-							fabric.parent_fabric = pfab
-							pfab.child_fabrics.append(fabric)
+			if 'fabric' in app.config:
+				# Find the parent fabric based on it's name
+				pfab = list(filter(lambda pf: pf.name == app.config['fabric'], self.fabrics))[0]
+				app.fabric = pfab
 			app.load_plugin()
 			app.build_dstate()
 

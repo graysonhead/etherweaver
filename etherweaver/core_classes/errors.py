@@ -38,5 +38,13 @@ class ConfigKeyMissing(Exception):
 	Raised when a required key is missing
 	"""
 
-	def __init__(selfs, key, section):
+	def __init__(self, key, section):
 		super().__init__('Required key \'{}\' is missing from config section {}'.format(key, section))
+
+class InvalidNodeFunction(Exception):
+	"""
+	Raised when an illegal function is attempted to be executed on a node
+	"""
+
+	def __init__(self, func, node):
+		super().__init__('Function {} is not allowed on node {}'.format(func, node))
