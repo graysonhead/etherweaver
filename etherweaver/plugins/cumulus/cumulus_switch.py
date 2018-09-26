@@ -440,6 +440,31 @@ class CumulusSwitch(NetWeaverPlugin):
 	# 			self.commit()
 	# 	return commands
 
+	def set_interface(self, type, inter, enable, execute=True, commit=True, delete=False, add=False):
+		commands = []
+		if type != 'bond':
+			bond = False
+			inter = self._number_port_mapper(inter)
+		else:
+			bond = True
+		if delete:
+			if bond:
+				commands.append('net del bond {}'.format(inter))
+			else:
+				commands.append('net del interface {}'.format(inter))
+		elif add:
+			if bond:
+				raise ValueError("You must create a bond by specifying its bond_slave interface(s) first")
+			else:
+				commands.append('net add interface {}'.format(inter))
+		if execute:
+			for com in commands:
+				self.command(com)
+				if commit:
+					self.commit()
+		return commands
+
+
 	def set_interface_tagged_vlans(self, speed, interface, vlans, execute=True, commit=True, delete=False, add=False):
 		if speed != 'bond':
 			cumulus_interface = self._number_port_mapper(interface)
@@ -556,12 +581,15 @@ class CumulusSwitch(NetWeaverPlugin):
 
 	# TODO: both of the below methods need their functionality rolled up into a generic ip addr setter
 
-	def set_interface_ip_addresses(self, type, interface, ips, execute=True, commit=True, delete=False, add=False):
+	def set_interface_ip_addresses(self, type, interface, ips, execute=True, commit=True, delete=False, add=False, cstate=None):
 		if type != 'bond':
 			cumulus_interface = self._number_port_mapper(interface)
 		else:
 			cumulus_interface = interface
-		cstate = self.appliance.cstate['interfaces'][type][interface]['ip']['addresses']
+		# This is sort of a workaround, because cumulus cuts of the period between subinterfaces and doesn't include
+		# them in the json
+		if not cstate:
+			cstate = self.appliance.cstate['interfaces'][type][interface]['ip']['addresses']
 		commands = []
 		ips_to_add = []
 		ips_to_delete = []
@@ -586,11 +614,17 @@ class CumulusSwitch(NetWeaverPlugin):
 				self.commit()
 		return commands
 
-
-
 	def set_clag_cidr(self, cidr, execute=True, delete=False, commit=True, add=False):
-		commands = []
-
+		return self.set_interface_ip_addresses(
+			'bond',
+			'peerlink.4094',
+			cidr,
+			execute=execute,
+			commit=commit,
+			delete=delete,
+			add=add,
+			cstate=self.appliance.cstate['clag']['clag_cidr']
+		)
 
 		# if delete:
 		# 	commands.append('net del interface peerlink.4094 ip address')
@@ -602,7 +636,6 @@ class CumulusSwitch(NetWeaverPlugin):
 		# 		if commit:
 		# 			self.commit()
 		# return commands
-
 
 	def set_clag_peer_ip(self, peer_ip, execute=True, delete=False, commit=True):
 		commands = []

@@ -176,6 +176,7 @@ class Appliance(ConfigObject):
 			self.cstate['interfaces'][int_type][int_id] = int_cstate
 		int_dispatch_dict = {
 				'get': int_cstate,
+				'set': self.plugin.set_interface,
 				'ip': {
 					'get': int_cstate['ip'],
 					'addresses': {
@@ -208,6 +209,11 @@ class Appliance(ConfigObject):
 						'set': self.plugin.set_portfast
 					}
 				},
+				'bond_slave': {
+					'get': int_cstate['bond_slave'],
+					'set': self.plugin.set_bond_slaves,
+					'data_type': str
+				}
 			}
 			int_dispatch_dict.update(physical_specific_dict)
 		# some of these only apply to bonds
