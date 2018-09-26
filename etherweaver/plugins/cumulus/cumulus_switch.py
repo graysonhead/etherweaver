@@ -132,6 +132,9 @@ class CumulusSwitch(NetWeaverPlugin):
 				# Parse STP options
 				elif line.startswith('net add interface {} stp portadminedge'.format(portid)):
 					conf['interfaces'][speed][portnum]['stp']['port_fast'] = True
+				elif 'ip address' in line:
+					conf['interfaces'][speed][portnum]['ip']['addresses'].append(line.split(' ')[6])
+
 
 		def clag_parse(line):
 			# Parses clag statements
@@ -149,7 +152,7 @@ class CumulusSwitch(NetWeaverPlugin):
 				conf['clag']['shared_mac'] = line.split(' ')[6]
 			# parse ip address
 			elif line.startswith('net add interface peerlink.4094 ip address'):
-				conf['clag']['clag_cidr'] = line.split(' ')[6]
+				conf['clag']['clag_cidr'].append(line.split(' ')[6])
 
 		def create_bond_inter(name, slaves):
 			# Create the bond node
@@ -183,6 +186,8 @@ class CumulusSwitch(NetWeaverPlugin):
 				name = line.split(' ')[3]
 				vid = line.split(' ')[6]
 				conf['interfaces']['bond'][name]['untagged_vlan'] = int(vid)
+			elif 'ip address' in line:
+				conf['interfaces']['bond'][name]['ip']['addresses'].append(line.split(' ')[6])
 
 
 
@@ -215,12 +220,12 @@ class CumulusSwitch(NetWeaverPlugin):
 			# Interfaces
 			elif line.startswith('net add interface') and not line.startswith('net add interface peerlink.4094'):
 				parse_interfaces(line)
-			# CLAG
-			elif line.startswith('net add interface peerlink.4094'):
-				clag_parse(line)
 			# bond parsing
 			elif line.startswith('net add bond'):
 				bond_parse(line)
+				# CLAG
+			if line.startswith('net add interface peerlink.4094'):
+				clag_parse(line)
 
 		wc = WeaverConfig(conf)
 		return wc.get_full_config()

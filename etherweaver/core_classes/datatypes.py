@@ -60,7 +60,7 @@ class WeaverConfig(object):
 				'priority': None,
 				'backup_ip': None,
 				'peer_ip': None,
-				'clag_cidr': None
+				'clag_cidr': []
 
 			},
 			'port_profiles': {},
@@ -92,7 +92,7 @@ class WeaverConfig(object):
 			'tagged_vlans': [],
 			'untagged_vlan': None,
 			'ip': {
-				'address': []
+				'addresses': []
 			},
 			'stp': {
 				'port_fast': False
@@ -107,7 +107,7 @@ class WeaverConfig(object):
 			'tagged_vlans': [],
 			'untagged_vlan': None,
 			'ip': {
-				'address': []
+				'addresses': []
 			}
 		}
 
