@@ -556,18 +556,53 @@ class CumulusSwitch(NetWeaverPlugin):
 
 	# TODO: both of the below methods need their functionality rolled up into a generic ip addr setter
 
-	def set_clag_cidr(self, cidr, execute=True, delete=False, commit=True):
-		commands = []
-		if delete:
-			commands.append('net del interface peerlink.4094 ip address')
+	def set_interface_ip_addresses(self, type, interface, ips, execute=True, commit=True, delete=False, add=False):
+		if type != 'bond':
+			cumulus_interface = self._number_port_mapper(interface)
 		else:
-			commands.append('net add interface peerlink.4094 ip address {}'.format(cidr))
+			cumulus_interface = interface
+		cstate = self.appliance.cstate['interfaces'][type][interface]['ip']['addresses']
+		commands = []
+		ips_to_add = []
+		ips_to_delete = []
+		if add:
+			ips_to_add = list(filter(lambda ip: ip not in cstate, ips))
+		elif delete:
+			if ips:
+				ips_to_delete = list(filter(lambda ip: ip in cstate, ips))
+			else:
+				ips_to_delete = cstate
+		else:
+			ips_to_add = list(filter(lambda ip: ip not in cstate, ips))
+			ips_to_delete = list(filter(lambda ip: ip not in ips, cstate))
+		for ip in ips_to_delete:
+			commands.append('net del interface {} ip address {}'.format(cumulus_interface, ip))
+		for ip in ips_to_add:
+			commands.append('net add interface {} ip address {}'.format(cumulus_interface, ip))
 		if execute:
 			for com in commands:
 				self.command(com)
-				if commit:
-					self.commit()
+			if commit:
+				self.commit()
 		return commands
+
+
+
+	def set_clag_cidr(self, cidr, execute=True, delete=False, commit=True, add=False):
+		commands = []
+
+
+		# if delete:
+		# 	commands.append('net del interface peerlink.4094 ip address')
+		# else:
+		# 	commands.append('net add interface peerlink.4094 ip address {}'.format(cidr))
+		# if execute:
+		# 	for com in commands:
+		# 		self.command(com)
+		# 		if commit:
+		# 			self.commit()
+		# return commands
+
 
 	def set_clag_peer_ip(self, peer_ip, execute=True, delete=False, commit=True):
 		commands = []

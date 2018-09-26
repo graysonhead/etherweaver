@@ -105,7 +105,8 @@ class Appliance(ConfigObject):
 				'clag_cidr': {
 					'get': self.cstate['clag']['clag_cidr'],
 					'set': self.plugin.set_clag_cidr,
-					'data_type': str
+					'data_type': list,
+					'list_subtype': str
 				},
 				'peer_ip': {
 					'get': self.cstate['clag']['peer_ip'],
@@ -165,11 +166,24 @@ class Appliance(ConfigObject):
 	def interface_dispatch(self, int_type, int_id):
 		""" This builds a dispatch dict with the correct get values for the specified interface """
 		# In cstate, bonds are strings (names) and interfaces are always integers
-		int_cstate = self.cstate['interfaces'][int_type][int_id]
+		try:
+			int_cstate = self.cstate['interfaces'][int_type][int_id]
+		except KeyError:
+			if int_type != 'bond':
+				int_cstate = WeaverConfig.gen_portskel()
+			else:
+				int_cstate = WeaverConfig.gen_bondskel()
+			self.cstate['interfaces'][int_type][int_id] = int_cstate
 		int_dispatch_dict = {
 				'get': int_cstate,
 				'ip': {
 					'get': int_cstate['ip'],
+					'addresses': {
+						'get': int_cstate['ip']['addresses'],
+						'set': self.plugin.set_interface_ip_addresses,
+						'data_type': list,
+						'list_subtype': str
+					}
 				},
 				'untagged_vlan': {
 					'get': int_cstate['untagged_vlan'],
