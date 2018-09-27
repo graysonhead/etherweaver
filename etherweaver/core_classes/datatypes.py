@@ -166,10 +166,11 @@ class WeaverConfig(object):
 			for kspd, vspd in self.config['interfaces'].items():
 				for kint, vint in self.config['interfaces'][kspd].items():
 					if 'profile' in vint:
-						try:
-							self.config['interfaces'][kspd][kint] = self.config['port_profiles'][vint['profile']]
-						except KeyError:
-							raise ReferenceNotFound(vint['profile'])
+						if vint['profile'] is not False:
+							try:
+								self.config['interfaces'][kspd][kint] = self.config['port_profiles'][vint['profile']]
+							except KeyError:
+								raise ReferenceNotFound(vint['profile'])
 
 
 class ApplianceConfig(WeaverConfig):

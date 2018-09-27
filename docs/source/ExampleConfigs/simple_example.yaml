@@ -1,0 +1,51 @@
+fabrics:
+  network:
+    vlans:
+      10:
+        Name: Employee
+      11:
+        Name: Servers
+      12:
+        Name: VOIP
+      20:
+        Name: Public Wireless
+      254:
+        Name: Management
+    port_profiles:
+      OfficePorts:
+        untagged_vlan: 10
+        tagged_vlans: [12]
+      WirelessAccessPoint:
+        untagged_vlan: 254
+        tagged_vlans: [10, 20]
+      Trunk:
+        tagged_vlans: [10,12,20,254]
+  dist_switches:
+    fabric: network
+    interfaces:
+      1G:
+        1-20:
+          profile: OfficePorts
+        20-22:
+          profile: WirelessAccessPoint
+        24:
+          profile: Trunk
+appliances:
+  dist1:
+    fabric: dist_switches
+    plugin_package: cumulus
+    connections:
+      ssh:
+        hostname: 192.168.122.254
+        username: cumulus
+        port: 22
+    hostname: dist1
+  dist2:
+    fabric: dist_switches
+    plugin_package: cumulus
+    connections:
+      ssh:
+        hostname: 192.168.122.171
+        username: cumulus
+        port: 22
+    hostname: dist2
