@@ -56,7 +56,6 @@ class TestInfrastructureClass(unittest.TestCase):
 		self.assertEqual(inf.is_infrastructure, True)
 		self.assertEqual(inf.appliances[0].is_appliance, True)
 		self.assertEqual(inf.fabrics[0].is_fabric, True)
-		self.assertEqual(inf.appliances[0].role.is_role, True)
 		self.assertEqual(inf.appliances[0].plugin.is_plugin, True)
 
 

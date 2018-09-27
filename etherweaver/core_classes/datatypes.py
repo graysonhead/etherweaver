@@ -9,17 +9,26 @@ class WeaverConfig(object):
 		self.type = None
 		self.type_specific_keys = {}
 		self.config = config_dict
+		# Extrapolate abbreviated information within port_profiles (vlans, etc)
 		if 'port_profiles' in self.config:
 			for kp, vp in self.config['port_profiles'].items():
 				vp = self._interface_extrapolate(vp)
+		# Extrapolate any abbreviated vlans
 		if 'vlans' in self.config:
 			self.config['vlans'] = extrapolate_dict(self.config['vlans'], int_key=True)
+		# Expand any interfaces present
 		if 'interfaces' in self.config:
 			new_int = {}
 			for kspd, vspd in self.config['interfaces'].items():
-				for kint, vint in self.config['interfaces'][kspd].items():
-					vint = self._interface_extrapolate(vint)
-				new_int.update({kspd: extrapolate_dict(vspd, int_key=True)})
+					for kint, vint in self.config['interfaces'][kspd].items():
+						# We can't extrapolate bonds as they are all strings
+						kspd_ints = {}
+						if kspd:
+							kspd_ints.update(self._interface_extrapolate(vint))
+					if kspd != 'bond':
+						new_int.update({kspd: extrapolate_dict(vspd, int_key=True)})
+					elif kspd == 'bond':
+						new_int.update({kspd: vspd})
 			self.config['interfaces'] = new_int
 		if validate:
 			self.validate()
@@ -46,6 +55,14 @@ class WeaverConfig(object):
 			'role': None,
 			'hostname': None,
 			'vlans': {},
+			'clag': {
+				'shared_mac': None,
+				'priority': None,
+				'backup_ip': None,
+				'peer_ip': None,
+				'clag_cidr': []
+
+			},
 			'port_profiles': {},
 			'protocols': {
 				'dns': {
@@ -63,22 +80,35 @@ class WeaverConfig(object):
 				'10G': {},
 				'40G': {},
 				'100G': {},
-				'mgmt': {}
+				'mgmt': {},
+				'bond': {}
 			}
 		}
 
 	@staticmethod
 	def gen_portskel():
 		return {
+			'bond_slave': None,
 			'tagged_vlans': [],
 			'untagged_vlan': None,
 			'ip': {
-				'address': []
+				'addresses': []
 			},
 			'stp': {
 				'port_fast': False
-			}
+			},
 
+		}
+
+	@staticmethod
+	def gen_bondskel():
+		return {
+			'clag_id': None,
+			'tagged_vlans': [],
+			'untagged_vlan': None,
+			'ip': {
+				'addresses': []
+			}
 		}
 
 	def validate(self):
@@ -115,7 +145,21 @@ class WeaverConfig(object):
 				raise ConfigKeyError(k, value=v)
 
 	def get_full_config(self):
-		return smart_dict_merge(self.gen_config_skel(), self.config)
+		# Apply skeleton to the base config
+		config = smart_dict_merge(self.gen_config_skel(), self.config)
+		# Walk through interfaces section and apply interface skeletons
+		if 'interfaces' in config:
+			for ktyp, vtyp in config['interfaces'].items():
+				# Regular interfaces get port skel
+				if ktyp in ['1G', '10G', '40G', '100G']:
+					for kint, vint in config['interfaces'][ktyp].items():
+						# Apply portskel to each interface
+						config['interfaces'][ktyp][kint] = smart_dict_merge(self.gen_portskel(), vint)
+				elif ktyp in ['bond']:
+					for kint, vint in config['interfaces'][ktyp].items():
+						# Apply bondskel to each bond
+						config['interfaces'][ktyp][kint] = smart_dict_merge(self.gen_bondskel(), vint)
+		return config
 
 	def apply_profiles(self):
 		if 'interfaces' in self.config:
@@ -163,14 +207,14 @@ class FabricConfig(WeaverConfig):
 			del(self.config['fabric'])
 
 
-class RoleConfig(WeaverConfig):
-
-	def _type_specific_keys(self):
-		self.type = 'Role'
-		return {
-			'fabric': str
-		}
-
-	def _clean_config(self):
-		if 'fabric' in self.config:
-			del(self.config['fabric'])
+# class RoleConfig(WeaverConfig):
+#
+# 	def _type_specific_keys(self):
+# 		self.type = 'Role'
+# 		return {
+# 			'fabric': str
+# 		}
+#
+# 	def _clean_config(self):
+# 		if 'fabric' in self.config:
+# 			del(self.config['fabric'])

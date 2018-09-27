@@ -11,7 +11,9 @@ class CLIApp:
 		self.config = None  # This is defined by the parsers below
 		if yaml:
 			self.config = self._parse_yaml_file(yaml)
-
+			for k, v in self.config.items():
+				if k not in ['roles', 'fabrics', 'appliances']:
+					raise KeyError('Key \'{}\' not allowed at top level'.format(k))
 		self._build_infrastructure_object()
 
 	def _parse_yaml_file(self, yamlfile):
@@ -41,7 +43,7 @@ class CLIApp:
 
 
 
-if __name__ == '__main__':
+def main():
 	pass
 	#TODO move this to init for the class
 	parser = argparse.ArgumentParser(
@@ -53,10 +55,12 @@ if __name__ == '__main__':
 		'--yaml',
 		type=str,
 		dest='yamlfile',
-		help='YAML file containing the roles, appliances, and fabric objects'
+		help='YAML file containing appliances and fabric objects'
 	)
 	args = parser.parse_args()
 	cli = CLIApp(yaml=args.yamlfile)
 	print(cli.run(target=args.target, func=args.func, value=args.value))
 
 
+if __name__ == '__main__':
+	main()
