@@ -2,8 +2,10 @@ import argparse
 import yaml
 from etherweaver.core_classes.infrastructure import Infrastructure
 import pprint
+import etherweaver
 
 pp = pprint.PrettyPrinter(indent=4)
+
 
 class CLIApp:
 
@@ -48,8 +50,8 @@ def main():
 	#TODO move this to init for the class
 	parser = argparse.ArgumentParser(
 			description='Etherweaver is an application to orchestrate network configurations.')
-	parser.add_argument('target', type=str)
-	parser.add_argument('func', type=str)
+	parser.add_argument('target', type=str, default=None, nargs='?')
+	parser.add_argument('func', type=str, default=None, nargs='?')
 	parser.add_argument('value', type=str, nargs='?', default=None)
 	parser.add_argument(
 		'--yaml',
@@ -57,7 +59,11 @@ def main():
 		dest='yamlfile',
 		help='YAML file containing appliances and fabric objects'
 	)
+	parser.add_argument('--version', action='store_true')
 	args = parser.parse_args()
+	if args.version:
+		print(etherweaver.__version__)
+		exit(0)
 	cli = CLIApp(yaml=args.yamlfile)
 	print(cli.run(target=args.target, func=args.func, value=args.value))
 
