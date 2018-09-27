@@ -150,3 +150,49 @@ You can view the current state of all appliances in the environment using the fo
 
 Note: Currently not all config nodes work. Accessing any disabled
 nodes should raise a NotSupported error
+
+Examples
+--------
+
+A Simple Example
+^^^^^^^^^^^^^^^^
+
+Lets imagine that you are tasked with deploying a switch fabric for
+a small branch office, with two switches total. Based on the needs of the office,
+you determine that you need two 24 port switches, which are to be configured using the following rules:
+
+- VLANs for Employees, VOIP phones, servers, Public Wireless, and Management interfaces
+- Ports 1-20 on both switches will be for employee usage, and will need the Employee VLAN untagged and the VOIP vlan tagged for phone passthrough
+- Ports 20-22 on both switches are reserved for Wireless access points, and need to be untagged on the Management VLAN for AP administration, and tagged on Employee and Public
+- Port 24 will be the trunk between switches
+
+From the system you are running etherweaver from, copy your public ssh keys to the switches (For switches that cannot
+do this, you can use a username and password, but you still need to accept the public ssh key of the system on your machine
+to prevent man in the middle attacks.) Then you write an etherweaver state file, simple_example.yaml:
+
+.. literalinclude:: ExampleConfigs/simple_example.yaml
+   :language: yaml
+
+Then, run:
+
+.. literalinclude:: ExampleConfigs/serun1.txt
+
+
+Now your switches are configured correctly, subsequent runs won't do anything because the curent state and desired state match:
+
+To complicate matters, a developer now needs to have a development server at his desk. unfortunately, his port
+is right in the middle of our 10-20 range, at port 11 on dist1. Not to worry though, we can place a config statement at
+any lower inheritance level to override the port range.  All we need to do is add an interface definition for the port
+in question, and define profile to false in order to stop inheritance. Now our state file looks like this:
+
+.. literalinclude:: ExampleConfigs/simple_examplev2.yaml
+   :language: yaml
+
+And running the program gives us the following output:
+
+.. literalinclude:: ExampleConfigs/serun2.txt
+
+As you can see, etherweaver operated idempotently, only applying the changes from the desired state that
+didn't match the current state. This allows you to easily manage and monitor config drift from within your environment.
+
+
