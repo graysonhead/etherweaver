@@ -1,4 +1,4 @@
-from paramiko import SSHClient, WarningPolicy
+from paramiko import SSHClient, WarningPolicy, RejectPolicy
 from enum import IntEnum
 from etherweaver.plugins.plugin_class_errors import *
 
@@ -88,11 +88,15 @@ class NetWeaverPlugin:
 		This builds the SSH connection
 		:return:
 		"""
+		if 'password' in self.appliance.dstate['connections']['ssh']:
+			password = self.appliance.dstate['connections']['ssh']['password']
+		else:
+			password = None
 		self.conn_type = NWConnType
 		self.ssh = self._build_ssh_client(
 			hostname=self.appliance.dstate['connections']['ssh']['hostname'],
 			username=self.appliance.dstate['connections']['ssh']['username'],
-			password=self.appliance.dstate['connections']['ssh']['password'],
+			password=password,
 			port=self.appliance.dstate['connections']['ssh']['port']
 		)
 
@@ -118,7 +122,7 @@ class NetWeaverPlugin:
 		"""Returns a paramiko ssh client object"""
 		ssh = SSHClient()
 		ssh.load_system_host_keys()
-		ssh.set_missing_host_key_policy(WarningPolicy)
+		ssh.set_missing_host_key_policy(RejectPolicy)
 		ssh.connect(hostname=hostname, port=port, username=username, password=password)
 		return ssh
 
