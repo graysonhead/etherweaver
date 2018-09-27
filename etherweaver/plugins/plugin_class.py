@@ -129,9 +129,10 @@ class NetWeaverPlugin:
 		:return:
 		"""
 		stdin, stdout, stderr = self.ssh.exec_command(command)
-		if stderr.read():
+		err = '\n'.join(stderr.readlines())
+		if err:
 			# TODO: Put useful info in here
-			raise SSHCommandError("While running command {} on appliance {}, got error {} {}".format(command, self.hostname, stderr.read(), stdout.read())) #TODO For some reason this line returns empty on error when run from a child instance
+			raise SSHCommandError("While running command {} on appliance {}, got error {} {}".format(command, self.hostname, err, stdout.read())) #TODO For some reason this line returns empty on error when run from a child instance
 		return stdout.read().decode('utf-8')
 
 	def pull_state(self):
@@ -482,3 +483,33 @@ class NetWeaverPlugin:
 			You must return the list EVEN IF execute=True
 		"""
 		self._not_supported('set_bond_clag_id')
+
+	def set_interface_ip_addresses(self, type, interface, ips, execute=True, commit=True, delete=False, add=False):
+		"""
+		Adds and removes IP addresses from the interface
+
+		:param type:
+			This is the type of the interface, for instance: 'bond', '1G', '10G'. Used to determine the group of the
+			interface to be modified.
+
+		:param interface:
+			This is the number of the interface, or text ID of the bond. You will likely need to translate this.
+
+		:param ips:
+			A list of CIDR notated IP addresses (I.E. ['10.0.0.1/16', '192.168.0.5/24'])
+
+		:param commit:
+			If commit is true, the appliance must load the new configuration as part of this method.
+
+		:param delete:
+			If delete is true and no value is set, remove all values.
+			If delete is true and there is one or more values, remove only the specified values.
+
+		:param execute:
+			If execute is True, this method must run and apply the configuration.
+
+		:return:
+			Return the list of commands that can be run to effect the change.
+			You must return the list EVEN IF execute=True
+		"""
+		self._not_supported('set interface ip address')
