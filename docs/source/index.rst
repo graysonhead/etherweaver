@@ -10,11 +10,11 @@ Etherweaver, Config Management for Network Engineers
    :maxdepth: 2
    :caption: Contents:
 
-   license
+
    install
    getting_started
    configuration
-   poc
+   license
 
 
 Indices and tables

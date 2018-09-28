@@ -18,6 +18,7 @@ class CumulusSwitch(NetWeaverPlugin):
 		self.commands = []
 
 	def after_connect(self):
+		self.command('net abort')
 		self.portmap = self.pull_port_state()
 		self.cstate = self.pull_state()
 
@@ -589,7 +590,10 @@ class CumulusSwitch(NetWeaverPlugin):
 		# This is sort of a workaround, because cumulus cuts of the period between subinterfaces and doesn't include
 		# them in the json
 		if not cstate:
-			cstate = self.appliance.cstate['interfaces'][type][interface]['ip']['addresses']
+			try:
+				cstate = self.appliance.cstate['interfaces'][type][interface]['ip']['addresses']
+			except KeyError:
+				cstate = []
 		commands = []
 		ips_to_add = []
 		ips_to_delete = []
@@ -615,6 +619,15 @@ class CumulusSwitch(NetWeaverPlugin):
 		return commands
 
 	def set_clag_cidr(self, cidr, execute=True, delete=False, commit=True, add=False):
+		try:
+			cstate = self.appliance.cstate['interfaces']['bond']['peerlink']
+		except KeyError:
+			cstate = []
+			# for ktyp, vtyp in self.appliance.dstate['interfaces'].items():
+			# 	if ktyp != 'bond':
+			# 		for kint, vint in vtyp.items():
+			# 			if vint['bond_slave'] == 'peerlink':
+			# 				self.set_bond_slaves('bond', kint, 'peerlink')
 		return self.set_interface_ip_addresses(
 			'bond',
 			'peerlink.4094',
