@@ -4,8 +4,16 @@ Install Instructions
 Development Install
 ^^^^^^^^^^^^^^^^^^^
 
-Install using git:
+Install using pip
+-----------------
+
 .. code-block:: bash
 
-    git clone https://github.com/graysonhead/etherweaver.git
-    pip install -r requirements.txt
+    pip3 install etherweaver
+
+Install from Git repo
+---------------------
+
+.. code-block:: bash
+
+    pip3 install git+https://github.com/graysonhead/etherweaver.git
