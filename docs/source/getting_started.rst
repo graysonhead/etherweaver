@@ -7,22 +7,17 @@ Config Structure
 Top Level objects
 ^^^^^^^^^^^^^^^^^
 
-Etherweaver's config file (henceforth, referenced as config.yaml) must contain three sections:
+Etherweaver's can consist of two sections, of which Fabrics are optional:
 
 .. code-block:: yaml
    :caption: config.yaml
 
-   roles: # A list of all roles
    fabrics: # A list of all fabrics
    appliances: # A list of all hardware
 
-Fabrics represent networks, or collections of network devices with similar settings (vlans, port profiles, etc).
+Fabrics represent networks, or collections of network devices with inherited settings.
 
-Roles represent a desired configuration. They can reference certian objects from fabrics, and will usually identify
-a single device or group of devices with similar configurations.
-
-An appliance represents a network operating system to be configured, it's objects contain authentication credentials,
-as well as instructions on how to contact and configure each appliance, and which plugin to use.
+An appliance represents a network operating system to be configured, and it inherits settings (as well as defining it's own).
 
 An Example Config
 ^^^^^^^^^^^^^^^^^
@@ -34,12 +29,11 @@ An Example Config
       network1:
          vlans:
             4-10
-      connections:
-         ssh:
-            username: user
-            password: password!
+        connections:
+           ssh:
+              username: user
+              password: password!
 
-   roles:
       distribution:
          fabric: network1
          interfaces:
@@ -52,23 +46,23 @@ An Example Config
 
    appliances:
       distsw1:
-         role: distribution
+         fabric: distribution
          plugin_package: cumulus
          connections:
             ssh:
                hostname: 10.5.5.33
 
-The inheritance structure flows like so:
+The inheritance structure flows in this manner:
 
-Fabric -> Fabric*n -> roles -> appliances.
+Fabric -> Child Fabric*n -> appliances.
 
-Appliances map to individual instances of hosts, but everything else is logically mapped to whatever makes sense for a given user.
+A node specified twice will take the value of the last object to specify it in the structure.
 
 Nodes
 -----
 
-Think of nodes as a meta-dictionary that allow you to access, modify, or remove the current state
-of an appliance without writing any YAML. A node is respresented by it's path in the dict (which is the same as the config.yaml)
+Nodes represent a dictionary structure that allow you to access, modify, or remove the current state
+of an appliance without writing any YAML. A node is represented by it's path in the dict (which is the same as the config.yaml)
 
 For instance, here are some valid nodes:
 
@@ -76,33 +70,37 @@ For instance, here are some valid nodes:
 - interfaces.1G.1
 - hostname
 
-Nodes have different commands depending on their type, for instance single value nodes (such as hostname) generally have
-two commands:
+Nodes have different commands depending on their type. For instance single value nodes (such as hostname) generally have
+three commands:
 
 - hostname.get
 - hostname.set
+- hostname.del
 
 List nodes will often have more command types:
 
-- protocols.ntp.client.servers.add: Adds a single server
+- protocols.ntp.client.servers.add: Adds a server or servers
 - protocols.ntp.client.servers.get: Gets a list of all servers
 - protocols.ntp.client.servers.set: Overwrites the server list with a new list
-- protocols.ntp.client.servers.del: deletes the list
+- protocols.ntp.client.servers.del: If a value is specified, deletes the value, otherwise deletes all values
 
-Additionally, there are a few meta nodes such as 'state'. State is likely the one you will use the most, and it has two
-functions:
+Additionally, there are a few meta nodes such as 'state'. State is likely the one you will use the most, and it has one function:
 
-- state.apply: Applies the current config.yaml
-- state.get: Returns a yaml or json formatted dict representing the current state of the appliances specified
+- state.apply: Applies the current config.yaml in an interactive manner
+
+In addition there are also two additional state nodes with the following commands:
+
+- cstate.get: Fetch current state of the appliance
+- dstate.get: Fetch desired state of the appliance (based on config.yaml)
+- dstate.apply: Non-interactively apply the desired state without confirmation
+
 
 
 Commands
 --------
 Commands follow a simple syntax:
 
-netweaver 'role|*' node --yaml=Yaml config file --value=Value to be written to a write node.
-
-
+netweaver 'role|*' node value --yaml=config.yaml
 
 The YAML state can be applied to every appliance in the infrastructure file by running the following:
 
@@ -118,7 +116,7 @@ You can view the current state of all appliances in the environment using the fo
 
 .. code-block:: bash
 
-   netweaver.py 'sw1' state.get --yaml=config.yaml
+   netweaver.py 'sw1' cstate.get --yaml=config.yaml
    sw1:
       hostname: spine1.net.testco.org
       interfaces:
@@ -145,11 +143,12 @@ You can view the current state of all appliances in the environment using the fo
 
 .. code-block:: bash
 
-   netweaver.py 'sw1' hostname.set --value='spine2' --yaml=config.yaml
+   netweaver.py 'sw1' hostname.set 'spine2' --yaml=config.yaml
     net add hostname spine2
 
-Note: Currently not all config nodes work. Accessing any disabled
-nodes should raise a NotSupported error
+.. note::
+    Not all appliance plugins can implement all nodes due to hardware limitations, accessing any unsupported node will
+    result in a NotImplemented or NotSupported error.
 
 Examples
 --------
@@ -178,7 +177,7 @@ Then, run:
 .. literalinclude:: ExampleConfigs/serun1.txt
 
 
-Now your switches are configured correctly, subsequent runs won't do anything because the curent state and desired state match:
+Now your switches are configured correctly, subsequent runs won't do anything because the curent state and desired state match.
 
 To complicate matters, a developer now needs to have a development server at his desk. unfortunately, his port
 is right in the middle of our 10-20 range, at port 11 on dist1. Not to worry though, we can place a config statement at
@@ -195,4 +194,15 @@ And running the program gives us the following output:
 As you can see, etherweaver operated idempotently, only applying the changes from the desired state that
 didn't match the current state. This allows you to easily manage and monitor config drift from within your environment.
 
+CLAG
+^^^^
+
+The cumulus switches we have been using as an example also support a feature known as Clustering Link Aggregation, or CLAG.
+
+This allows two independent switches to share link aggregation groups without a single point of failure, and without
+stacking. This is an excellent use case for fabric inheritance, as there are attributes that the switches share, as well
+as plenty that they don't. Here is an example CLAG configuration with etherweaver:
+
+.. literalinclude:: ExampleConfigs/clag_example.yaml
+   :language: yaml
 
