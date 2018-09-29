@@ -16,7 +16,7 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('../../'))
-from etherweaver import __version__
+import etherweaver
 
 
 # -- Project information -----------------------------------------------------
@@ -27,9 +27,9 @@ author = u'Grayson Head'
 
 
 # The short X.Y version
-version = __version__
+version = etherweaver.__version__
 # The full version, including alpha/beta/rc tags
-release = __version__
+release = etherweaver.__version__
 
 
 # -- General configuration ---------------------------------------------------
