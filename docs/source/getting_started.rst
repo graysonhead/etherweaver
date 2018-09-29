@@ -206,3 +206,10 @@ as plenty that they don't. Here is an example CLAG configuration with etherweave
 .. literalinclude:: ExampleConfigs/clag_example.yaml
    :language: yaml
 
+Applying this state file looks like this:
+
+.. literalinclude:: ExampleConfigs/clrun1.txt
+
+.. Note::
+   When testing state files in a virtual environment such as GNS3 or vagrant, the cumulus switches clag will not function unless
+   you add 'clagd-args --vm' to /etc/network/interfaces under the peerlink.4094 interface section on both switches.

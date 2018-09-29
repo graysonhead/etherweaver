@@ -23,7 +23,7 @@ fabrics:
   spine_cluster:
     fabric: network
     clag:
-      shared_mac: 44:38:39:FF:01:01
+      shared_mac: 44:38:39:FF:40:94
     interfaces:
       1G:
         9-10:
@@ -39,10 +39,21 @@ fabrics:
         po2:
           clag_id: 2
           profile: Trunk
+  dist_switches:
+    fabric: network
+    interfaces:
+      1G:
+        1-4:
+          profile: OfficePorts
+        5-6:
+          bond_slave: downlink
+      bond:
+        downlink:
+          profile: Trunk
 appliances:
   spine1:
     fabric: spine_cluster
-    hostname: dist1
+    hostname: spine1
     plugin_package: cumulus
     connections:
       ssh:
@@ -50,13 +61,13 @@ appliances:
         username: cumulus
         port: 22
     clag:
-      priority: 1000
+      priority: 0
       backup_ip: 192.168.122.18
       clag_cidr: [169.254.2.1/30]
       peer_ip: 169.254.2.2
   spine2:
     fabric: spine_cluster
-    hostname: dist2
+    hostname: spine2
     plugin_package: cumulus
     connections:
       ssh:
@@ -64,7 +75,25 @@ appliances:
         username: cumulus
         port: 22
     clag:
-      priority: 0
+      priority: 1000
       backup_ip: 192.168.122.89
       clag_cidr: [169.254.2.2/30]
       peer_ip: 169.254.2.1
+  dist1:
+    fabric: dist_switches
+    hostname: dist1
+    plugin_package: cumulus
+    connections:
+      ssh:
+        hostname: 192.168.122.68
+        username: cumulus
+        port: 22
+  dist2:
+    fabric: dist_switches
+    hostname: dist2
+    plugin_package: cumulus
+    connections:
+      ssh:
+        hostname: 192.168.122.219
+        username: cumulus
+        port: 22

@@ -1,3 +1,6 @@
+
+from etherweaver import __version__
+
 # -*- coding: utf-8 -*-
 #
 # Configuration file for the Sphinx documentation builder.
@@ -23,10 +26,11 @@ project = u'etherweaver'
 copyright = u'2018, Grayson Head'
 author = u'Grayson Head'
 
+
 # The short X.Y version
-version = u'Alpha'
+version = __version__
 # The full version, including alpha/beta/rc tags
-release = u'0.0.1'
+release = __version__
 
 
 # -- General configuration ---------------------------------------------------
