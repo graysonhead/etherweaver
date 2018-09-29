@@ -16,7 +16,8 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('../../'))
-import etherweaver
+# import etherweaver
+import pkg_resources
 
 
 # -- Project information -----------------------------------------------------
@@ -25,11 +26,12 @@ project = u'etherweaver'
 copyright = u'2018, Grayson Head'
 author = u'Grayson Head'
 
+vers = '0.2.3'
 
 # The short X.Y version
-version = etherweaver.__version__
+version = vers
 # The full version, including alpha/beta/rc tags
-release = etherweaver.__version__
+release = vers
 
 
 # -- General configuration ---------------------------------------------------
