@@ -14,6 +14,7 @@ Etherweaver, Config Management for Network Engineers
    install
    getting_started
    configuration
+   plugins
    license
 
 
