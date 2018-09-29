@@ -1,0 +1,35 @@
+etherweaver "*" state.apply --yaml=clag_example2.yaml
+If you continue, the following changes will be applied:
+###################################
+{   'dist1': [   'net add hostname dist1',
+                 'net add bridge bridge vids 10-12,20,254',
+                 'net add interface swp1 bridge vids 12',
+                 'net add interface swp1 bridge pvid 10',
+                 'net add interface swp2 bridge vids 12',
+                 'net add interface swp2 bridge pvid 10',
+                 'net add interface swp3 bridge vids 12',
+                 'net add interface swp3 bridge pvid 10',
+                 'net add interface swp4 bridge vids 12',
+                 'net add interface swp4 bridge pvid 10',
+                 'net add bond downlink bond slaves swp5',
+                 'net add bond downlink bond slaves swp6',
+                 'net add bond downlink bridge vids 10,12,20,254'],
+    'dist2': [   'net add hostname dist2',
+                 'net add bridge bridge vids 10-12,20,254',
+                 'net add interface swp1 bridge vids 12',
+                 'net add interface swp1 bridge pvid 10',
+                 'net add interface swp2 bridge vids 12',
+                 'net add interface swp2 bridge pvid 10',
+                 'net add interface swp3 bridge vids 12',
+                 'net add interface swp3 bridge pvid 10',
+                 'net add interface swp4 bridge vids 12',
+                 'net add interface swp4 bridge pvid 10',
+                 'net add bond downlink bond slaves swp5',
+                 'net add bond downlink bond slaves swp6',
+                 'net add bond downlink bridge vids 10,12,20,254']}
+Do you want to continue? y/[n]y
+dist1: 100%|███████████████████████████████████████| 13/13 [00:01<00:00,  7.50it/s]
+dist2: 100%|███████████████████████████████████████| 13/13 [00:04<00:00,  5.22it/s]
+
+
+Run complete
