@@ -85,8 +85,8 @@ class NetWeaverPlugin:
 
 	def build_ssh_session(self):
 		"""
-		This builds the SSH connection
-		:return:
+		Build the SSH Object
+
 		"""
 		if 'password' in self.appliance.dstate['connections']['ssh']:
 			password = self.appliance.dstate['connections']['ssh']['password']
@@ -103,7 +103,7 @@ class NetWeaverPlugin:
 	def connect(self):
 		"""
 		Examine protocol attribute and set up connection accordingly
-		:return:
+
 		"""
 		if self.protocol == 2:
 			self.build_ssh_session()
@@ -114,7 +114,7 @@ class NetWeaverPlugin:
 		PLUGIN_OVERRIDE
 
 		Put anything here that your plugin needs to do after a self.connect is called
-		:return:
+
 		"""
 		pass
 
@@ -458,6 +458,31 @@ class NetWeaverPlugin:
 		"""
 		self._not_supported('set_clag_shared_mac')
 
+	def set_bond_slaves(self, int_type, interface, bond, execute=True, commit=True):
+		"""
+
+		:param int_type:
+			This is the type of the interface, for instance: 'bond', '1G', '10G'. Used to determine the group of the
+			interface to be modified.
+
+		:param interface:
+			This is the number of the interface. You will likely need to translate this.
+
+		:param bond:
+			This is the ID of the bond that the interface will be added to.
+
+		:param execute:
+			If execute is True, this method must run and apply the configuration
+
+		:param commit:
+			If commit is true, this method must also commit the change (if applicable)
+
+		:return:
+			List of commands that can be run to effect the change.
+			You must return the list even if execute=True
+		"""
+		self._not_supported('set bond slaves')
+
 	def set_bond_clag_id(self, type, interface, clag_id, execute=True, commit=True):
 		"""
 		Sets the CLAG ID of a bond
@@ -487,6 +512,32 @@ class NetWeaverPlugin:
 			You must return the list EVEN IF execute=True
 		"""
 		self._not_supported('set_bond_clag_id')
+
+	def set_portfast(self, int_type, interface, enable_bool, execute=True, commit=True):
+		"""
+		Portfast skips STP listening stage on the port to allow the link to come up faster.
+
+		:param int_type:
+			This is the type of the interface, for instance: 'bond', '1G', '10G'. Used to determine the group of the
+			interface to be modified.
+
+		:param interface:
+			This is the number of the interface, or text ID of the bond. You will likely need to translate this.
+
+		:param enable_bool:
+			If true, enable portfast, if false disable portfast
+
+		:param execute:
+			If execute is True, this method must run and apply the configuration
+
+		:param commit:
+			If commit is true, this method must also commit the change (if applicable)
+
+		:return:
+			List of commands that can be run to effect the change.
+			You must return the list even if execute=True
+		"""
+		self._not_supported('interface portfast')
 
 	def set_interface_ip_addresses(self, type, interface, ips, execute=True, commit=True, delete=False, add=False):
 		"""

@@ -1,0 +1,39 @@
+$ etherweaver "*" state.apply --yaml=clag_example.yaml
+If you continue, the following changes will be applied:
+###################################
+{   'spine1': [   'net add hostname dist1',
+                  'net add bridge bridge vids 10-12,20,254',
+                  'net add bond peerlink bond slaves swp9',
+                  'net add bond peerlink bond slaves swp10',
+                  'net add bond po1 bond slaves swp1',
+                  'net add bond po2 bond slaves swp2',
+                  'net add interface peerlink.4094 clag backup-ip '
+                  '192.168.122.18',
+                  'net add interface peerlink.4094 ip address 169.254.2.1/30',
+                  'net add interface peerlink.4094 clag peer-ip 169.254.2.2',
+                  'net add interface peerlink.4094 clag priority 1000',
+                  'net add interface peerlink.4094 clag sys-mac '
+                  '44:38:39:FF:01:01',
+                  'net add bond po1 bridge vids 10,12,20,254',
+                  'net add bond po2 bridge vids 10,12,20,254'],
+    'spine2': [   'net add hostname dist2',
+                  'net add bridge bridge vids 10-12,20,254',
+                  'net add bond peerlink bond slaves swp9',
+                  'net add bond peerlink bond slaves swp10',
+                  'net add bond po1 bond slaves swp1',
+                  'net add bond po2 bond slaves swp2',
+                  'net add interface peerlink.4094 clag backup-ip '
+                  '192.168.122.89',
+                  'net add interface peerlink.4094 ip address 169.254.2.2/30',
+                  'net add interface peerlink.4094 clag peer-ip 169.254.2.1',
+                  'net add interface peerlink.4094 clag priority 0',
+                  'net add interface peerlink.4094 clag sys-mac '
+                  '44:38:39:FF:01:01',
+                  'net add bond po1 bridge vids 10,12,20,254',
+                  'net add bond po2 bridge vids 10,12,20,254']}
+Do you want to continue? y/[n]y
+spine1: 100%|███████████████████████████████████████| 13/13 [00:01<00:00,  7.17it/s]
+spine2: 100%|███████████████████████████████████████| 13/13 [00:06<00:00,  5.02it/s]
+
+
+Run complete

@@ -1,3 +1,7 @@
+
+from etherweaver import __version__
+from etherweaver.plugins.plugin_class import NetWeaverPlugin
+
 # -*- coding: utf-8 -*-
 #
 # Configuration file for the Sphinx documentation builder.
@@ -12,9 +16,9 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+sys.path.insert(0, os.path.abspath('../../'))
 
 
 # -- Project information -----------------------------------------------------
@@ -23,10 +27,11 @@ project = u'etherweaver'
 copyright = u'2018, Grayson Head'
 author = u'Grayson Head'
 
+
 # The short X.Y version
-version = u'Alpha'
+version = __version__
 # The full version, including alpha/beta/rc tags
-release = u'0.0.1'
+release = __version__
 
 
 # -- General configuration ---------------------------------------------------

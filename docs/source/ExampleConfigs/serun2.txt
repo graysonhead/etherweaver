@@ -1,4 +1,4 @@
-$: etherweaver '*' state.apply --yaml=docs/source/ExampleConfigs/simple_examplev2.yaml
+$etherweaver '*' state.apply --yaml=docs/source/ExampleConfigs/simple_examplev2.yaml
 If you continue, the following changes will be applied:
 ###################################
 {'dist1': ['net add interface swp11 bridge pvid 11']}
