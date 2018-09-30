@@ -1,6 +1,7 @@
 import collections.abc
 import copy
 import json
+import copy
 
 
 def parse_input_value(input, data_type, list_subtype=None):
@@ -79,31 +80,55 @@ def parse_input_value(input, data_type, list_subtype=None):
 
 
 def extrapolate_dict(numdict, int_key=False):
-		newnumdict = {}
-		if numdict is False:
-			return False
-		elif type(numdict) is not dict:
-			raise TypeError
-		for k, v in numdict.items():
-			if type(k) is str:
-				if '-' in k:
-					nums = k.split('-')
-					for n in range(int(nums[0]), int(nums[1]) + 1, 1):
-						if int_key:
-							newnumdict.update({int(n): v})
-						else:
-							newnumdict.update({str(n): v})
-				else:
+	newnumdict = {}
+	if numdict is False:
+		return False
+	elif type(numdict) is not dict:
+		raise TypeError
+	for k, v in numdict.items():
+		if type(k) is str:
+			# If there is a hyphen, we need to expand the key's values
+			if '-' in k:
+				# strip all numbers and hyphens to get the prefix
+				prefix = k.strip('1234567890-')
+				# strip the prefix to get the number iterators only
+				iterators = k.strip(prefix)
+				nums = iterators.split('-')
+				for n in range(int(nums[0]), int(nums[1]) + 1, 1):
 					if int_key:
-						newnumdict.update({int(k): v})
+						newnumdict.update({int(n): iterator_replace(v, val=int(n))})
 					else:
-						newnumdict.update({str(k): v})
+						newnumdict.update({prefix + str(n): iterator_replace(v, val=n)})
 			else:
 				if int_key:
 					newnumdict.update({int(k): v})
 				else:
 					newnumdict.update({str(k): v})
-		return newnumdict
+		else:
+			if int_key:
+				newnumdict.update({int(k): v})
+			else:
+				newnumdict.update({str(k): v})
+	return newnumdict
+
+
+def iterator_replace(repl_dict, var_id='i', val=None):
+	if type(repl_dict) is dict:
+		replace_dict = copy.deepcopy(repl_dict)
+		key = '$' + var_id
+		for k, v in replace_dict.items():
+			if type(v) is dict:
+				v = iterator_replace(v, var_id=var_id)
+			if type(v) == str:
+				if v.isdigit():
+					if int(v) == key:
+						replace_dict[k] = int(val)
+			if key in str(v):
+				replace_dict[k] = v.replace(key, str(val))
+				replace_dict[k] = str(replace_dict[k])
+	else:
+		replace_dict = None
+	return replace_dict
 
 
 def extrapolate_list(numlist, int_out=False):

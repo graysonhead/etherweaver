@@ -28,7 +28,7 @@ class WeaverConfig(object):
 					if kspd != 'bond':
 						new_int.update({kspd: extrapolate_dict(vspd, int_key=True)})
 					elif kspd == 'bond':
-						new_int.update({kspd: vspd})
+						new_int.update({kspd: extrapolate_dict(vspd, int_key=False)})
 			self.config['interfaces'] = new_int
 		if validate:
 			self.validate()
