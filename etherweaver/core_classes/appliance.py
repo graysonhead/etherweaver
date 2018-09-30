@@ -50,7 +50,7 @@ class Appliance(ConfigObject):
 			self.fabric_tree.append(self.fabric)
 			self.return_fabrics(self.fabric)
 			dstate = FabricConfig(self.fabric_tree[-1].config, validate=False)
-			for fab in self.fabric_tree[:-1]:
+			for fab in self.fabric_tree[::-1]:
 				dstate = dstate.merge_configs(FabricConfig(fab.config, validate=False))
 		if dstate:
 			dstate = dstate.merge_configs(ApplianceConfig(self.config), validate=False)

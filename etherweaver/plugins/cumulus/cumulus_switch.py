@@ -694,6 +694,8 @@ class CumulusSwitch(NetWeaverPlugin):
 		# 		for kint, vint in vtyp.items():
 		# 			if vint['bond'] == interface:
 		# 				bond_slaves.append(self._number_port_mapper(kint))
+		# Check to make sure the new bond doesn't orphan any existing bonds
+
 		command = 'net add bond {} bond slaves {}'.format(bond, self._number_port_mapper(interface))
 		if execute:
 			self.command(command)
