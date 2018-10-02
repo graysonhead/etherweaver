@@ -17,10 +17,12 @@ class CumulusSwitch(NetWeaverPlugin):
 		self.cstate = cstate
 		self.commands = []
 
+
 	def after_connect(self):
 		self.command('net abort')
 		self.portmap = self.pull_port_state()
 		self.cstate = self.pull_state()
+
 
 	def command(self, command):
 		"""
@@ -685,7 +687,7 @@ class CumulusSwitch(NetWeaverPlugin):
 				self.commit()
 		return [command]
 
-	def set_bond_slaves(self, int_type, interface, bond, execute=True, commit=True):
+	def set_bond_slaves(self, int_type, interface, bond, execute=True, commit=True, delete=False):
 		# TODO: allow deletion of bonds
 		# Find interfaces belonging to this bond, since cumulus defines interfces on the bond
 		# bond_slaves = []
@@ -694,9 +696,32 @@ class CumulusSwitch(NetWeaverPlugin):
 		# 		for kint, vint in vtyp.items():
 		# 			if vint['bond'] == interface:
 		# 				bond_slaves.append(self._number_port_mapper(kint))
-		# Check to make sure the new bond doesn't orphan any existing bonds
+		# Remove existing slaves if interface previously had slaves
 
-		command = 'net add bond {} bond slaves {}'.format(bond, self._number_port_mapper(interface))
+		if delete:
+			command = 'net del bond {} bond slaves {}'.format(bond, self._number_port_mapper(interface))
+		else:
+			slave_speed = self.portmap['by_number'][interface]['speed']
+			slave_int = self.cstate['interfaces'][slave_speed][interface]['bond_slave']
+			if slave_int and slave_int != bond:
+				self.set_bond_slaves(
+					int_type,
+					interface,
+					self.cstate['interfaces'][slave_speed][interface]['bond_slave'],
+					delete=True)
+			command = 'net add bond {} bond slaves {}'.format(bond, self._number_port_mapper(interface))
+		if execute:
+			self.command(command)
+			if commit:
+				self.commit()
+		return [command]
+
+	def set_bond(self, int_type, interface, execute=True, delete=False, commit=True):
+		if delete:
+			command = 'net del bond {}'.format(interface)
+		else:
+			# In cumulus, bonds cannot exists without slaves, so we any bond creation must be done throug set_bond_slaves
+			return
 		if execute:
 			self.command(command)
 			if commit:

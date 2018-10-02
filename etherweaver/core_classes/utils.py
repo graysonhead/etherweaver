@@ -2,6 +2,7 @@ import collections.abc
 import copy
 import json
 import copy
+import yaml
 
 
 def parse_input_value(input, data_type, list_subtype=None):
@@ -117,15 +118,20 @@ def iterator_replace(repl_dict, var_id='i', val=None):
 		replace_dict = copy.deepcopy(repl_dict)
 		key = '$' + var_id
 		for k, v in replace_dict.items():
+			# IF V is a dict, recurse this function
 			if type(v) is dict:
 				v = iterator_replace(v, var_id=var_id)
-			if type(v) == str:
-				if v.isdigit():
-					if int(v) == key:
-						replace_dict[k] = int(val)
+			# If We find the key in the current value
 			if key in str(v):
-				replace_dict[k] = v.replace(key, str(val))
-				replace_dict[k] = str(replace_dict[k])
+				# If after replacing the key, the val equals the new val, cast it to an integer
+				repval = v.replace(key, str(val))
+				if str(val) == repval and repval.isdigit():
+					replace_dict[k] = int(repval)
+				# Otherwise it is a string
+				else:
+					replace_dict[k] = repval
+				# replace_dict[k] = v.replace(key, str(val))
+				# replace_dict[k] = str(replace_dict[k])
 	else:
 		replace_dict = None
 	return replace_dict
@@ -250,3 +256,10 @@ def multi_port_parse(prt):
 		for pn in prt_list:
 			int_names.append(prt_name + pn)
 	return int_names
+
+def read_yaml_file(file):
+	with open(file, 'r') as stream:
+		try:
+			return yaml.safe_load(stream)
+		except yaml.YAMLError:
+			raise
