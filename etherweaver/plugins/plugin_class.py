@@ -62,7 +62,7 @@ class NWConnType(IntEnum):
 class NetWeaverPlugin:
 	# Hard coded to SSH for now
 	protocol = 2
-	hostname = None
+	name = None
 	commands = []
 
 	def add_command(self, commands):
@@ -88,6 +88,7 @@ class NetWeaverPlugin:
 		Build the SSH Object
 
 		"""
+		self.name = self.appliance.name
 		if 'password' in self.appliance.dstate['connections']['ssh']:
 			password = self.appliance.dstate['connections']['ssh']['password']
 		else:
@@ -136,7 +137,7 @@ class NetWeaverPlugin:
 		err = '\n'.join(stderr.readlines())
 		if err:
 			# TODO: Put useful info in here
-			raise SSHCommandError("While running command {} on appliance {}, got error {} {}".format(command, self.hostname, err, stdout.read())) #TODO For some reason this line returns empty on error when run from a child instance
+			raise SSHCommandError("While running command {} on appliance {}, got error {} {}".format(command, self.name, err, stdout.read())) #TODO For some reason this line returns empty on error when run from a child instance
 		return stdout.read().decode('utf-8')
 
 	def pull_state(self):

@@ -21,25 +21,32 @@ class WeaverConfig(object):
 			new_int = {}
 			for kspd, vspd in self.config['interfaces'].items():
 					for kint, vint in self.config['interfaces'][kspd].items():
-						# We can't extrapolate bonds as they are all strings
 						kspd_ints = {}
-						if kspd:
-							kspd_ints.update(self._interface_extrapolate(vint))
+						if vint is None or vint is False:
+							if kspd == 'bond':
+								vint = self.gen_bondskel()
+							else:
+								vint = self.gen_portskel()
+							vspd[kint] = vint
+						else:
+							if kspd:
+								kspd_ints.update(self._interface_extrapolate(vint))
 					if kspd != 'bond':
 						new_int.update({kspd: extrapolate_dict(vspd, int_key=True)})
 					elif kspd == 'bond':
-						new_int.update({kspd: vspd})
+						new_int.update({kspd: extrapolate_dict(vspd, int_key=False)})
 			self.config['interfaces'] = new_int
 		if validate:
 			self.validate()
 		#self._clean_config()
 
 	def _interface_extrapolate(self, inter):
-		if 'tagged_vlans' in inter:
-			inter['tagged_vlans'] = extrapolate_list(inter['tagged_vlans'], int_out=True)
-		if 'untagged_vlan' in inter:
-			if inter['untagged_vlan']:
-				inter['untagged_vlan'] = int(inter['untagged_vlan'])
+		if inter is not False or None:
+			if 'tagged_vlans' in inter:
+				inter['tagged_vlans'] = extrapolate_list(inter['tagged_vlans'], int_out=True)
+			if 'untagged_vlan' in inter:
+				if inter['untagged_vlan']:
+					inter['untagged_vlan'] = int(inter['untagged_vlan'])
 		return inter
 
 	def _clean_config(self):
@@ -88,6 +95,7 @@ class WeaverConfig(object):
 	@staticmethod
 	def gen_portskel():
 		return {
+			'delete': False,
 			'bond_slave': None,
 			'tagged_vlans': [],
 			'untagged_vlan': None,
@@ -103,6 +111,7 @@ class WeaverConfig(object):
 	@staticmethod
 	def gen_bondskel():
 		return {
+			'delete': False,
 			'clag_id': None,
 			'tagged_vlans': [],
 			'untagged_vlan': None,

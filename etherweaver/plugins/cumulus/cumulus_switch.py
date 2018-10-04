@@ -5,6 +5,7 @@ import json
 from etherweaver.core_classes.utils import \
 	extrapolate_list, \
 	compact_list, \
+	smart_append, \
 	multi_port_parse
 from etherweaver.core_classes.datatypes import WeaverConfig
 from etherweaver.core_classes.errors import ConfigKeyError
@@ -17,10 +18,12 @@ class CumulusSwitch(NetWeaverPlugin):
 		self.cstate = cstate
 		self.commands = []
 
+
 	def after_connect(self):
 		self.command('net abort')
 		self.portmap = self.pull_port_state()
 		self.cstate = self.pull_state()
+
 
 	def command(self, command):
 		"""
@@ -685,7 +688,7 @@ class CumulusSwitch(NetWeaverPlugin):
 				self.commit()
 		return [command]
 
-	def set_bond_slaves(self, int_type, interface, bond, execute=True, commit=True):
+	def set_bond_slaves(self, int_type, interface, bond, execute=True, commit=True, delete=False):
 		# TODO: allow deletion of bonds
 		# Find interfaces belonging to this bond, since cumulus defines interfces on the bond
 		# bond_slaves = []
@@ -694,7 +697,34 @@ class CumulusSwitch(NetWeaverPlugin):
 		# 		for kint, vint in vtyp.items():
 		# 			if vint['bond'] == interface:
 		# 				bond_slaves.append(self._number_port_mapper(kint))
-		command = 'net add bond {} bond slaves {}'.format(bond, self._number_port_mapper(interface))
+		# Remove existing slaves if interface previously had slaves
+		commands = []
+		if delete:
+			commands.append('net del bond {} bond slaves {}'.format(bond, self._number_port_mapper(interface)))
+		else:
+			slave_speed = self.portmap['by_number'][interface]['speed']
+			slave_int = self.cstate['interfaces'][slave_speed][interface]['bond_slave']
+			if slave_int and slave_int != bond:
+				smart_append(commands, self.set_bond_slaves(
+					int_type,
+					interface,
+					self.cstate['interfaces'][slave_speed][interface]['bond_slave'],
+					delete=True, execute=False))
+			commands.append('net add bond {} bond slaves {}'.format(bond, self._number_port_mapper(interface)))
+		if execute:
+			for command in commands:
+				self.command(command)
+			if commit:
+				self.commit()
+		return commands
+
+	def set_bond(self, int_type, interface, execute=True, delete=False, commit=True):
+		if delete:
+			# A bond is just a type of interface in cumulus, deleting the interface removes some edge-cases
+			command = 'net del interface {}'.format(interface)
+		else:
+			# In cumulus, bonds cannot exists without slaves, so we any bond creation must be done throug set_bond_slaves
+			return
 		if execute:
 			self.command(command)
 			if commit:

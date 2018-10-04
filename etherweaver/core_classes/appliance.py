@@ -50,7 +50,7 @@ class Appliance(ConfigObject):
 			self.fabric_tree.append(self.fabric)
 			self.return_fabrics(self.fabric)
 			dstate = FabricConfig(self.fabric_tree[-1].config, validate=False)
-			for fab in self.fabric_tree[:-1]:
+			for fab in self.fabric_tree[::-1]:
 				dstate = dstate.merge_configs(FabricConfig(fab.config, validate=False))
 		if dstate:
 			dstate = dstate.merge_configs(ApplianceConfig(self.config), validate=False)
@@ -462,6 +462,9 @@ class Appliance(ConfigObject):
 		for kspd, vspd in i_dstate.items():
 			if kspd in ['1G', '10G', '100G', '40G', 'mgmt']:
 				for kint, vint in vspd.items():
+					if 'delete' in vint:
+						if vint['delete'] is True:
+							smart_append(commands, self.plugin.set_bond(kspd, kint, delete=True, execute=False))
 					if 'tagged_vlans' in vint:
 						smart_append(commands, self._interface_tagged_vlans_push(cstate, dstate, kspd, kint))
 					if 'untagged_vlan' in vint:
@@ -500,18 +503,25 @@ class Appliance(ConfigObject):
 				'tagged_vlans': self.plugin.set_interface_tagged_vlans,
 				'untagged_vlan': self.plugin.set_interface_untagged_vlan,
 			}
-			for key, func in dispatcher.items():
-				if bnd_dstate is not None:
-					ds = bnd_dstate[key]
-				else:
-					ds = bnd_dstate
-				if bnd_cstate is not None:
-					cs = bnd_cstate[key]
-				else:
-					cs = bnd_cstate
-				smart_append(commands, self._compare_state(ds, cs, func, int_type='bond', interface=kbnd))
+			if vbnd['delete'] is True:
+				smart_append(commands, self._push_bond_delete(kbnd))
+				continue
+			else:
+				for key, func in dispatcher.items():
+					if bnd_dstate is not None:
+						ds = bnd_dstate[key]
+					else:
+						ds = bnd_dstate
+					if bnd_cstate is not None:
+						cs = bnd_cstate[key]
+					else:
+						cs = bnd_cstate
+					smart_append(commands, self._compare_state(ds, cs, func, int_type='bond', interface=kbnd))
 		return commands
 
+	def _push_bond_delete(self, kbnd):
+		if kbnd in self.cstate['interfaces']['bond']:
+			return self.plugin.set_bond('bond', kbnd, delete=True, execute=False)
 
 	def _stp_options_push(self, cstate, dstate, kspd, kint):
 		# TODO: update this function to follow conventions

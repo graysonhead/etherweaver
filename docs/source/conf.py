@@ -1,7 +1,4 @@
 
-from etherweaver import __version__
-from etherweaver.plugins.plugin_class import NetWeaverPlugin
-
 # -*- coding: utf-8 -*-
 #
 # Configuration file for the Sphinx documentation builder.
@@ -19,6 +16,8 @@ from etherweaver.plugins.plugin_class import NetWeaverPlugin
 import os
 import sys
 sys.path.insert(0, os.path.abspath('../../'))
+# import etherweaver
+import pkg_resources
 
 
 # -- Project information -----------------------------------------------------
@@ -27,11 +26,12 @@ project = u'etherweaver'
 copyright = u'2018, Grayson Head'
 author = u'Grayson Head'
 
+vers = '0.2.3'
 
 # The short X.Y version
-version = __version__
+version = vers
 # The full version, including alpha/beta/rc tags
-release = __version__
+release = vers
 
 
 # -- General configuration ---------------------------------------------------
