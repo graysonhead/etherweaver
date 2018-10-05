@@ -548,6 +548,53 @@ class NetWeaverPlugin:
 		"""
 		self._not_supported('interface portfast')
 
+	def set_interface_mtu(self, int_type, interface, mtu, execute=True, commit=True):
+		"""
+
+		:param int_type:
+			The type/speed of interface
+
+		:param interface:
+			The ID of the interface
+
+		:param mtu:
+			Non zero non negative integer
+
+		:param execute:
+			If execute is True, this method must run and apply the configuration
+
+		:param commit:
+			If commit is true, this method must also commit the change (if applicable)
+
+		:return:
+			List of commands that can be run to effect the change.
+			You must return the list even if execute=True
+		"""
+		self._not_supported('interface mtu')
+
+	def set_bond_mtu(self, int_type, bond, mtu, execute=True, commit=True):
+		"""
+
+		:param int_type:
+			The type/speed of the bond (Will always be a string 'bond', this parameter exists for consistency)
+
+		:param bond:
+			The ID of the bond
+
+		:param mtu:
+			Non zero non negative integer
+
+		:param execute:
+			If execute is True, this method must run and apply the configuration
+
+		:param commit:
+			If commit is true, this method must also commit the change (if applicable)
+
+		:return:
+			List of commands that can be run to effect the change.
+			You must return the list even if execute=True
+		"""
+
 	def set_interface_ip_addresses(self, int_type, interface, ips, execute=True, commit=True, delete=False, add=False):
 		"""
 		Adds and removes IP addresses from the interface

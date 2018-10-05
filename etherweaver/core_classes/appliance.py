@@ -211,6 +211,11 @@ class Appliance(ConfigObject):
 					'get': int_cstate['bond_slave'],
 					'set': self.plugin.set_bond_slaves,
 					'data_type': str
+				},
+				'mtu': {
+					'get': int_cstate['mtu'],
+					'set': self.plugin.set_interface_mtu,
+					'data_type': str
 				}
 			}
 			int_dispatch_dict.update(physical_specific_dict)
@@ -472,7 +477,23 @@ class Appliance(ConfigObject):
 						smart_append(commands, self._stp_options_push(cstate, dstate, kspd, kint))
 					if 'bond_slave':
 						smart_append(commands, self._bond_slave_push(cstate, dstate, kspd, kint))
+					if 'mtu':
+						smart_append(commands, self._mtu_interface_push(cstate, dstate, kspd, kint))
 		self.plugin.add_command(commands)
+
+	def _mtu_interface_push(self, cstate, dstate, kspd, kint):
+		inter_dstate = dstate['interfaces'][kspd][kint]['mtu']
+		try:
+			inter_cstate = cstate['interfaces'][kspd][kint]['mtu']
+		except KeyError:
+			inter_cstate = None
+		return self._compare_state(
+			inter_dstate,
+			inter_cstate,
+			self.plugin.set_interface_mtu,
+			int_type=kspd,
+			interface=kint
+		)
 
 	def _bond_slave_push(self, cstate, dstate, kspd, kint):
 		inter_dstate = dstate['interfaces'][kspd][kint]['bond_slave']
