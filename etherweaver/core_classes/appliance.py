@@ -226,6 +226,11 @@ class Appliance(ConfigObject):
 					'get': int_cstate['clag_id'],
 					'set': self.plugin.set_bond_clag_id,
 					'data_type': int
+				},
+				'mtu': {
+					'get': int_cstate['mtu'],
+					'set': self.plugin.set_bond_mtu,
+					'data_type': str
 				}
 			}
 			int_dispatch_dict.update(bond_specific_dict)
@@ -522,6 +527,7 @@ class Appliance(ConfigObject):
 				'clag_id': self.plugin.set_bond_clag_id,
 				'tagged_vlans': self.plugin.set_interface_tagged_vlans,
 				'untagged_vlan': self.plugin.set_interface_untagged_vlan,
+				'mtu': self.plugin.set_bond_mtu
 			}
 			if vbnd['delete'] is True:
 				smart_append(commands, self._push_bond_delete(kbnd))

@@ -549,17 +549,29 @@ class CumulusSwitch(NetWeaverPlugin):
 			self.command(command)
 		return [command]
 
-	def set_interface_mtu(self, int_type, interface, mtu, execute=True, commit=True):
-		command = 'net add interface {} mtu {}'.format(self._number_port_mapper(interface), mtu)
+	def set_interface_mtu(self, int_type, interface, mtu, execute=True, commit=True, delete=False):
+		# TODO: Deletes not idempotent
+		if delete:
+			command = 'net del interface {} mtu'.format(self._number_port_mapper(interface))
+		else:
+			command = 'net add interface {} mtu {}'.format(self._number_port_mapper(interface), mtu)
 		if execute:
 			self.command(command)
 			if commit:
 				self.commit()
 		return [command]
 
-	def set_bond_mtu(self, int_type, bond, mtu, execute=True, commit=True):
-		# In cumulus, bonds and interfaces are functionally the same in this regard
-		return self.set_interface_mtu(int_type, bond, mtu, execute=execute, commit=commit)
+	def set_bond_mtu(self, int_type, bond, mtu, execute=True, commit=True, delete=False):
+		# TODO: Deletes not idempotent
+		if delete:
+			command = 'net del bond {} mtu'.format(bond)
+		else:
+			command = 'net add bond {} mtu {}'.format(bond, mtu)
+		if execute:
+			self.command(command)
+			if commit:
+				self.commit()
+		return [command]
 
 	def set_interface_ip_addresses(self, int_type, interface, ips, execute=True, commit=True, delete=False, add=False, cstate=None):
 		if int_type != 'bond':

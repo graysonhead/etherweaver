@@ -548,7 +548,7 @@ class NetWeaverPlugin:
 		"""
 		self._not_supported('interface portfast')
 
-	def set_interface_mtu(self, int_type, interface, mtu, execute=True, commit=True):
+	def set_interface_mtu(self, int_type, interface, mtu, execute=True, commit=True, delete=False):
 		"""
 
 		:param int_type:
@@ -566,13 +566,16 @@ class NetWeaverPlugin:
 		:param commit:
 			If commit is true, this method must also commit the change (if applicable)
 
+		:param delete:
+			Resets MTU to default on appliances that support it. Raise an error if yours doesn't.
+
 		:return:
 			List of commands that can be run to effect the change.
 			You must return the list even if execute=True
 		"""
 		self._not_supported('interface mtu')
 
-	def set_bond_mtu(self, int_type, bond, mtu, execute=True, commit=True):
+	def set_bond_mtu(self, int_type, bond, mtu, execute=True, commit=True, delete=False):
 		"""
 
 		:param int_type:
@@ -589,6 +592,9 @@ class NetWeaverPlugin:
 
 		:param commit:
 			If commit is true, this method must also commit the change (if applicable)
+
+		:param delete:
+			Resets MTU to default on appliances that support it. Raise an error if yours doesn't.
 
 		:return:
 			List of commands that can be run to effect the change.
