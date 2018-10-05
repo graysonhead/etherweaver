@@ -464,7 +464,7 @@ class NetWeaverPlugin:
 		"""
 		self._not_supported('set_clag_shared_mac')
 
-	def set_bond_slaves(self, int_type, interface, bond, execute=True, commit=True):
+	def set_bond_slaves(self, int_type, interface, bond, execute=True, commit=True, delete=False):
 		"""
 
 		:param int_type:
@@ -483,13 +483,16 @@ class NetWeaverPlugin:
 		:param commit:
 			If commit is true, this method must also commit the change (if applicable)
 
+		:param delete:
+			Delete the bond.
+
 		:return:
 			List of commands that can be run to effect the change.
 			You must return the list even if execute=True
 		"""
 		self._not_supported('set bond slaves')
 
-	def set_bond_clag_id(self, int_type, interface, clag_id, execute=True, commit=True, delete=False):
+	def set_bond_clag_id(self, int_type, interface, clag_id, execute=True, delete=False, commit=True):
 		"""
 		Sets the CLAG ID of a bond
 

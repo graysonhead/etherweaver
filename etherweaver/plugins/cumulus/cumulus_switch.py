@@ -1,4 +1,4 @@
-from etherweaver.plugins.plugin_class import NetWeaverPlugin, NWConnType
+from etherweaver.plugins.plugin_class import NetWeaverPlugin
 from ipaddress import ip_address
 import pytz
 import json
@@ -7,6 +7,7 @@ from etherweaver.core_classes.utils import \
 	compact_list, \
 	smart_append
 from etherweaver.core_classes.datatypes import WeaverConfig
+
 
 class CumulusSwitch(NetWeaverPlugin):
 
@@ -240,19 +241,6 @@ class CumulusSwitch(NetWeaverPlugin):
 		if atrib:
 			return True
 
-	# def add_dns_nameserver(self, ip, commit=True, execute=True):
-	# 	ip = ip_address(ip)
-	# 	if ip._version == 4:
-	# 		version = 'ipv4'
-	# 	elif ip._version == 6:
-	# 		version = 'ipv6'
-	# 	command = 'net add dns nameserver {} {}'.format(version, ip)
-	# 	if execute:
-	# 		self.command(command)
-	# 		if commit:
-	# 			self.commit()
-	# 	return command
-
 	def set_dns_nameservers(self, nameserverlist, execute=True, commit=True, delete=False, add=False):
 		commands = []
 		nameservers_to_delete = []
@@ -289,19 +277,6 @@ class CumulusSwitch(NetWeaverPlugin):
 			if commit:
 				self.commit()
 		return commands
-
-	# def rm_dns_nameserver(self, ip, commit=True, execute=True):
-	# 	ip = ip_address(ip)
-	# 	if ip._version == 4:
-	# 		version = 'ipv4'
-	# 	elif ip._version == 6:
-	# 		version = 'ipv6'
-	# 	command = 'net del dns nameserver {} {}'.format(version, ip)
-	# 	if execute:
-	# 		self.command(command)
-	# 		if commit:
-	# 			self.commit()
-	# 	return command
 
 	def set_hostname(self, hostname, execute=True, commit=True, delete=False):
 		if delete:
@@ -389,20 +364,20 @@ class CumulusSwitch(NetWeaverPlugin):
 		vlans_to_remove = []
 		if delete:
 			if vlandictlist:
-				for k, v in vlandictlist.items():
-					if k in self.appliance.cstate['vlans']:
-						vlans_to_remove.append(k)
+				for k in vlandictlist.items():
+					if k[0] in self.appliance.cstate['vlans']:
+						vlans_to_remove.append(k[0])
 			else:
-				for k, v in self.appliance.cstate['vlans'].items():
-					vlans_to_remove.append(k)
+				for k in self.appliance.cstate['vlans'].items():
+					vlans_to_remove.append(k[0])
 		else:
-			for k, v in vlandictlist.items():
+			for k in vlandictlist.items():
 				# Comparing vlan keys and values to existing ones in cstate
-				if k not in self.appliance.cstate['vlans']:
-					vlans_to_add.append(k)
-			for k, v in self.appliance.cstate['vlans'].items():
-				if k not in vlandictlist:
-					vlans_to_remove.append(k)
+				if k[0] not in self.appliance.cstate['vlans']:
+					vlans_to_add.append(k[0])
+			for k in self.appliance.cstate['vlans'].items():
+				if k[0] not in vlandictlist:
+					vlans_to_remove.append(k[0])
 		if vlans_to_add:
 			commands.append('net add bridge bridge vids {}'.format(
 				','.join(str(x) for x in compact_list(vlans_to_add))
