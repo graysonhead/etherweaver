@@ -7,7 +7,6 @@ Etherweaver is an agentless configuration management system.
 
 Similar to Ansible and Salt, the goal of Etherweaver is to abstract the task of managing large switch fabrics.
 
-
 ## Core Design Concepts
 
 * ### Universal States for Different Platforms
