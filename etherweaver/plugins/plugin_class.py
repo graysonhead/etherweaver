@@ -1,4 +1,4 @@
-from paramiko import SSHClient, WarningPolicy, RejectPolicy
+from paramiko import SSHClient, RejectPolicy
 from enum import IntEnum
 from etherweaver.plugins.plugin_class_errors import *
 
@@ -158,13 +158,12 @@ class NetWeaverPlugin:
 
 	def pre_push(self):
 		self._not_implemented()
-	"""Override these functions to enable each feature"""
 
-	def set_interface_tagged_vlans(self, type, interface, vlans, execute=True, commit=True, delete=False, add=False):
+	def set_interface_tagged_vlans(self, speed, interface, vlans, execute=True, commit=True, delete=False, add=False):
 		"""
 		This method modifies the list of allowed tagged vlans for a given interface.
 
-		:param type:
+		:param speed:
 			This is the type of the interface, for instance: 'bond', '1G', '10G'. Used to determine the group of the
 			interface to be modified.
 
@@ -218,7 +217,7 @@ class NetWeaverPlugin:
 		"""
 		self._not_supported('set_hostname')
 
-	def set_dns_nameservers(self, nameserverlist, execute=True, commit=True, delete=False):
+	def set_dns_nameservers(self, nameserverlist, execute=True, commit=True, delete=False, add=False):
 		"""
 		This method sets the dns resolvers used by the appliance.
 
@@ -227,6 +226,9 @@ class NetWeaverPlugin:
 
 		:param execute:
 			If execute is True, this method must run and apply the configuration.
+
+		:param add:
+			List of DNS nameservers to be added.
 
 		:param commit:
 			If commit is true, the appliance must load the new configuration as part of this method.
@@ -303,11 +305,11 @@ class NetWeaverPlugin:
 		"""
 		self._not_supported('set_vlans')
 
-	def set_interface_untagged_vlan(self, type, interface, vlan, execute=True, delete=False):
+	def set_interface_untagged_vlan(self, int_type, interface, vlan, execute=True, delete=False, commit=True):
 		"""
 		Sets the untagged (PVID) of an interface
 
-		:param type:
+		:param int_type:
 			This is the type of the interface, for instance: 'bond', '1G', '10G'. Used to determine the group of the
 			interface to be modified.
 
@@ -367,12 +369,15 @@ class NetWeaverPlugin:
 		"""
 		self._not_supported('set_clag_backup_ip')
 
-	def set_clag_cidr(self, cidr, execute=True, delete=False, commit=True):
+	def set_clag_cidr(self, cidr, execute=True, delete=False, commit=True, add=False):
 		"""
 			Set the IP address and subnet mask of the primary CLAG peer interface
 
 		:param cidr:
 			CIDR of the appliance's CLAG peering interface as a string. EX; '169.254.2.1/30'
+
+		:param add:
+			List of cidrs to add.
 
 		:param commit:
 			If commit is true, the appliance must load the new configuration as part of this method.
@@ -484,11 +489,11 @@ class NetWeaverPlugin:
 		"""
 		self._not_supported('set bond slaves')
 
-	def set_bond_clag_id(self, type, interface, clag_id, execute=True, commit=True):
+	def set_bond_clag_id(self, int_type, interface, clag_id, execute=True, commit=True, delete=False):
 		"""
 		Sets the CLAG ID of a bond
 
-		:param type:
+		:param int_type:
 			This is the type of the interface, for instance: 'bond', '1G', '10G'. Used to determine the group of the
 			interface to be modified.
 
@@ -540,11 +545,11 @@ class NetWeaverPlugin:
 		"""
 		self._not_supported('interface portfast')
 
-	def set_interface_ip_addresses(self, type, interface, ips, execute=True, commit=True, delete=False, add=False):
+	def set_interface_ip_addresses(self, int_type, interface, ips, execute=True, commit=True, delete=False, add=False):
 		"""
 		Adds and removes IP addresses from the interface
 
-		:param type:
+		:param int_type:
 			This is the type of the interface, for instance: 'bond', '1G', '10G'. Used to determine the group of the
 			interface to be modified.
 

@@ -19,7 +19,8 @@ class CLIApp:
 					raise KeyError('Key \'{}\' not allowed at top level'.format(k))
 		self._build_infrastructure_object()
 
-	def _parse_yaml_file(self, yamlfile):
+	@staticmethod
+	def _parse_yaml_file(yamlfile):
 		"""Read Yaml from file and send to parse_yaml_string"""
 		return read_yaml_file(yamlfile)
 

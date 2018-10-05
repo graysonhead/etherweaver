@@ -1,5 +1,4 @@
 from etherweaver.core_classes.config_object import ConfigObject
-import unittest
 from etherweaver.server_config_loader import get_server_config
 from importlib.machinery import SourceFileLoader
 from etherweaver.core_classes.utils import smart_append, parse_input_value
@@ -59,7 +58,6 @@ class Appliance(ConfigObject):
 			dstate = ApplianceConfig(self.config)
 		dstate.apply_profiles()
 		self.dstate = dstate.get_full_config()
-
 
 	def return_fabrics(self, fabric):
 		if fabric.parent_fabric:
@@ -366,7 +364,8 @@ class Appliance(ConfigObject):
 		if self.plugin.ssh:
 			self.plugin.ssh.close()
 
-	def _compare_state(self, dstate, cstate, func, interface=None, int_type=None, data_type=str):
+	@staticmethod
+	def _compare_state(dstate, cstate, func, interface=None, int_type=None, data_type=str):
 		# Case0
 		try:
 			dstate

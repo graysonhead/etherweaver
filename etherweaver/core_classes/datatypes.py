@@ -40,7 +40,8 @@ class WeaverConfig(object):
 			self.validate()
 		#self._clean_config()
 
-	def _interface_extrapolate(self, inter):
+	@staticmethod
+	def _interface_extrapolate(inter):
 		if inter is not False or None:
 			if 'tagged_vlans' in inter:
 				inter['tagged_vlans'] = extrapolate_list(inter['tagged_vlans'], int_out=True)
@@ -148,7 +149,7 @@ class WeaverConfig(object):
 			if k in skip_set:
 				pass
 			elif k in skel_dict:
-				if type(v) is dict:
+				if isinstance(v, dict):
 					self._validate_dict(config_dict[k], skel_dict[k])
 			else:
 				raise ConfigKeyError(k, value=v)
