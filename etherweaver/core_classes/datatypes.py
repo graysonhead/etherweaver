@@ -106,6 +106,7 @@ class WeaverConfig(object):
 			'stp': {
 				'port_fast': False
 			},
+			'mtu': 0
 
 		}
 
@@ -118,7 +119,8 @@ class WeaverConfig(object):
 			'untagged_vlan': None,
 			'ip': {
 				'addresses': []
-			}
+			},
+			'mtu': 0
 		}
 
 	def validate(self):

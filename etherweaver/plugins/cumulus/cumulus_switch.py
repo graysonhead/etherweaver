@@ -115,7 +115,8 @@ class CumulusSwitch(NetWeaverPlugin):
 		def parse_interfaces(line):
 			portid = line.split(' ')[3]
 			# lookup port
-			portnum = self.portmap['by_name'][portid]['portid']
+			port_dict = self.portmap['by_name'][portid]
+			portnum = port_dict['portid']
 			if self.portmap['by_name'][portid]['mode'] == 'Mgmt':
 				speed = 'mgmt'
 			else:
@@ -136,6 +137,8 @@ class CumulusSwitch(NetWeaverPlugin):
 					conf['interfaces'][speed][portnum]['stp']['port_fast'] = True
 				elif 'ip address' in line:
 					conf['interfaces'][speed][portnum]['ip']['addresses'].append(line.split(' ')[6])
+				# Add MTU for the interface as fetched from the portmap
+				conf['interfaces'][speed][portnum].update({'mtu': port_dict['mtu']})
 
 
 		def clag_parse(line):
@@ -163,9 +166,12 @@ class CumulusSwitch(NetWeaverPlugin):
 				# Get the speed of the interface
 				speed = self.portmap['by_name']['swp{}'.format(str(interface))]['speed']
 				# Create or update the interface
+				# Look up the bond in the portmap for fetching MTU, etc
+				port = self.portmap['by_name'][name]
 				if interface not in conf['interfaces'][speed]:
 					conf['interfaces'][speed].update({interface: WeaverConfig.gen_portskel()})
 				conf['interfaces'][speed][interface].update({'bond_slave': name})
+				conf['interfaces']['bond'][name].update({'mtu': port['mtu']})
 
 		def bond_parse(line):
 			# This should be the first reference of any bond
@@ -352,10 +358,22 @@ class CumulusSwitch(NetWeaverPlugin):
 				except ValueError:
 					portnum = k.strip('swp')
 			if v['speed'] == 'N/A':
-				ports_by_name.update({portname: {'portid': portnum, 'speed': '1G', 'mode': v['mode']}})
+				ports_by_name.update({portname: {
+					'portid': portnum,
+					'speed': '1G',
+					'mode': v['mode'],
+					'mtu': v['iface_obj']['mtu']}})
 			else:
-				ports_by_name.update({portname: {'portid': portnum, 'speed': v['speed'], 'mode': v['mode']}})
-			ports_by_number.update({portnum: {'portname': portname, 'speed': v['speed'], 'mode': v['mode']}})
+				ports_by_name.update({portname: {
+					'portid': portnum,
+					'speed': v['speed'],
+					'mode': v['mode'],
+					'mtu': v['iface_obj']['mtu']}})
+			ports_by_number.update({portnum: {
+				'portname': portname,
+				'speed': v['speed'],
+				'mode': v['mode'],
+				'mtu': v['iface_obj']['mtu']}})
 		return {'by_name': ports_by_name, 'by_number': ports_by_number}
 
 	def set_vlans(self, vlandictlist, execute=True, commit=True, delete=False):
