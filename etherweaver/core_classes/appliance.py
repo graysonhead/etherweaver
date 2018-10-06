@@ -532,13 +532,18 @@ class Appliance(ConfigObject):
 			inter_cstate = cstate['interfaces'][kspd][kint]['mtu']
 		except KeyError:
 			inter_cstate = None
-		return self._compare_state(
-			inter_dstate,
-			inter_cstate,
-			self.plugin.set_interface_mtu,
-			int_type=kspd,
-			interface=kint
-		)
+		# If the desired state is false (unconfigure) and the cstate is 1500, its probably safe to assume its
+		# deconfigured on most platforms
+		if inter_dstate is False and inter_cstate == 1500:
+			return
+		else:
+			return self._compare_state(
+				inter_dstate,
+				inter_cstate,
+				self.plugin.set_interface_mtu,
+				int_type=kspd,
+				interface=kint
+			)
 
 	def _bond_slave_push(self, cstate, dstate, kspd, kint):
 		inter_dstate = dstate['interfaces'][kspd][kint]['bond_slave']
@@ -574,15 +579,21 @@ class Appliance(ConfigObject):
 				continue
 			else:
 				for key, func in dispatcher.items():
-					if bnd_dstate is not None:
-						ds = bnd_dstate[key]
-					else:
-						ds = bnd_dstate
-					if bnd_cstate is not None:
-						cs = bnd_cstate[key]
-					else:
-						cs = bnd_cstate
-					smart_append(commands, self._compare_state(ds, cs, func, int_type='bond', interface=kbnd))
+					if key == 'mtu':
+						# If the desired state is false (unconfigure) and the cstate is 1500, its probably safe to assume its
+						# deconfigured on most platforms
+						if bnd_dstate['mtu'] is False and bnd_cstate['mtu'] == 1500:
+							continue
+						else:
+							if bnd_dstate is not None:
+								ds = bnd_dstate[key]
+							else:
+								ds = bnd_dstate
+							if bnd_cstate is not None:
+								cs = bnd_cstate[key]
+							else:
+								cs = bnd_cstate
+							smart_append(commands, self._compare_state(ds, cs, func, int_type='bond', interface=kbnd))
 		return commands
 
 	def _push_bond_delete(self, kbnd):

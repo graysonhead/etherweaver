@@ -5,3 +5,4 @@
 * [cumulus_switch] Fixed bond deletion bug
 * [cumulus_switch] When all of a bond's slave interfaces are re-assigned, that bond is now deleted automatically instead of being converted to an interface
 * Fixed a bug where fabrics were being inherited in reverse order
+* Primitive node documentation
