@@ -630,3 +630,53 @@ class NetWeaverPlugin:
 			You must return the list EVEN IF execute=True
 		"""
 		self._not_supported('set interface ip address')
+
+	def set_interface_admin_down(self, int_type, interface, down_status, commit=True, execute=True):
+		"""
+
+		:param int_type:
+			This is the type of the interface, for instance: 'bond', '1G', '10G'. Used to determine the group of the
+			interface to be modified.
+
+		:param interface:
+			This is the number of the interface, or text ID of the bond. You will likely need to translate this.
+
+		:param down_status:
+			True for a downed interface, False for an up interface.
+
+		:param commit:
+			If commit is true, the appliance must load the new configuration as part of this method.
+
+		:param execute:
+			If execute is True, this method must run and apply the configuration.
+
+		:return:
+			Return the list of commands that can be run to effect the change.
+			You must return the list EVEN IF execute=True
+		"""
+		self._not_supported('set interface admin down')
+
+	def set_bond_admin_down(self, int_type, bond, down_status, commit=True, execute=True):
+		"""
+
+		:param int_type:
+			This is the type of the interface, for instance: 'bond', '1G', '10G'. Used to determine the group of the
+			interface to be modified.
+
+		:param bond:
+			This is the number of the interface, or text ID of the bond. You will likely need to translate this.
+
+		:param down_status:
+			True for a downed bond, False for an up bond.
+
+		:param commit:
+			If commit is true, the appliance must load the new configuration as part of this method.
+
+		:param execute:
+			If execute is True, this method must run and apply the configuration.
+
+		:return:
+			Return the list of commands that can be run to effect the change.
+			You must return the list EVEN IF execute=True
+		"""
+		self._not_supported('set bond admin down')

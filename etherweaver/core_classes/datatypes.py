@@ -106,7 +106,8 @@ class WeaverConfig(object):
 			'stp': {
 				'port_fast': False
 			},
-			'mtu': None
+			'mtu': None,
+			'admin_down': False
 
 		}
 
@@ -120,7 +121,8 @@ class WeaverConfig(object):
 			'ip': {
 				'addresses': []
 			},
-			'mtu': None
+			'mtu': None,
+			'admin_down': False
 		}
 
 	def validate(self):

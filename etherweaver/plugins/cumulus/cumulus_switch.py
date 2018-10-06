@@ -137,6 +137,8 @@ class CumulusSwitch(NetWeaverPlugin):
 					conf['interfaces'][speed][portnum]['stp']['port_fast'] = True
 				elif 'ip address' in line:
 					conf['interfaces'][speed][portnum]['ip']['addresses'].append(line.split(' ')[6])
+				elif 'link down' in line:
+					conf['interfaces'][speed][portnum]['admin_down'] = True
 				# Add MTU for the interface as fetched from the portmap
 				conf['interfaces'][speed][portnum].update({'mtu': port_dict['mtu']})
 
@@ -175,6 +177,7 @@ class CumulusSwitch(NetWeaverPlugin):
 
 		def bond_parse(line):
 			# This should be the first reference of any bond
+			name = line.split(' ')[3]
 			if 'slaves' in line:
 				name = line.split(' ')[3]
 				# Parse the interfaces and extrapolate them
@@ -183,19 +186,18 @@ class CumulusSwitch(NetWeaverPlugin):
 				create_bond_inter(name, interfaces)
 			if 'clag id' in line:
 				# Get the name and ID of the interface
-				name = line.split(' ')[3]
 				clag_id = line.split(' ')[6]
 				conf['interfaces']['bond'][name]['clag_id'] = int(clag_id)
 			if 'bridge vids' in line:
-				name = line.split(' ')[3]
 				vids = line.split(' ')[6].split(',')
 				conf['interfaces']['bond'][name]['tagged_vlans'] = extrapolate_list(vids, int_out=True)
 			if 'bridge pvid' in line:
-				name = line.split(' ')[3]
 				vid = line.split(' ')[6]
 				conf['interfaces']['bond'][name]['untagged_vlan'] = int(vid)
 			elif 'ip address' in line:
 				conf['interfaces']['bond'][name]['ip']['addresses'].append(line.split(' ')[6])
+			elif 'link down' in line:
+				conf['interfaces']['bond'][name]['admin_down'] = True
 
 
 
@@ -704,3 +706,25 @@ class CumulusSwitch(NetWeaverPlugin):
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		if self.ssh:
 			self.ssh.close()
+
+	def set_interface_admin_down(self, int_type, interface, down_status, commit=True, execute=True):
+		if down_status:
+			command = 'net add interface {} link down'.format(self._number_port_mapper(interface))
+		else:
+			command = 'net del interface {} link down'.format(self._number_port_mapper(interface))
+		if execute:
+			self.command(command)
+			if commit:
+				self.commit()
+		return [command]
+
+	def set_bond_admin_down(self, int_type, bond, down_status, commit=True, execute=True):
+		if down_status:
+			command = 'net add bond {} link down'.format(bond)
+		else:
+			command = 'net del bond {} link down'.format(bond)
+		if execute:
+			self.command(command)
+			if commit:
+				self.commit()
+		return [command]

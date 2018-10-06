@@ -248,6 +248,12 @@ class Appliance(ConfigObject):
 					'set': self.plugin.set_interface_mtu,
 					'data_type': str,
 					'allowed_functions': ['get', 'set', 'del']
+				},
+				'admin_down': {
+					'get': int_cstate['admin_down'],
+					'set': self.plugin.set_interface_admin_down,
+					'data_type': bool,
+					'allowed_functions': ['get', 'set']
 				}
 			}
 			int_dispatch_dict.update(physical_specific_dict)
@@ -265,6 +271,12 @@ class Appliance(ConfigObject):
 					'set': self.plugin.set_bond_mtu,
 					'data_type': str,
 					'allowed_functions': ['get', 'set', 'del']
+				},
+				'admin_down': {
+					'get': int_cstate['admin_down'],
+					'set': self.plugin.set_bond_admin_down,
+					'data_type': bool,
+					'allowed_functions': ['get', 'set']
 				}
 			}
 			int_dispatch_dict.update(bond_specific_dict)
@@ -415,7 +427,7 @@ class Appliance(ConfigObject):
 			self.plugin.ssh.close()
 
 	@staticmethod
-	def _compare_state(dstate, cstate, func, interface=None, int_type=None, data_type=str):
+	def _compare_state(dstate, cstate, func, interface=None, int_type=None, data_type=str, bool_val=False):
 		# Case0
 		try:
 			dstate
@@ -458,7 +470,7 @@ class Appliance(ConfigObject):
 					else:
 						return func(dstate, execute=False)
 				elif int and int_type:
-					if dstate is False:
+					if dstate is False and not bool_val:
 						return func(int_type, interface, dstate, execute=False, delete=True)
 					else:
 						return func(int_type, interface, dstate, execute=False)
@@ -524,7 +536,24 @@ class Appliance(ConfigObject):
 						smart_append(commands, self._bond_slave_push(cstate, dstate, kspd, kint))
 					if 'mtu':
 						smart_append(commands, self._mtu_interface_push(cstate, dstate, kspd, kint))
+					if 'admin_down':
+						smart_append(commands, self._interface_admin_down_push(cstate, dstate, kspd, kint))
 		self.plugin.add_command(commands)
+
+	def _interface_admin_down_push(self, cstate, dstate, kspd, kint):
+		inter_dstate = dstate['interfaces'][kspd][kint]['admin_down']
+		try:
+			inter_cstate = cstate['interfaces'][kspd][kint]['admin_down']
+		except KeyError:
+			inter_cstate = False
+		return self._compare_state(
+			inter_dstate,
+			inter_cstate,
+			self.plugin.set_interface_admin_down,
+			int_type=kspd,
+			interface=kint,
+			bool_val=True
+		)
 
 	def _mtu_interface_push(self, cstate, dstate, kspd, kint):
 		inter_dstate = dstate['interfaces'][kspd][kint]['mtu']
@@ -544,6 +573,8 @@ class Appliance(ConfigObject):
 				int_type=kspd,
 				interface=kint
 			)
+
+
 
 	def _bond_slave_push(self, cstate, dstate, kspd, kint):
 		inter_dstate = dstate['interfaces'][kspd][kint]['bond_slave']

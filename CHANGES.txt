@@ -1,5 +1,7 @@
 * added mtu state and command node to interfaces
 * added mtu state and command node to bonds
+* added admin_down to interfaces
+* [cumulus_switch] Implemented admin_down on interfaces
 * [cumulus_switch] Implemented new MTU nodes
 * Added iterator key feature
 * [cumulus_switch] Fixed bond deletion bug
