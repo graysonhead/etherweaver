@@ -433,7 +433,7 @@ class Appliance(ConfigObject):
 			dstate
 		except KeyError:
 			return
-		#if dstate is False or dstate is None or bool(dstate) is False:
+		# if dstate is False or dstate is None or bool(dstate) is False:
 		if dstate == [] or dstate == '' or dstate == {} or dstate is None:
 			return
 		# If the dstate specifies a value shouldn't exist with False, but the cstate is None, we have already done our
@@ -519,24 +519,6 @@ class Appliance(ConfigObject):
 	def _interfaces_push(self, dstate, cstate):
 		# TODO: This probably could be consolidated under the new convention
 		commands = []
-		# for kspd, vspd in i_dstate.items():
-		# 	if kspd in ['1G', '10G', '100G', '40G', 'mgmt']:
-		# 		for kint, vint in vspd.items():
-		# 			if 'delete' in vint:
-		# 				if vint['delete'] is True:
-		# 					smart_append(commands, self.plugin.set_bond(kspd, kint, delete=True, execute=False))
-		# 			if 'tagged_vlans' in vint:
-		# 				smart_append(commands, self._interface_tagged_vlans_push(cstate, dstate, kspd, kint))
-		# 			if 'untagged_vlan' in vint:
-		# 				smart_append(commands, self._interface_untagged_vlan_push(cstate, dstate, kspd, kint))
-		# 			if 'stp' in vint:
-		# 				smart_append(commands, self._stp_options_push(cstate, dstate, kspd, kint))
-		# 			if 'bond_slave':
-		# 				smart_append(commands, self._bond_slave_push(cstate, dstate, kspd, kint))
-		# 			if 'mtu':
-		# 				smart_append(commands, self._mtu_interface_push(cstate, dstate, kspd, kint))
-		# 			if 'admin_down':
-		# 				smart_append(commands, self._interface_admin_down_push(cstate, dstate, kspd, kint))
 		dispatcher = {
 			'tagged_vlans': self.plugin.set_interface_tagged_vlans,
 			'untagged_vlan': self.plugin.set_interface_untagged_vlan,
@@ -596,41 +578,6 @@ class Appliance(ConfigObject):
 			bool_val=True
 		)
 
-	# def _mtu_interface_push(self, cstate, dstate, kspd, kint):
-	# 	inter_dstate = dstate['interfaces'][kspd][kint]['mtu']
-	# 	try:
-	# 		inter_cstate = cstate['interfaces'][kspd][kint]['mtu']
-	# 	except KeyError:
-	# 		inter_cstate = None
-	# 	# If the desired state is false (unconfigure) and the cstate is 1500, its probably safe to assume its
-	# 	# deconfigured on most platforms
-	# 	if inter_dstate is False and inter_cstate == 1500:
-	# 		return
-	# 	else:
-	# 		return self._compare_state(
-	# 			inter_dstate,
-	# 			inter_cstate,
-	# 			self.plugin.set_interface_mtu,
-	# 			int_type=kspd,
-	# 			interface=kint
-	# 		)
-
-
-
-	# def _bond_slave_push(self, cstate, dstate, kspd, kint):
-	# 	inter_dstate = dstate['interfaces'][kspd][kint]['bond_slave']
-	# 	try:
-	# 		inter_cstate = cstate['interfaces'][kspd][kint]['bond_slave']
-	# 	except KeyError:
-	# 		inter_cstate = None
-	# 	return self._compare_state(
-	# 		inter_dstate,
-	# 		inter_cstate,
-	# 		self.plugin.set_bond_slaves,
-	# 		int_type='bond',
-	# 		interface=kint
-	# 	)
-
 	def _bonds_push(self, dstate, cstate):
 		bonds_dstate = dstate['interfaces']['bond']
 		commands = []
@@ -683,31 +630,6 @@ class Appliance(ConfigObject):
 				cs = False
 			if v == 'port_fast':
 				return self._compare_state(ds, cs, self.plugin.set_portfast, interface=kint, int_type=kspd, bool_val=True)
-
-	# def _interface_untagged_vlan_push(self, cstate, dstate, speed, interface):
-	# 	dstate = dstate['interfaces'][speed][interface]['untagged_vlan']
-	# 	# Case 3
-	# 	try:
-	# 		cstate = cstate['interfaces'][speed][interface]['untagged_vlan']
-	# 	except KeyError:
-	# 		cstate = None
-	# 	return self._compare_state(dstate, cstate, self.plugin.set_interface_untagged_vlan, interface=interface, int_type=speed)
-
-	# def _interface_tagged_vlans_push(self, cstate, dstate, speed, interface):
-	# 	# Case 3
-	# 	dstate = dstate['interfaces'][speed][interface]['tagged_vlans']
-	# 	try:
-	# 		cstate = cstate['interfaces'][speed][interface]['tagged_vlans']
-	# 	except KeyError:
-	# 		cstate = None
-	# 	return self._compare_state(
-	# 		dstate,
-	# 		cstate,
-	# 		self.plugin.set_interface_tagged_vlans,
-	# 		interface=interface,
-	# 		int_type=speed,
-	# 		data_type=list
-	# 	)
 
 	def _protocol_dns_nameservers_push(self, dstate, cstate):
 		try:
