@@ -680,17 +680,23 @@ class CumulusSwitch(NetWeaverPlugin):
 		return commands
 
 	def set_bond(self, int_type, interface, execute=True, delete=False, commit=True):
+		commands = []
 		if delete:
-			# A bond is just a type of interface in cumulus, deleting the interface removes some edge-cases
-			command = 'net del interface {}'.format(interface)
+			stdin, stdout, stderr = self.ssh.exec_command('net show interface {}'.format(interface))
+			out = stdout.read().decode('utf-8')
+			if 'Bond Mode:' in out:
+				commands.append('net del bond {}'.format(interface))
+			else:
+				commands.append('net del interface {}'.format(interface))
 		else:
 			# In cumulus, bonds cannot exists without slaves, so we any bond creation must be done throug set_bond_slaves
 			return
 		if execute:
-			self.command(command)
+			for command in commands:
+				self.command(command)
 			if commit:
 				self.commit()
-		return [command]
+		return commands
 
 	def set_bond_clag_id(self, int_type, interface, clag_id, execute=True, delete=False, commit=True):
 		if delete:

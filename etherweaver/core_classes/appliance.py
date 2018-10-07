@@ -398,7 +398,7 @@ class Appliance(ConfigObject):
 		self.plugin.add_command(self._protocol_ntpclient_push(dstate, cstate))
 		self.plugin.add_command(self._vlans_push(dstate, cstate))
 		# Interfaces depend on vlans, so they are run after vlans
-		self._interfaces_push(dstate, cstate)
+		self.plugin.add_command(self._interfaces_push(dstate, cstate))
 		# Bonds depend on interfaces, so they are run after interfaces
 		self.plugin.add_command(self._clag_push(dstate, cstate))
 		self.plugin.add_command(self._bonds_push(dstate, cstate))
@@ -518,27 +518,68 @@ class Appliance(ConfigObject):
 
 	def _interfaces_push(self, dstate, cstate):
 		# TODO: This probably could be consolidated under the new convention
-		i_dstate = dstate['interfaces']
 		commands = []
-		for kspd, vspd in i_dstate.items():
-			if kspd in ['1G', '10G', '100G', '40G', 'mgmt']:
-				for kint, vint in vspd.items():
-					if 'delete' in vint:
-						if vint['delete'] is True:
-							smart_append(commands, self.plugin.set_bond(kspd, kint, delete=True, execute=False))
-					if 'tagged_vlans' in vint:
-						smart_append(commands, self._interface_tagged_vlans_push(cstate, dstate, kspd, kint))
-					if 'untagged_vlan' in vint:
-						smart_append(commands, self._interface_untagged_vlan_push(cstate, dstate, kspd, kint))
-					if 'stp' in vint:
-						smart_append(commands, self._stp_options_push(cstate, dstate, kspd, kint))
-					if 'bond_slave':
-						smart_append(commands, self._bond_slave_push(cstate, dstate, kspd, kint))
-					if 'mtu':
-						smart_append(commands, self._mtu_interface_push(cstate, dstate, kspd, kint))
-					if 'admin_down':
-						smart_append(commands, self._interface_admin_down_push(cstate, dstate, kspd, kint))
-		self.plugin.add_command(commands)
+		# for kspd, vspd in i_dstate.items():
+		# 	if kspd in ['1G', '10G', '100G', '40G', 'mgmt']:
+		# 		for kint, vint in vspd.items():
+		# 			if 'delete' in vint:
+		# 				if vint['delete'] is True:
+		# 					smart_append(commands, self.plugin.set_bond(kspd, kint, delete=True, execute=False))
+		# 			if 'tagged_vlans' in vint:
+		# 				smart_append(commands, self._interface_tagged_vlans_push(cstate, dstate, kspd, kint))
+		# 			if 'untagged_vlan' in vint:
+		# 				smart_append(commands, self._interface_untagged_vlan_push(cstate, dstate, kspd, kint))
+		# 			if 'stp' in vint:
+		# 				smart_append(commands, self._stp_options_push(cstate, dstate, kspd, kint))
+		# 			if 'bond_slave':
+		# 				smart_append(commands, self._bond_slave_push(cstate, dstate, kspd, kint))
+		# 			if 'mtu':
+		# 				smart_append(commands, self._mtu_interface_push(cstate, dstate, kspd, kint))
+		# 			if 'admin_down':
+		# 				smart_append(commands, self._interface_admin_down_push(cstate, dstate, kspd, kint))
+		dispatcher = {
+			'tagged_vlans': self.plugin.set_interface_tagged_vlans,
+			'untagged_vlan': self.plugin.set_interface_untagged_vlan,
+			'stp': self._stp_options_push,
+			'bond_slave': self.plugin.set_bond_slaves,
+			'mtu': self.plugin.set_interface_mtu,
+			'admin_down': self.plugin.set_interface_admin_down
+		}
+		bool_keys = ['admin_down']
+		for ktyp, vtyp in dstate['interfaces'].items():
+			if ktyp in ['1G', '10G', '100G', '40G', 'mgmt']:
+				for kint, vint in vtyp.items():
+					try:
+						int_dstate = dstate['interfaces'][ktyp][kint]
+					except KeyError:
+						int_dstate = None
+					try:
+						int_cstate = cstate['interfaces'][ktyp][kint]
+					except KeyError:
+						int_cstate = None
+					if vint['delete'] is True:
+						# Todo: add interface deletion like bonds
+						pass
+					else:
+						for key, func in dispatcher.items():
+							if key == 'mtu':
+								# If the desired state is false (unconfigure) and the cstate is 1500, its probably safe to assume its
+								# deconfigured on most platforms
+								if int_dstate['mtu'] is False and int_cstate['mtu'] == 1500:
+									continue
+							if int_dstate is not None:
+								ds = int_dstate[key]
+							else:
+								ds = int_dstate
+							if int_cstate is not None:
+								cs = int_cstate[key]
+							else:
+								cs = int_cstate
+							if key in bool_keys:
+								smart_append(commands, self._compare_state(ds, cs, func, int_type=ktyp, interface=kint, bool_val=True))
+							else:
+								smart_append(commands, self._compare_state(ds, cs, func, int_type=ktyp, interface=kint))
+		return commands
 
 	def _interface_admin_down_push(self, cstate, dstate, kspd, kint):
 		inter_dstate = dstate['interfaces'][kspd][kint]['admin_down']
@@ -555,40 +596,40 @@ class Appliance(ConfigObject):
 			bool_val=True
 		)
 
-	def _mtu_interface_push(self, cstate, dstate, kspd, kint):
-		inter_dstate = dstate['interfaces'][kspd][kint]['mtu']
-		try:
-			inter_cstate = cstate['interfaces'][kspd][kint]['mtu']
-		except KeyError:
-			inter_cstate = None
-		# If the desired state is false (unconfigure) and the cstate is 1500, its probably safe to assume its
-		# deconfigured on most platforms
-		if inter_dstate is False and inter_cstate == 1500:
-			return
-		else:
-			return self._compare_state(
-				inter_dstate,
-				inter_cstate,
-				self.plugin.set_interface_mtu,
-				int_type=kspd,
-				interface=kint
-			)
+	# def _mtu_interface_push(self, cstate, dstate, kspd, kint):
+	# 	inter_dstate = dstate['interfaces'][kspd][kint]['mtu']
+	# 	try:
+	# 		inter_cstate = cstate['interfaces'][kspd][kint]['mtu']
+	# 	except KeyError:
+	# 		inter_cstate = None
+	# 	# If the desired state is false (unconfigure) and the cstate is 1500, its probably safe to assume its
+	# 	# deconfigured on most platforms
+	# 	if inter_dstate is False and inter_cstate == 1500:
+	# 		return
+	# 	else:
+	# 		return self._compare_state(
+	# 			inter_dstate,
+	# 			inter_cstate,
+	# 			self.plugin.set_interface_mtu,
+	# 			int_type=kspd,
+	# 			interface=kint
+	# 		)
 
 
 
-	def _bond_slave_push(self, cstate, dstate, kspd, kint):
-		inter_dstate = dstate['interfaces'][kspd][kint]['bond_slave']
-		try:
-			inter_cstate = cstate['interfaces'][kspd][kint]['bond_slave']
-		except KeyError:
-			inter_cstate = None
-		return self._compare_state(
-			inter_dstate,
-			inter_cstate,
-			self.plugin.set_bond_slaves,
-			int_type='bond',
-			interface=kint
-		)
+	# def _bond_slave_push(self, cstate, dstate, kspd, kint):
+	# 	inter_dstate = dstate['interfaces'][kspd][kint]['bond_slave']
+	# 	try:
+	# 		inter_cstate = cstate['interfaces'][kspd][kint]['bond_slave']
+	# 	except KeyError:
+	# 		inter_cstate = None
+	# 	return self._compare_state(
+	# 		inter_dstate,
+	# 		inter_cstate,
+	# 		self.plugin.set_bond_slaves,
+	# 		int_type='bond',
+	# 		interface=kint
+	# 	)
 
 	def _bonds_push(self, dstate, cstate):
 		bonds_dstate = dstate['interfaces']['bond']
@@ -631,42 +672,42 @@ class Appliance(ConfigObject):
 		if kbnd in self.cstate['interfaces']['bond']:
 			return self.plugin.set_bond('bond', kbnd, delete=True, execute=False)
 
-	def _stp_options_push(self, cstate, dstate, kspd, kint):
+	def _stp_options_push(self, kspd, kint, dstate, execute=False):
 		# TODO: update this function to follow conventions
 		for v in WeaverConfig.gen_portskel()['stp']:
-			ds = dstate['interfaces'][kspd][kint]['stp'][v]
+			ds = dstate[v]
 			# Assume false on keyerror
 			try:
-				cs = cstate['interfaces'][kspd][kint]['stp'][v]
+				cs = self.cstate['interfaces'][kspd][kint]['stp'][v]
 			except KeyError:
 				cs = False
 			if v == 'port_fast':
-				return self._compare_state(ds, cs, self.plugin.set_portfast, interface=kint, int_type=kspd)
+				return self._compare_state(ds, cs, self.plugin.set_portfast, interface=kint, int_type=kspd, bool_val=True)
 
-	def _interface_untagged_vlan_push(self, cstate, dstate, speed, interface):
-		dstate = dstate['interfaces'][speed][interface]['untagged_vlan']
-		# Case 3
-		try:
-			cstate = cstate['interfaces'][speed][interface]['untagged_vlan']
-		except KeyError:
-			cstate = None
-		return self._compare_state(dstate, cstate, self.plugin.set_interface_untagged_vlan, interface=interface, int_type=speed)
+	# def _interface_untagged_vlan_push(self, cstate, dstate, speed, interface):
+	# 	dstate = dstate['interfaces'][speed][interface]['untagged_vlan']
+	# 	# Case 3
+	# 	try:
+	# 		cstate = cstate['interfaces'][speed][interface]['untagged_vlan']
+	# 	except KeyError:
+	# 		cstate = None
+	# 	return self._compare_state(dstate, cstate, self.plugin.set_interface_untagged_vlan, interface=interface, int_type=speed)
 
-	def _interface_tagged_vlans_push(self, cstate, dstate, speed, interface):
-		# Case 3
-		dstate = dstate['interfaces'][speed][interface]['tagged_vlans']
-		try:
-			cstate = cstate['interfaces'][speed][interface]['tagged_vlans']
-		except KeyError:
-			cstate = None
-		return self._compare_state(
-			dstate,
-			cstate,
-			self.plugin.set_interface_tagged_vlans,
-			interface=interface,
-			int_type=speed,
-			data_type=list
-		)
+	# def _interface_tagged_vlans_push(self, cstate, dstate, speed, interface):
+	# 	# Case 3
+	# 	dstate = dstate['interfaces'][speed][interface]['tagged_vlans']
+	# 	try:
+	# 		cstate = cstate['interfaces'][speed][interface]['tagged_vlans']
+	# 	except KeyError:
+	# 		cstate = None
+	# 	return self._compare_state(
+	# 		dstate,
+	# 		cstate,
+	# 		self.plugin.set_interface_tagged_vlans,
+	# 		interface=interface,
+	# 		int_type=speed,
+	# 		data_type=list
+	# 	)
 
 	def _protocol_dns_nameservers_push(self, dstate, cstate):
 		try:
