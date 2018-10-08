@@ -17,10 +17,12 @@ class CumulusSwitch(NetWeaverPlugin):
 		self.cstate = cstate
 		self.commands = []
 
+
 	def after_connect(self):
 		self.command('net abort')
 		self.portmap = self.pull_port_state()
 		self.cstate = self.pull_state()
+
 
 	def command(self, command):
 		"""
@@ -360,20 +362,17 @@ class CumulusSwitch(NetWeaverPlugin):
 				except ValueError:
 					portnum = k.strip('swp')
 			if v['speed'] == 'N/A':
-				ports_by_name.update({portname: {
-					'portid': portnum,
-					'speed': '1G',
-					'mode': v['mode'],
-					'mtu': v['iface_obj']['mtu']}})
+				prt_spd = self.plugin_options['port_speed']
 			else:
-				ports_by_name.update({portname: {
-					'portid': portnum,
-					'speed': v['speed'],
-					'mode': v['mode'],
-					'mtu': v['iface_obj']['mtu']}})
+				prt_spd = v['speed']
+			ports_by_name.update({portname: {
+				'portid': portnum,
+				'speed': prt_spd,
+				'mode': v['mode'],
+				'mtu': v['iface_obj']['mtu']}})
 			ports_by_number.update({portnum: {
 				'portname': portname,
-				'speed': v['speed'],
+				'speed': prt_spd,
 				'mode': v['mode'],
 				'mtu': v['iface_obj']['mtu']}})
 		return {'by_name': ports_by_name, 'by_number': ports_by_number}
@@ -663,14 +662,6 @@ class CumulusSwitch(NetWeaverPlugin):
 		if delete:
 			commands.append('net del bond {} bond slaves {}'.format(bond, self._number_port_mapper(interface)))
 		else:
-			slave_speed = self.portmap['by_number'][interface]['speed']
-			slave_int = self.cstate['interfaces'][slave_speed][interface]['bond_slave']
-			if slave_int and slave_int != bond:
-				smart_append(commands, self.set_bond_slaves(
-					int_type,
-					interface,
-					self.cstate['interfaces'][slave_speed][interface]['bond_slave'],
-					delete=True, execute=False))
 			commands.append('net add bond {} bond slaves {}'.format(bond, self._number_port_mapper(interface)))
 		if execute:
 			for command in commands:

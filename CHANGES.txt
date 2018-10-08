@@ -8,3 +8,5 @@
 * [cumulus_switch] When all of a bond's slave interfaces are re-assigned, that bond is now deleted automatically instead of being converted to an interface
 * Fixed a bug where fabrics were being inherited in reverse order
 * Primitive node documentation
+* Added ability to set custom plugin options
+* [cumulus_switch] Fixed a few bond creation edge-case bugs
