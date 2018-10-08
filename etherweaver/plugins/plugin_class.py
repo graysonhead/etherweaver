@@ -65,6 +65,12 @@ class NetWeaverPlugin:
 	name = None
 	commands = []
 
+	def _set_plugin_options(self):
+		if 'plugin_options' in self.appliance.dstate:
+			self.plugin_options = self.appliance.dstate['plugin_options']
+		else:
+			self.plugin_options = {}
+
 	def add_command(self, commands):
 		"""
 		Adds a command to the command queue

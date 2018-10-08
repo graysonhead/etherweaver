@@ -58,6 +58,7 @@ class Appliance(ConfigObject):
 			dstate = ApplianceConfig(self.config)
 		dstate.apply_profiles()
 		self.dstate = dstate.get_full_config()
+		self.plugin._set_plugin_options()
 
 	def return_fabrics(self, fabric):
 		if fabric.parent_fabric:
@@ -603,16 +604,16 @@ class Appliance(ConfigObject):
 						# deconfigured on most platforms
 						if bnd_dstate['mtu'] is False and bnd_cstate['mtu'] == 1500:
 							continue
+					else:
+						if bnd_dstate is not None:
+							ds = bnd_dstate[key]
 						else:
-							if bnd_dstate is not None:
-								ds = bnd_dstate[key]
-							else:
-								ds = bnd_dstate
-							if bnd_cstate is not None:
-								cs = bnd_cstate[key]
-							else:
-								cs = bnd_cstate
-							smart_append(commands, self._compare_state(ds, cs, func, int_type='bond', interface=kbnd))
+							ds = bnd_dstate
+						if bnd_cstate is not None:
+							cs = bnd_cstate[key]
+						else:
+							cs = bnd_cstate
+						smart_append(commands, self._compare_state(ds, cs, func, int_type='bond', interface=kbnd))
 		return commands
 
 	def _push_bond_delete(self, kbnd):
