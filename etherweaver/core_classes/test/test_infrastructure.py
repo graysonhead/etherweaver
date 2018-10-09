@@ -1,6 +1,7 @@
 import unittest
 from etherweaver.core_classes.appliance import Appliance
 from etherweaver.core_classes.infrastructure import Infrastructure
+from etherweaver.__main__ import CLIApp
 
 mock1 = {
 			'roles':
@@ -57,6 +58,39 @@ class TestInfrastructureClass(unittest.TestCase):
 		self.assertEqual(inf.appliances[0].is_appliance, True)
 		self.assertEqual(inf.fabrics[0].is_fabric, True)
 		self.assertEqual(inf.appliances[0].plugin.is_plugin, True)
+
+
+class TestDstateInherit(unittest.TestCase):
+	def test_basic_inheritance(self):
+		correct_dstate = {'fabric': 'dist', 'role': None, 'hostname': 'dist1',
+						'vlans': {1: None, 2: None, 3: None, 4: None, 5: None, 6: None},
+						'clag': {'shared_mac': None, 'priority': None, 'backup_ip': None, 'peer_ip': None,
+						'clag_cidr': []}, 'port_profiles': {}, 'protocols': {'dns': {'nameservers': []},
+						'ntp': {
+						'client': {'servers': [],
+						'timezone': None}}},
+						'interfaces': {'1G': {
+						1: {'delete': False, 'bond_slave': None, 'tagged_vlans': [3, 4], 'untagged_vlan': 2,
+						'ip': {'addresses': []}, 'stp': {'port_fast': False}, 'mtu': None},
+						2: {'delete': False, 'bond_slave': None, 'tagged_vlans': [3, 4], 'untagged_vlan': 2,
+						'ip': {'addresses': []}, 'stp': {'port_fast': False}, 'mtu': None},
+						3: {'delete': False, 'bond_slave': None, 'tagged_vlans': [3, 4], 'untagged_vlan': 2,
+						'ip': {'addresses': []}, 'stp': {'port_fast': False}, 'mtu': None},
+						4: {'delete': False, 'bond_slave': None, 'tagged_vlans': [3, 4], 'untagged_vlan': 2,
+						'ip': {'addresses': []}, 'stp': {'port_fast': False}, 'mtu': None},
+						5: {'delete': False, 'bond_slave': None, 'tagged_vlans': [1, 2, 3, 4, 5, 6],
+						'untagged_vlan': None, 'ip': {'addresses': []}, 'stp': {'port_fast': False},
+						'mtu': None},
+						6: {'delete': False, 'bond_slave': None, 'tagged_vlans': [1, 2, 3, 4, 5, 6],
+						'untagged_vlan': None, 'ip': {'addresses': []}, 'stp': {'port_fast': False},
+						'mtu': None}}, '10G': {}, '40G': {}, '100G': {}, 'mgmt': {}, 'bond': {}},
+						'plugin_package': 'cumulus', 'plugin_options': {'port_speed': '1G'},
+						'connections': {'ssh': {'hostname': '192.168.122.121', 'username': 'cumulus', 'port': 22}}}
+		cli = CLIApp(yaml='inheritancetest.yaml')
+		cli._build_infrastructure_object()
+		cli.inf.appliances[0].build_dstate()
+		self.assertEqual(cli.inf.appliances[0].dstate, correct_dstate)
+
 
 
 if __name__ == '__main__':

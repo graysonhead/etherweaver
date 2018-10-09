@@ -1,0 +1,34 @@
+fabrics:
+  vlanconf:
+    vlans:
+      1-6:
+  protocols:
+    dns:
+      nameservers: [10.5.5.115]
+    ntp:
+      client:
+        servers: [pool.ntp.org]
+
+
+  dist:
+    fabric: vlanconf
+    interfaces:
+      1G:
+        1-4:
+          untagged_vlan: 2
+          tagged_vlans: [3, 4]
+        5-6:
+          tagged_vlans: [1-6]
+
+appliances:
+  dist1:
+    fabric: dist
+    hostname: dist1
+    plugin_package: cumulus
+    plugin_options:
+      port_speed: 1G
+    connections:
+      ssh:
+        hostname: 192.168.122.121
+        username: cumulus
+        port: 22
