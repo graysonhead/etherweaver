@@ -673,8 +673,8 @@ class CumulusSwitch(NetWeaverPlugin):
 	def set_bond(self, int_type, interface, execute=True, delete=False, commit=True):
 		commands = []
 		if delete:
-			stdin, stdout, stderr = self.ssh.exec_command('net show interface {}'.format(interface))
-			out = stdout.read().decode('utf-8')
+			out = self.ssh.exec_command('net show interface {}'.format(interface))
+			out = out[1].read().decode('utf-8')
 			if 'Bond Mode:' in out:
 				commands.append('net del bond {}'.format(interface))
 			else:
