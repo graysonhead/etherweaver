@@ -36,11 +36,11 @@ Similar to Ansible and Salt, the goal of Etherweaver is to abstract the task of 
 
 Etherweaver's can consist of two sections, of which Fabrics are optional:
 
-.. code-block:: yaml
-   :caption: config.yaml
+    code-block:: yaml
+    :caption: config.yaml
 
-   fabrics: # A list of all fabrics
-   appliances: # A list of all hardware
+    fabrics: # A list of all fabrics
+    appliances: # A list of all hardware
 
 Fabrics represent networks, or collections of network devices with inherited settings.
 
@@ -48,35 +48,35 @@ An appliance represents a network operating system to be configured, and it inhe
 
 ### An Example Config
 
-.. code-block:: yaml
-   :caption: config.yaml
+    code-block:: yaml
+    :caption: config.yaml
 
    fabrics:
-      network1:
-         vlans:
-            4-10
+     network1:
+        vlans:
+         4-10
+       connections:
+          ssh:
+           username: user
+           password: password!
+
+    distribution:
+       fabric: network1
+       interfaces:
+        1G:
+           1-22:
+            untagged_vlan: 4
+            tagged_vlans: 5-7
+           23-24:
+            tagged_vlans: 4-10
+
+    appliances:
+     distsw1:
+        fabric: distribution
+        plugin_package: cumulus
         connections:
-           ssh:
-              username: user
-              password: password!
-
-      distribution:
-         fabric: network1
-         interfaces:
-            1G:
-               1-22:
-                  untagged_vlan: 4
-                  tagged_vlans: 5-7
-               23-24:
-                  tagged_vlans: 4-10
-
-   appliances:
-      distsw1:
-         fabric: distribution
-         plugin_package: cumulus
-         connections:
-            ssh:
-               hostname: 10.5.5.33
+         ssh:
+            hostname: 10.5.5.33
 
 The inheritance structure flows in this manner:
 
@@ -126,38 +126,38 @@ In addition there are also two additional state nodes with the following command
 
 Commands follow a simple syntax:
 
-netweaver 'role|*' node value --yaml=config.yaml
+    netweaver 'role|*' node value --yaml=config.yaml
 
 The YAML state can be applied to every appliance in the infrastructure file by running the following:
 
-.. code-block:: bash
+    code-block:: bash
 
-   netweaver.py '*' state.apply --yaml=config.yaml
-   sw1: []
-   sw2: []
+    netweaver.py '*' state.apply --yaml=config.yaml
+    sw1: []
+    sw2: []
 
 The brackets will contain a list of any commands run in order to bring the switches in alignment with the current state.
 
 You can view the current state of all appliances in the environment using the following command:
 
-.. code-block:: bash
+    code-block:: bash
 
-   netweaver.py 'sw1' cstate.get --yaml=config.yaml
-   sw1:
-      hostname: spine1.net.testco.org
-      interfaces:
-        100G: {}
-        10G: {}
-        1G:
-          '1':
-            ip:
-              address: []
-            tagged_vlans: [2, 3, 4]
-            untagged_vlan: '7'
-       ...
+    netweaver.py 'sw1' cstate.get --yaml=config.yaml
+    sw1:
+     hostname: spine1.net.testco.org
+     interfaces:
+       100G: {}
+       10G: {}
+       1G:
+         '1':
+         ip:
+           address: []
+         tagged_vlans: [2, 3, 4]
+         untagged_vlan: '7'
+      ...
 
 
-.. code-block:: bash
+    code-block:: bash
 
     etherweaver.py '*' protocols.ntp.client.servers.get --yaml=config.yaml
     sw1: [pool.ntp.org, 0.cumulusnetworks.pool.ntp.org, 1.cumulusnetworks.pool.ntp.org,
@@ -167,12 +167,12 @@ You can view the current state of all appliances in the environment using the fo
 
 
 
-.. code-block:: bash
+    code-block:: bash
 
-   netweaver.py 'sw1' hostname.set 'spine2' --yaml=config.yaml
+    netweaver.py 'sw1' hostname.set 'spine2' --yaml=config.yaml
     net add hostname spine2
 
-.. note::
+    note::
     Not all appliance plugins can implement all nodes due to hardware limitations, accessing any unsupported node will
     result in a NotImplemented or NotSupported error.
 
@@ -195,12 +195,12 @@ From the system you are running etherweaver from, copy your public ssh keys to t
 do this, you can use a username and password, but you still need to accept the public ssh key of the system on your machine
 to prevent man in the middle attacks.) Then you write an etherweaver state file, simple_example.yaml:
 
-.. literalinclude:: ExampleConfigs/simple_example.yaml
-   :language: yaml
+    literalinclude:: ExampleConfigs/simple_example.yaml
+    :language: yaml
 
 Then, run:
 
-.. literalinclude:: ExampleConfigs/serun1.txt
+    literalinclude:: ExampleConfigs/serun1.txt
 
 
 Now your switches are configured correctly, subsequent runs won't do anything because the curent state and desired state match.
@@ -210,12 +210,12 @@ is right in the middle of our 10-20 range, at port 11 on dist1. Not to worry tho
 any lower inheritance level to override the port range.  All we need to do is add an interface definition for the port
 in question, and define profile to false in order to stop inheritance. Now our state file looks like this:
 
-.. literalinclude:: ExampleConfigs/simple_examplev2.yaml
+    literalinclude:: ExampleConfigs/simple_examplev2.yaml
    :language: yaml
 
 And running the program gives us the following output:
 
-.. literalinclude:: ExampleConfigs/serun2.txt
+    literalinclude:: ExampleConfigs/serun2.txt
 
 As you can see, etherweaver operated idempotently, only applying the changes from the desired state that
 didn't match the current state. This allows you to easily manage and monitor config drift from within your environment.
@@ -229,14 +229,14 @@ This allows two independent switches to share link aggregation groups without a 
 stacking. This is an excellent use case for fabric inheritance, as there are attributes that the switches share, as well
 as plenty that they don't. Here is an example CLAG configuration with etherweaver:
 
-.. literalinclude:: ExampleConfigs/clag_example.yaml
-   :language: yaml
+    literalinclude:: ExampleConfigs/clag_example.yaml
+    :language: yaml
 
 Applying this state file looks like this:
 
-.. literalinclude:: ExampleConfigs/clrun1.txt
+    literalinclude:: ExampleConfigs/clrun1.txt
 
-.. Note::
+    Note::
    When testing state files in a virtual environment such as GNS3 or vagrant, the cumulus switches clag will not function unless
    you add 'clagd-args --vm' to /etc/network/interfaces under the peerlink.4094 interface section on both switches.
 
@@ -250,5 +250,5 @@ Applying this state file looks like this:
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    See the GNU General Public License for more details.
