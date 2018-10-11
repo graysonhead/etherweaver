@@ -69,7 +69,13 @@ def parse_input_value(input, data_type, list_subtype=None):
 		out = int(input)
 	if data_type is str:
 		out = input
-
+	if data_type is bool and isinstance(input, bool):
+		out = input
+	if data_type is bool and isinstance(input, str):
+		if input.lower() == 'false':
+			out = False
+		elif input.lower() == 'true':
+			out = True
 
 	if type(out) is data_type:
 		return out

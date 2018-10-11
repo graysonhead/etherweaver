@@ -17,10 +17,12 @@ class CumulusSwitch(NetWeaverPlugin):
 		self.cstate = cstate
 		self.commands = []
 
+
 	def after_connect(self):
 		self.command('net abort')
 		self.portmap = self.pull_port_state()
 		self.cstate = self.pull_state()
+
 
 	def command(self, command):
 		"""
@@ -137,6 +139,8 @@ class CumulusSwitch(NetWeaverPlugin):
 					conf['interfaces'][speed][portnum]['stp']['port_fast'] = True
 				elif 'ip address' in line:
 					conf['interfaces'][speed][portnum]['ip']['addresses'].append(line.split(' ')[6])
+				elif 'link down' in line:
+					conf['interfaces'][speed][portnum]['admin_down'] = True
 				# Add MTU for the interface as fetched from the portmap
 				conf['interfaces'][speed][portnum].update({'mtu': port_dict['mtu']})
 
@@ -175,6 +179,7 @@ class CumulusSwitch(NetWeaverPlugin):
 
 		def bond_parse(line):
 			# This should be the first reference of any bond
+			name = line.split(' ')[3]
 			if 'slaves' in line:
 				name = line.split(' ')[3]
 				# Parse the interfaces and extrapolate them
@@ -183,19 +188,18 @@ class CumulusSwitch(NetWeaverPlugin):
 				create_bond_inter(name, interfaces)
 			if 'clag id' in line:
 				# Get the name and ID of the interface
-				name = line.split(' ')[3]
 				clag_id = line.split(' ')[6]
 				conf['interfaces']['bond'][name]['clag_id'] = int(clag_id)
 			if 'bridge vids' in line:
-				name = line.split(' ')[3]
 				vids = line.split(' ')[6].split(',')
 				conf['interfaces']['bond'][name]['tagged_vlans'] = extrapolate_list(vids, int_out=True)
 			if 'bridge pvid' in line:
-				name = line.split(' ')[3]
 				vid = line.split(' ')[6]
 				conf['interfaces']['bond'][name]['untagged_vlan'] = int(vid)
 			elif 'ip address' in line:
 				conf['interfaces']['bond'][name]['ip']['addresses'].append(line.split(' ')[6])
+			elif 'link down' in line:
+				conf['interfaces']['bond'][name]['admin_down'] = True
 
 
 
@@ -358,20 +362,17 @@ class CumulusSwitch(NetWeaverPlugin):
 				except ValueError:
 					portnum = k.strip('swp')
 			if v['speed'] == 'N/A':
-				ports_by_name.update({portname: {
-					'portid': portnum,
-					'speed': '1G',
-					'mode': v['mode'],
-					'mtu': v['iface_obj']['mtu']}})
+				prt_spd = self.plugin_options['port_speed']
 			else:
-				ports_by_name.update({portname: {
-					'portid': portnum,
-					'speed': v['speed'],
-					'mode': v['mode'],
-					'mtu': v['iface_obj']['mtu']}})
+				prt_spd = v['speed']
+			ports_by_name.update({portname: {
+				'portid': portnum,
+				'speed': prt_spd,
+				'mode': v['mode'],
+				'mtu': v['iface_obj']['mtu']}})
 			ports_by_number.update({portnum: {
 				'portname': portname,
-				'speed': v['speed'],
+				'speed': prt_spd,
 				'mode': v['mode'],
 				'mtu': v['iface_obj']['mtu']}})
 		return {'by_name': ports_by_name, 'by_number': ports_by_number}
@@ -661,14 +662,6 @@ class CumulusSwitch(NetWeaverPlugin):
 		if delete:
 			commands.append('net del bond {} bond slaves {}'.format(bond, self._number_port_mapper(interface)))
 		else:
-			slave_speed = self.portmap['by_number'][interface]['speed']
-			slave_int = self.cstate['interfaces'][slave_speed][interface]['bond_slave']
-			if slave_int and slave_int != bond:
-				smart_append(commands, self.set_bond_slaves(
-					int_type,
-					interface,
-					self.cstate['interfaces'][slave_speed][interface]['bond_slave'],
-					delete=True, execute=False))
 			commands.append('net add bond {} bond slaves {}'.format(bond, self._number_port_mapper(interface)))
 		if execute:
 			for command in commands:
@@ -678,17 +671,23 @@ class CumulusSwitch(NetWeaverPlugin):
 		return commands
 
 	def set_bond(self, int_type, interface, execute=True, delete=False, commit=True):
+		commands = []
 		if delete:
-			# A bond is just a type of interface in cumulus, deleting the interface removes some edge-cases
-			command = 'net del interface {}'.format(interface)
+			out = self.ssh.exec_command('net show interface {}'.format(interface))
+			out = out[1].read().decode('utf-8')
+			if 'Bond Mode:' in out:
+				commands.append('net del bond {}'.format(interface))
+			else:
+				commands.append('net del interface {}'.format(interface))
 		else:
 			# In cumulus, bonds cannot exists without slaves, so we any bond creation must be done throug set_bond_slaves
 			return
 		if execute:
-			self.command(command)
+			for command in commands:
+				self.command(command)
 			if commit:
 				self.commit()
-		return [command]
+		return commands
 
 	def set_bond_clag_id(self, int_type, interface, clag_id, execute=True, delete=False, commit=True):
 		if delete:
@@ -704,3 +703,25 @@ class CumulusSwitch(NetWeaverPlugin):
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		if self.ssh:
 			self.ssh.close()
+
+	def set_interface_admin_down(self, int_type, interface, down_status, commit=True, execute=True):
+		if down_status:
+			command = 'net add interface {} link down'.format(self._number_port_mapper(interface))
+		else:
+			command = 'net del interface {} link down'.format(self._number_port_mapper(interface))
+		if execute:
+			self.command(command)
+			if commit:
+				self.commit()
+		return [command]
+
+	def set_bond_admin_down(self, int_type, bond, down_status, commit=True, execute=True):
+		if down_status:
+			command = 'net add bond {} link down'.format(bond)
+		else:
+			command = 'net del bond {} link down'.format(bond)
+		if execute:
+			self.command(command)
+			if commit:
+				self.commit()
+		return [command]
