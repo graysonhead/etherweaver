@@ -12,7 +12,7 @@ setuptools.setup(
 	packages=setuptools.find_packages(),
 	license='GPL V3',
 	install_requires = [
-		'paramiko>=2.4.1',
+		'paramiko>=2.4.2',
 		'PyYAML>=3.12',
 		'tqdm>=4.25.0',
 		'pytz>=2018.5'
