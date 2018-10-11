@@ -1,3 +1,4 @@
+0.3.0 - 10/11/2018
 * added mtu state and command node to interfaces
 * added mtu state and command node to bonds
 * added admin_down to interfaces
@@ -10,3 +11,4 @@
 * Primitive node documentation
 * Added ability to set custom plugin options
 * [cumulus_switch] Fixed a few bond creation edge-case bugs
+* Upgraded paramiko to 2.4.2 to eliminate CVE-2018-1000805 vulnerability
