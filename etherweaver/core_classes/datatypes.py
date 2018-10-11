@@ -21,25 +21,33 @@ class WeaverConfig(object):
 			new_int = {}
 			for kspd, vspd in self.config['interfaces'].items():
 					for kint, vint in self.config['interfaces'][kspd].items():
-						# We can't extrapolate bonds as they are all strings
 						kspd_ints = {}
-						if kspd:
-							kspd_ints.update(self._interface_extrapolate(vint))
+						if vint is None or vint is False:
+							if kspd == 'bond':
+								vint = self.gen_bondskel()
+							else:
+								vint = self.gen_portskel()
+							vspd[kint] = vint
+						else:
+							if kspd:
+								kspd_ints.update(self._interface_extrapolate(vint))
 					if kspd != 'bond':
 						new_int.update({kspd: extrapolate_dict(vspd, int_key=True)})
 					elif kspd == 'bond':
-						new_int.update({kspd: vspd})
+						new_int.update({kspd: extrapolate_dict(vspd, int_key=False)})
 			self.config['interfaces'] = new_int
 		if validate:
 			self.validate()
 		#self._clean_config()
 
-	def _interface_extrapolate(self, inter):
-		if 'tagged_vlans' in inter:
-			inter['tagged_vlans'] = extrapolate_list(inter['tagged_vlans'], int_out=True)
-		if 'untagged_vlan' in inter:
-			if inter['untagged_vlan']:
-				inter['untagged_vlan'] = int(inter['untagged_vlan'])
+	@staticmethod
+	def _interface_extrapolate(inter):
+		if inter is not False or None:
+			if 'tagged_vlans' in inter:
+				inter['tagged_vlans'] = extrapolate_list(inter['tagged_vlans'], int_out=True)
+			if 'untagged_vlan' in inter:
+				if inter['untagged_vlan']:
+					inter['untagged_vlan'] = int(inter['untagged_vlan'])
 		return inter
 
 	def _clean_config(self):
@@ -88,6 +96,7 @@ class WeaverConfig(object):
 	@staticmethod
 	def gen_portskel():
 		return {
+			'delete': False,
 			'bond_slave': None,
 			'tagged_vlans': [],
 			'untagged_vlan': None,
@@ -97,18 +106,23 @@ class WeaverConfig(object):
 			'stp': {
 				'port_fast': False
 			},
+			'mtu': None,
+			'admin_down': False
 
 		}
 
 	@staticmethod
 	def gen_bondskel():
 		return {
+			'delete': False,
 			'clag_id': None,
 			'tagged_vlans': [],
 			'untagged_vlan': None,
 			'ip': {
 				'addresses': []
-			}
+			},
+			'mtu': None,
+			'admin_down': False
 		}
 
 	def validate(self):
@@ -139,7 +153,7 @@ class WeaverConfig(object):
 			if k in skip_set:
 				pass
 			elif k in skel_dict:
-				if type(v) is dict:
+				if isinstance(v, dict):
 					self._validate_dict(config_dict[k], skel_dict[k])
 			else:
 				raise ConfigKeyError(k, value=v)

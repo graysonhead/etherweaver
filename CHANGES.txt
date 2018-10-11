@@ -1,0 +1,14 @@
+0.3.0 - 10/11/2018
+* added mtu state and command node to interfaces
+* added mtu state and command node to bonds
+* added admin_down to interfaces
+* [cumulus_switch] Implemented admin_down on interfaces
+* [cumulus_switch] Implemented new MTU nodes
+* Added iterator key feature
+* [cumulus_switch] Fixed bond deletion bug
+* [cumulus_switch] When all of a bond's slave interfaces are re-assigned, that bond is now deleted automatically instead of being converted to an interface
+* Fixed a bug where fabrics were being inherited in reverse order
+* Primitive node documentation
+* Added ability to set custom plugin options
+* [cumulus_switch] Fixed a few bond creation edge-case bugs
+* Upgraded paramiko to 2.4.2 to eliminate CVE-2018-1000805 vulnerability

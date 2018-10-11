@@ -1,8 +1,6 @@
 from etherweaver.core_classes.fabric import Fabric
 from etherweaver.core_classes.appliance import Appliance
-from etherweaver.core_classes.role import NetworkRole
 from etherweaver.core_classes.errors import MissingRequiredAttribute
-from etherweaver.core_classes.utils import extrapolate_list, extrapolate_dict
 import sys
 import pprint
 

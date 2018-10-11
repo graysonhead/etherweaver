@@ -1,6 +1,8 @@
 import collections.abc
 import copy
 import json
+import copy
+import yaml
 
 
 def parse_input_value(input, data_type, list_subtype=None):
@@ -67,7 +69,13 @@ def parse_input_value(input, data_type, list_subtype=None):
 		out = int(input)
 	if data_type is str:
 		out = input
-
+	if data_type is bool and isinstance(input, bool):
+		out = input
+	if data_type is bool and isinstance(input, str):
+		if input.lower() == 'false':
+			out = False
+		elif input.lower() == 'true':
+			out = True
 
 	if type(out) is data_type:
 		return out
@@ -79,31 +87,60 @@ def parse_input_value(input, data_type, list_subtype=None):
 
 
 def extrapolate_dict(numdict, int_key=False):
-		newnumdict = {}
-		if numdict is False:
-			return False
-		elif type(numdict) is not dict:
-			raise TypeError
-		for k, v in numdict.items():
-			if type(k) is str:
-				if '-' in k:
-					nums = k.split('-')
-					for n in range(int(nums[0]), int(nums[1]) + 1, 1):
-						if int_key:
-							newnumdict.update({int(n): v})
-						else:
-							newnumdict.update({str(n): v})
-				else:
+	newnumdict = {}
+	if numdict is False:
+		return False
+	elif type(numdict) is not dict:
+		raise TypeError
+	for k, v in numdict.items():
+		if type(k) is str:
+			# If there is a hyphen, we need to expand the key's values
+			if '-' in k:
+				# strip all numbers and hyphens to get the prefix
+				prefix = k.strip('1234567890-')
+				# strip the prefix to get the number iterators only
+				iterators = k.strip(prefix)
+				nums = iterators.split('-')
+				for n in range(int(nums[0]), int(nums[1]) + 1, 1):
 					if int_key:
-						newnumdict.update({int(k): v})
+						newnumdict.update({int(n): iterator_replace(v, val=int(n))})
 					else:
-						newnumdict.update({str(k): v})
+						newnumdict.update({prefix + str(n): iterator_replace(v, val=n)})
 			else:
 				if int_key:
 					newnumdict.update({int(k): v})
 				else:
 					newnumdict.update({str(k): v})
-		return newnumdict
+		else:
+			if int_key:
+				newnumdict.update({int(k): v})
+			else:
+				newnumdict.update({str(k): v})
+	return newnumdict
+
+
+def iterator_replace(repl_dict, var_id='i', val=None):
+	if type(repl_dict) is dict:
+		replace_dict = copy.deepcopy(repl_dict)
+		key = '$' + var_id
+		for k, v in replace_dict.items():
+			# IF V is a dict, recurse this function
+			if type(v) is dict:
+				v = iterator_replace(v, var_id=var_id)
+			# If We find the key in the current value
+			if key in str(v):
+				# If after replacing the key, the val equals the new val, cast it to an integer
+				repval = v.replace(key, str(val))
+				if str(val) == repval and repval.isdigit():
+					replace_dict[k] = int(repval)
+				# Otherwise it is a string
+				else:
+					replace_dict[k] = repval
+				# replace_dict[k] = v.replace(key, str(val))
+				# replace_dict[k] = str(replace_dict[k])
+	else:
+		replace_dict = None
+	return replace_dict
 
 
 def extrapolate_list(numlist, int_out=False):
@@ -225,3 +262,10 @@ def multi_port_parse(prt):
 		for pn in prt_list:
 			int_names.append(prt_name + pn)
 	return int_names
+
+def read_yaml_file(file):
+	with open(file, 'r') as stream:
+		try:
+			return yaml.safe_load(stream)
+		except yaml.YAMLError:
+			raise

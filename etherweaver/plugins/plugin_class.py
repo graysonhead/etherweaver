@@ -1,4 +1,4 @@
-from paramiko import SSHClient, WarningPolicy, RejectPolicy
+from paramiko import SSHClient, RejectPolicy
 from enum import IntEnum
 from etherweaver.plugins.plugin_class_errors import *
 
@@ -62,8 +62,14 @@ class NWConnType(IntEnum):
 class NetWeaverPlugin:
 	# Hard coded to SSH for now
 	protocol = 2
-	hostname = None
+	name = None
 	commands = []
+
+	def _set_plugin_options(self):
+		if 'plugin_options' in self.appliance.dstate:
+			self.plugin_options = self.appliance.dstate['plugin_options']
+		else:
+			self.plugin_options = {}
 
 	def add_command(self, commands):
 		"""
@@ -88,6 +94,7 @@ class NetWeaverPlugin:
 		Build the SSH Object
 
 		"""
+		self.name = self.appliance.name
 		if 'password' in self.appliance.dstate['connections']['ssh']:
 			password = self.appliance.dstate['connections']['ssh']['password']
 		else:
@@ -136,7 +143,7 @@ class NetWeaverPlugin:
 		err = '\n'.join(stderr.readlines())
 		if err:
 			# TODO: Put useful info in here
-			raise SSHCommandError("While running command {} on appliance {}, got error {} {}".format(command, self.hostname, err, stdout.read())) #TODO For some reason this line returns empty on error when run from a child instance
+			raise SSHCommandError("While running command {} on appliance {}, got error {} {}".format(command, self.name, err, stdout.read())) #TODO For some reason this line returns empty on error when run from a child instance
 		return stdout.read().decode('utf-8')
 
 	def pull_state(self):
@@ -157,13 +164,12 @@ class NetWeaverPlugin:
 
 	def pre_push(self):
 		self._not_implemented()
-	"""Override these functions to enable each feature"""
 
-	def set_interface_tagged_vlans(self, type, interface, vlans, execute=True, commit=True, delete=False, add=False):
+	def set_interface_tagged_vlans(self, speed, interface, vlans, execute=True, commit=True, delete=False, add=False):
 		"""
 		This method modifies the list of allowed tagged vlans for a given interface.
 
-		:param type:
+		:param speed:
 			This is the type of the interface, for instance: 'bond', '1G', '10G'. Used to determine the group of the
 			interface to be modified.
 
@@ -217,7 +223,7 @@ class NetWeaverPlugin:
 		"""
 		self._not_supported('set_hostname')
 
-	def set_dns_nameservers(self, nameserverlist, execute=True, commit=True, delete=False):
+	def set_dns_nameservers(self, nameserverlist, execute=True, commit=True, delete=False, add=False):
 		"""
 		This method sets the dns resolvers used by the appliance.
 
@@ -226,6 +232,9 @@ class NetWeaverPlugin:
 
 		:param execute:
 			If execute is True, this method must run and apply the configuration.
+
+		:param add:
+			List of DNS nameservers to be added.
 
 		:param commit:
 			If commit is true, the appliance must load the new configuration as part of this method.
@@ -302,11 +311,11 @@ class NetWeaverPlugin:
 		"""
 		self._not_supported('set_vlans')
 
-	def set_interface_untagged_vlan(self, type, interface, vlan, execute=True, delete=False):
+	def set_interface_untagged_vlan(self, int_type, interface, vlan, execute=True, delete=False, commit=True):
 		"""
 		Sets the untagged (PVID) of an interface
 
-		:param type:
+		:param int_type:
 			This is the type of the interface, for instance: 'bond', '1G', '10G'. Used to determine the group of the
 			interface to be modified.
 
@@ -366,12 +375,15 @@ class NetWeaverPlugin:
 		"""
 		self._not_supported('set_clag_backup_ip')
 
-	def set_clag_cidr(self, cidr, execute=True, delete=False, commit=True):
+	def set_clag_cidr(self, cidr, execute=True, delete=False, commit=True, add=False):
 		"""
 			Set the IP address and subnet mask of the primary CLAG peer interface
 
 		:param cidr:
 			CIDR of the appliance's CLAG peering interface as a string. EX; '169.254.2.1/30'
+
+		:param add:
+			List of cidrs to add.
 
 		:param commit:
 			If commit is true, the appliance must load the new configuration as part of this method.
@@ -458,7 +470,7 @@ class NetWeaverPlugin:
 		"""
 		self._not_supported('set_clag_shared_mac')
 
-	def set_bond_slaves(self, int_type, interface, bond, execute=True, commit=True):
+	def set_bond_slaves(self, int_type, interface, bond, execute=True, commit=True, delete=False):
 		"""
 
 		:param int_type:
@@ -477,17 +489,20 @@ class NetWeaverPlugin:
 		:param commit:
 			If commit is true, this method must also commit the change (if applicable)
 
+		:param delete:
+			Delete the bond.
+
 		:return:
 			List of commands that can be run to effect the change.
 			You must return the list even if execute=True
 		"""
 		self._not_supported('set bond slaves')
 
-	def set_bond_clag_id(self, type, interface, clag_id, execute=True, commit=True):
+	def set_bond_clag_id(self, int_type, interface, clag_id, execute=True, delete=False, commit=True):
 		"""
 		Sets the CLAG ID of a bond
 
-		:param type:
+		:param int_type:
 			This is the type of the interface, for instance: 'bond', '1G', '10G'. Used to determine the group of the
 			interface to be modified.
 
@@ -539,11 +554,64 @@ class NetWeaverPlugin:
 		"""
 		self._not_supported('interface portfast')
 
-	def set_interface_ip_addresses(self, type, interface, ips, execute=True, commit=True, delete=False, add=False):
+	def set_interface_mtu(self, int_type, interface, mtu, execute=True, commit=True, delete=False):
+		"""
+
+		:param int_type:
+			The type/speed of interface
+
+		:param interface:
+			The ID of the interface
+
+		:param mtu:
+			Non zero non negative integer
+
+		:param execute:
+			If execute is True, this method must run and apply the configuration
+
+		:param commit:
+			If commit is true, this method must also commit the change (if applicable)
+
+		:param delete:
+			Resets MTU to default on appliances that support it. Raise an error if yours doesn't.
+
+		:return:
+			List of commands that can be run to effect the change.
+			You must return the list even if execute=True
+		"""
+		self._not_supported('interface mtu')
+
+	def set_bond_mtu(self, int_type, bond, mtu, execute=True, commit=True, delete=False):
+		"""
+
+		:param int_type:
+			The type/speed of the bond (Will always be a string 'bond', this parameter exists for consistency)
+
+		:param bond:
+			The ID of the bond
+
+		:param mtu:
+			Non zero non negative integer
+
+		:param execute:
+			If execute is True, this method must run and apply the configuration
+
+		:param commit:
+			If commit is true, this method must also commit the change (if applicable)
+
+		:param delete:
+			Resets MTU to default on appliances that support it. Raise an error if yours doesn't.
+
+		:return:
+			List of commands that can be run to effect the change.
+			You must return the list even if execute=True
+		"""
+
+	def set_interface_ip_addresses(self, int_type, interface, ips, execute=True, commit=True, delete=False, add=False):
 		"""
 		Adds and removes IP addresses from the interface
 
-		:param type:
+		:param int_type:
 			This is the type of the interface, for instance: 'bond', '1G', '10G'. Used to determine the group of the
 			interface to be modified.
 
@@ -568,3 +636,53 @@ class NetWeaverPlugin:
 			You must return the list EVEN IF execute=True
 		"""
 		self._not_supported('set interface ip address')
+
+	def set_interface_admin_down(self, int_type, interface, down_status, commit=True, execute=True):
+		"""
+
+		:param int_type:
+			This is the type of the interface, for instance: 'bond', '1G', '10G'. Used to determine the group of the
+			interface to be modified.
+
+		:param interface:
+			This is the number of the interface, or text ID of the bond. You will likely need to translate this.
+
+		:param down_status:
+			True for a downed interface, False for an up interface.
+
+		:param commit:
+			If commit is true, the appliance must load the new configuration as part of this method.
+
+		:param execute:
+			If execute is True, this method must run and apply the configuration.
+
+		:return:
+			Return the list of commands that can be run to effect the change.
+			You must return the list EVEN IF execute=True
+		"""
+		self._not_supported('set interface admin down')
+
+	def set_bond_admin_down(self, int_type, bond, down_status, commit=True, execute=True):
+		"""
+
+		:param int_type:
+			This is the type of the interface, for instance: 'bond', '1G', '10G'. Used to determine the group of the
+			interface to be modified.
+
+		:param bond:
+			This is the number of the interface, or text ID of the bond. You will likely need to translate this.
+
+		:param down_status:
+			True for a downed bond, False for an up bond.
+
+		:param commit:
+			If commit is true, the appliance must load the new configuration as part of this method.
+
+		:param execute:
+			If execute is True, this method must run and apply the configuration.
+
+		:return:
+			Return the list of commands that can be run to effect the change.
+			You must return the list EVEN IF execute=True
+		"""
+		self._not_supported('set bond admin down')

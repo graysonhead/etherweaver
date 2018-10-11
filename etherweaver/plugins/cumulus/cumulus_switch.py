@@ -1,13 +1,13 @@
-from etherweaver.plugins.plugin_class import NetWeaverPlugin, NWConnType
-from ipaddress import ip_address, IPv4Address, IPv6Address
+from etherweaver.plugins.plugin_class import NetWeaverPlugin
+from ipaddress import ip_address
 import pytz
 import json
 from etherweaver.core_classes.utils import \
 	extrapolate_list, \
 	compact_list, \
-	multi_port_parse
+	smart_append
 from etherweaver.core_classes.datatypes import WeaverConfig
-from etherweaver.core_classes.errors import ConfigKeyError
+
 
 class CumulusSwitch(NetWeaverPlugin):
 
@@ -17,10 +17,12 @@ class CumulusSwitch(NetWeaverPlugin):
 		self.cstate = cstate
 		self.commands = []
 
+
 	def after_connect(self):
 		self.command('net abort')
 		self.portmap = self.pull_port_state()
 		self.cstate = self.pull_state()
+
 
 	def command(self, command):
 		"""
@@ -36,7 +38,8 @@ class CumulusSwitch(NetWeaverPlugin):
 		self.cstate = self.pull_state()
 		return ret
 
-	def multi_port_parse(self, prt):
+	@staticmethod
+	def multi_port_parse(prt):
 		# Populate this list with the complete list of interface names
 		int_names = []
 		# We may have an abbreviation like this 'po1-3,pol2-4'
@@ -114,7 +117,8 @@ class CumulusSwitch(NetWeaverPlugin):
 		def parse_interfaces(line):
 			portid = line.split(' ')[3]
 			# lookup port
-			portnum = self.portmap['by_name'][portid]['portid']
+			port_dict = self.portmap['by_name'][portid]
+			portnum = port_dict['portid']
 			if self.portmap['by_name'][portid]['mode'] == 'Mgmt':
 				speed = 'mgmt'
 			else:
@@ -135,6 +139,10 @@ class CumulusSwitch(NetWeaverPlugin):
 					conf['interfaces'][speed][portnum]['stp']['port_fast'] = True
 				elif 'ip address' in line:
 					conf['interfaces'][speed][portnum]['ip']['addresses'].append(line.split(' ')[6])
+				elif 'link down' in line:
+					conf['interfaces'][speed][portnum]['admin_down'] = True
+				# Add MTU for the interface as fetched from the portmap
+				conf['interfaces'][speed][portnum].update({'mtu': port_dict['mtu']})
 
 
 		def clag_parse(line):
@@ -162,12 +170,16 @@ class CumulusSwitch(NetWeaverPlugin):
 				# Get the speed of the interface
 				speed = self.portmap['by_name']['swp{}'.format(str(interface))]['speed']
 				# Create or update the interface
+				# Look up the bond in the portmap for fetching MTU, etc
+				port = self.portmap['by_name'][name]
 				if interface not in conf['interfaces'][speed]:
 					conf['interfaces'][speed].update({interface: WeaverConfig.gen_portskel()})
 				conf['interfaces'][speed][interface].update({'bond_slave': name})
+				conf['interfaces']['bond'][name].update({'mtu': port['mtu']})
 
 		def bond_parse(line):
 			# This should be the first reference of any bond
+			name = line.split(' ')[3]
 			if 'slaves' in line:
 				name = line.split(' ')[3]
 				# Parse the interfaces and extrapolate them
@@ -176,19 +188,18 @@ class CumulusSwitch(NetWeaverPlugin):
 				create_bond_inter(name, interfaces)
 			if 'clag id' in line:
 				# Get the name and ID of the interface
-				name = line.split(' ')[3]
 				clag_id = line.split(' ')[6]
 				conf['interfaces']['bond'][name]['clag_id'] = int(clag_id)
 			if 'bridge vids' in line:
-				name = line.split(' ')[3]
 				vids = line.split(' ')[6].split(',')
 				conf['interfaces']['bond'][name]['tagged_vlans'] = extrapolate_list(vids, int_out=True)
 			if 'bridge pvid' in line:
-				name = line.split(' ')[3]
 				vid = line.split(' ')[6]
 				conf['interfaces']['bond'][name]['untagged_vlan'] = int(vid)
 			elif 'ip address' in line:
 				conf['interfaces']['bond'][name]['ip']['addresses'].append(line.split(' ')[6])
+			elif 'link down' in line:
+				conf['interfaces']['bond'][name]['admin_down'] = True
 
 
 
@@ -231,28 +242,14 @@ class CumulusSwitch(NetWeaverPlugin):
 		wc = WeaverConfig(conf)
 		return wc.get_full_config()
 
-	def _check_atrib(self, atrib):
+	@staticmethod
+	def _check_atrib(atrib):
 		try:
 			atrib
 		except KeyError:
 			return False
-			pass
-		else:
-			if atrib:
-				return True
-
-	# def add_dns_nameserver(self, ip, commit=True, execute=True):
-	# 	ip = ip_address(ip)
-	# 	if ip._version == 4:
-	# 		version = 'ipv4'
-	# 	elif ip._version == 6:
-	# 		version = 'ipv6'
-	# 	command = 'net add dns nameserver {} {}'.format(version, ip)
-	# 	if execute:
-	# 		self.command(command)
-	# 		if commit:
-	# 			self.commit()
-	# 	return command
+		if atrib:
+			return True
 
 	def set_dns_nameservers(self, nameserverlist, execute=True, commit=True, delete=False, add=False):
 		commands = []
@@ -290,19 +287,6 @@ class CumulusSwitch(NetWeaverPlugin):
 			if commit:
 				self.commit()
 		return commands
-
-	# def rm_dns_nameserver(self, ip, commit=True, execute=True):
-	# 	ip = ip_address(ip)
-	# 	if ip._version == 4:
-	# 		version = 'ipv4'
-	# 	elif ip._version == 6:
-	# 		version = 'ipv6'
-	# 	command = 'net del dns nameserver {} {}'.format(version, ip)
-	# 	if execute:
-	# 		self.command(command)
-	# 		if commit:
-	# 			self.commit()
-	# 	return command
 
 	def set_hostname(self, hostname, execute=True, commit=True, delete=False):
 		if delete:
@@ -361,10 +345,8 @@ class CumulusSwitch(NetWeaverPlugin):
 	def pull_port_state(self):
 		ports_by_name = {}
 		ports_by_number = {}
-		"""
-		Ports will look like:
-		{ swp1: { speed: 1G, mode: Mgmt}
-		"""
+		# Ports will look like:
+		# { swp1: { speed: 1G, mode: Mgmt}
 		prtjson = self._get_interface_json()
 		for k, v in prtjson.items():
 			if v['mode'] == 'Mgmt':
@@ -380,10 +362,19 @@ class CumulusSwitch(NetWeaverPlugin):
 				except ValueError:
 					portnum = k.strip('swp')
 			if v['speed'] == 'N/A':
-				ports_by_name.update({portname: {'portid': portnum, 'speed': '1G', 'mode': v['mode']}})
+				prt_spd = self.plugin_options['port_speed']
 			else:
-				ports_by_name.update({portname: {'portid': portnum, 'speed': v['speed'], 'mode': v['mode']}})
-			ports_by_number.update({portnum: {'portname': portname, 'speed': v['speed'], 'mode': v['mode']}})
+				prt_spd = v['speed']
+			ports_by_name.update({portname: {
+				'portid': portnum,
+				'speed': prt_spd,
+				'mode': v['mode'],
+				'mtu': v['iface_obj']['mtu']}})
+			ports_by_number.update({portnum: {
+				'portname': portname,
+				'speed': prt_spd,
+				'mode': v['mode'],
+				'mtu': v['iface_obj']['mtu']}})
 		return {'by_name': ports_by_name, 'by_number': ports_by_number}
 
 	def set_vlans(self, vlandictlist, execute=True, commit=True, delete=False):
@@ -392,20 +383,20 @@ class CumulusSwitch(NetWeaverPlugin):
 		vlans_to_remove = []
 		if delete:
 			if vlandictlist:
-				for k, v in vlandictlist.items():
-					if k in self.appliance.cstate['vlans']:
-						vlans_to_remove.append(k)
+				for k in vlandictlist.items():
+					if k[0] in self.appliance.cstate['vlans']:
+						vlans_to_remove.append(k[0])
 			else:
-				for k, v in self.appliance.cstate['vlans'].items():
-					vlans_to_remove.append(k)
+				for k in self.appliance.cstate['vlans'].items():
+					vlans_to_remove.append(k[0])
 		else:
-			for k, v in vlandictlist.items():
+			for k in vlandictlist.items():
 				# Comparing vlan keys and values to existing ones in cstate
-				if k not in self.appliance.cstate['vlans']:
-					vlans_to_add.append(k)
-			for k, v in self.appliance.cstate['vlans'].items():
-				if k not in vlandictlist:
-					vlans_to_remove.append(k)
+				if k[0] not in self.appliance.cstate['vlans']:
+					vlans_to_add.append(k[0])
+			for k in self.appliance.cstate['vlans'].items():
+				if k[0] not in vlandictlist:
+					vlans_to_remove.append(k[0])
 		if vlans_to_add:
 			commands.append('net add bridge bridge vids {}'.format(
 				','.join(str(x) for x in compact_list(vlans_to_add))
@@ -421,29 +412,17 @@ class CumulusSwitch(NetWeaverPlugin):
 				self.commit()
 		return commands
 
-	def _dict_input_handler(self, stringordict):
-		if type(stringordict) is str:
+	@staticmethod
+	def _dict_input_handler(stringordict):
+		if isinstance(stringordict, str):
 			dic = json.loads(stringordict)
-		elif type(stringordict) is dict:
+		elif isinstance(stringordict, dict):
 			dic = stringordict
 		return dic
 
-	# def set_interface_tagged_vlans(self, interface, vlans, execute=True, commit=True):
-	# 	commands = []
-	# 	vids_to_add = ','.join(str(x) for x in vlans)
-	# 	interface = self._number_port_mapper(interface)
-	# 	commands.append('net del interface {} bridge vids'.format(interface))
-	# 	commands.append('net add interface {} bridge vids {}'.format(interface, vids_to_add))
-	# 	if execute:
-	# 		for com in commands:
-	# 			self.command(com)
-	# 		if commit:
-	# 			self.commit()
-	# 	return commands
-
-	def set_interface(self, type, inter, enable, execute=True, commit=True, delete=False, add=False):
+	def set_interface(self, int_type, inter, enable, execute=True, commit=True, delete=False, add=False):
 		commands = []
-		if type != 'bond':
+		if int_type != 'bond':
 			bond = False
 			inter = self._number_port_mapper(inter)
 		else:
@@ -464,7 +443,6 @@ class CumulusSwitch(NetWeaverPlugin):
 				if commit:
 					self.commit()
 		return commands
-
 
 	def set_interface_tagged_vlans(self, speed, interface, vlans, execute=True, commit=True, delete=False, add=False):
 		if speed != 'bond':
@@ -526,8 +504,7 @@ class CumulusSwitch(NetWeaverPlugin):
 				self.commit()
 		return commands
 
-
-	def set_portfast(self, speed, interface, enable_bool, execute=True, commit=True):
+	def set_portfast(self, int_type, interface, enable_bool, execute=True, commit=True):
 		if enable_bool:
 			command = 'net add interface {} stp portadminedge'.format(self._number_port_mapper(interface))
 		else:
@@ -547,8 +524,8 @@ class CumulusSwitch(NetWeaverPlugin):
 		except KeyError:
 			raise ValueError("Referenced non-existent interface {} on appliance {}".format(port, self.appliance.name))
 
-	def set_interface_untagged_vlan(self, type, interface, vlan, execute=True, delete=False, commit=True):
-		if type == 'bond':
+	def set_interface_untagged_vlan(self, int_type, interface, vlan, execute=True, delete=False, commit=True):
+		if int_type == 'bond':
 			if delete:
 				command = 'net del bond {} bridge pvid'.format(interface)
 			else:
@@ -564,12 +541,6 @@ class CumulusSwitch(NetWeaverPlugin):
 				self.commit()
 		return [command]
 
-	# def rm_interface_untagged_vlan(self, interface, execute=True, delete=False):
-	# 	command = 'net del interface {} bridge pvid'.format(self._number_port_mapper(interface))
-	# 	if execute:
-	# 		self.command(command)
-	# 	return command
-
 	def set_clag_backup_ip(self, backup_ip, execute=True, delete=False, commit=True):
 		if delete:
 			command = 'net del interface peerlink.4094 clag backup-ip'
@@ -579,11 +550,32 @@ class CumulusSwitch(NetWeaverPlugin):
 			self.command(command)
 		return [command]
 
+	def set_interface_mtu(self, int_type, interface, mtu, execute=True, commit=True, delete=False):
+		# TODO: Deletes not idempotent
+		if delete:
+			command = 'net del interface {} mtu'.format(self._number_port_mapper(interface))
+		else:
+			command = 'net add interface {} mtu {}'.format(self._number_port_mapper(interface), mtu)
+		if execute:
+			self.command(command)
+			if commit:
+				self.commit()
+		return [command]
 
-	# TODO: both of the below methods need their functionality rolled up into a generic ip addr setter
+	def set_bond_mtu(self, int_type, bond, mtu, execute=True, commit=True, delete=False):
+		# TODO: Deletes not idempotent
+		if delete:
+			command = 'net del bond {} mtu'.format(bond)
+		else:
+			command = 'net add bond {} mtu {}'.format(bond, mtu)
+		if execute:
+			self.command(command)
+			if commit:
+				self.commit()
+		return [command]
 
-	def set_interface_ip_addresses(self, type, interface, ips, execute=True, commit=True, delete=False, add=False, cstate=None):
-		if type != 'bond':
+	def set_interface_ip_addresses(self, int_type, interface, ips, execute=True, commit=True, delete=False, add=False, cstate=None):
+		if int_type != 'bond':
 			cumulus_interface = self._number_port_mapper(interface)
 		else:
 			cumulus_interface = interface
@@ -591,7 +583,7 @@ class CumulusSwitch(NetWeaverPlugin):
 		# them in the json
 		if not cstate:
 			try:
-				cstate = self.appliance.cstate['interfaces'][type][interface]['ip']['addresses']
+				cstate = self.appliance.cstate['interfaces'][int_type][interface]['ip']['addresses']
 			except KeyError:
 				cstate = []
 		commands = []
@@ -619,15 +611,6 @@ class CumulusSwitch(NetWeaverPlugin):
 		return commands
 
 	def set_clag_cidr(self, cidr, execute=True, delete=False, commit=True, add=False):
-		try:
-			cstate = self.appliance.cstate['interfaces']['bond']['peerlink']
-		except KeyError:
-			cstate = []
-			# for ktyp, vtyp in self.appliance.dstate['interfaces'].items():
-			# 	if ktyp != 'bond':
-			# 		for kint, vint in vtyp.items():
-			# 			if vint['bond_slave'] == 'peerlink':
-			# 				self.set_bond_slaves('bond', kint, 'peerlink')
 		return self.set_interface_ip_addresses(
 			'bond',
 			'peerlink.4094',
@@ -638,17 +621,6 @@ class CumulusSwitch(NetWeaverPlugin):
 			add=add,
 			cstate=self.appliance.cstate['clag']['clag_cidr']
 		)
-
-		# if delete:
-		# 	commands.append('net del interface peerlink.4094 ip address')
-		# else:
-		# 	commands.append('net add interface peerlink.4094 ip address {}'.format(cidr))
-		# if execute:
-		# 	for com in commands:
-		# 		self.command(com)
-		# 		if commit:
-		# 			self.commit()
-		# return commands
 
 	def set_clag_peer_ip(self, peer_ip, execute=True, delete=False, commit=True):
 		commands = []
@@ -685,21 +657,37 @@ class CumulusSwitch(NetWeaverPlugin):
 				self.commit()
 		return [command]
 
-	def set_bond_slaves(self, int_type, interface, bond, execute=True, commit=True):
-		# TODO: allow deletion of bonds
-		# Find interfaces belonging to this bond, since cumulus defines interfces on the bond
-		# bond_slaves = []
-		# for ktyp, vtyp in self.appliance.cstate['interfaces'].items():
-		# 	if ktyp in ['10G', '1G', '40G', '100G']:
-		# 		for kint, vint in vtyp.items():
-		# 			if vint['bond'] == interface:
-		# 				bond_slaves.append(self._number_port_mapper(kint))
-		command = 'net add bond {} bond slaves {}'.format(bond, self._number_port_mapper(interface))
+	def set_bond_slaves(self, int_type, interface, bond, execute=True, commit=True, delete=False):
+		commands = []
+		if delete:
+			commands.append('net del bond {} bond slaves {}'.format(bond, self._number_port_mapper(interface)))
+		else:
+			commands.append('net add bond {} bond slaves {}'.format(bond, self._number_port_mapper(interface)))
 		if execute:
-			self.command(command)
+			for command in commands:
+				self.command(command)
 			if commit:
 				self.commit()
-		return [command]
+		return commands
+
+	def set_bond(self, int_type, interface, execute=True, delete=False, commit=True):
+		commands = []
+		if delete:
+			out = self.ssh.exec_command('net show interface {}'.format(interface))
+			out = out[1].read().decode('utf-8')
+			if 'Bond Mode:' in out:
+				commands.append('net del bond {}'.format(interface))
+			else:
+				commands.append('net del interface {}'.format(interface))
+		else:
+			# In cumulus, bonds cannot exists without slaves, so we any bond creation must be done throug set_bond_slaves
+			return
+		if execute:
+			for command in commands:
+				self.command(command)
+			if commit:
+				self.commit()
+		return commands
 
 	def set_bond_clag_id(self, int_type, interface, clag_id, execute=True, delete=False, commit=True):
 		if delete:
@@ -715,3 +703,25 @@ class CumulusSwitch(NetWeaverPlugin):
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		if self.ssh:
 			self.ssh.close()
+
+	def set_interface_admin_down(self, int_type, interface, down_status, commit=True, execute=True):
+		if down_status:
+			command = 'net add interface {} link down'.format(self._number_port_mapper(interface))
+		else:
+			command = 'net del interface {} link down'.format(self._number_port_mapper(interface))
+		if execute:
+			self.command(command)
+			if commit:
+				self.commit()
+		return [command]
+
+	def set_bond_admin_down(self, int_type, bond, down_status, commit=True, execute=True):
+		if down_status:
+			command = 'net add bond {} link down'.format(bond)
+		else:
+			command = 'net del bond {} link down'.format(bond)
+		if execute:
+			self.command(command)
+			if commit:
+				self.commit()
+		return [command]

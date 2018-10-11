@@ -3,6 +3,7 @@ import yaml
 from etherweaver.core_classes.infrastructure import Infrastructure
 import pprint
 import etherweaver
+from etherweaver.core_classes.utils import read_yaml_file
 
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -18,13 +19,10 @@ class CLIApp:
 					raise KeyError('Key \'{}\' not allowed at top level'.format(k))
 		self._build_infrastructure_object()
 
-	def _parse_yaml_file(self, yamlfile):
+	@staticmethod
+	def _parse_yaml_file(yamlfile):
 		"""Read Yaml from file and send to parse_yaml_string"""
-		with open(yamlfile, 'r') as stream:
-			try:
-				return yaml.safe_load(stream)
-			except yaml.YAMLError:
-				raise
+		return read_yaml_file(yamlfile)
 
 	def _build_infrastructure_object(self):
 		"""
