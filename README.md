@@ -30,93 +30,225 @@ Similar to Ansible and Salt, the goal of Etherweaver is to abstract the task of 
 
 ## Config Structure
 
+
 ### Top Level objects
-```yaml
-roles: # A list of all roles
-fabrics: # A list of all fabrics
-appliances: # A list of all hardware
-```
 
-### Roles
 
-A Role describes the state and attributes that can describe a specific appliance, or group of appliances.
+Etherweaver's can consist of two sections, of which Fabrics are optional:
 
-Roles can be defined on a per device status (for example, you may have role objects for individual switches, or you may have a single template that describes the configuration of hundreds of switches.)
+.. code-block:: yaml
+   :caption: config.yaml
 
-Here is an example of a Role Object as defined in YAML:
-```yaml
-roles:
-  spine1:
-    fabric: network1
-    hostname: spine1.net.testco.org
-    protocols:
-      dns:
-        nameservers:
-            - 10.5.5.115
-      ntp:
-        client:
-          timezone: America/Chicago
-          servers:
-              - pool.ntp.org
-              - 0.cumulusnetworks.pool.ntp.org
-              - 1.cumulusnetworks.pool.ntp.org
-              - 2.cumulusnetworks.pool.ntp.org
-    interfaces:
-      1G:
-        1-5:
-          tagged_vlans: [2-4]
-          untagged_vlan: 7
-        6:
-          untagged_vlan: 5
-```
+   fabrics: # A list of all fabrics
+   appliances: # A list of all hardware
 
-### Fabrics
+Fabrics represent networks, or collections of network devices with inherited settings.
 
-A fabric is a collection of common configuration items, usually representing a switch fabric in a single location. However, it can represent whatever you want. Its simply a logical construct.
+An appliance represents a network operating system to be configured, and it inherits settings (as well as defining it's own).
 
-Here is an example of a fabric object:
+### An Example Config
 
-```yaml
-fabrics:
-  network1:
-    credentials:
-      username: cumulus
-      password: CumulusLinux!
-    vlans:
-      1-5:
-      6:
-        description: Data
-      30:
-        description: Public
-      11-29:
-```
-## Appliances
+.. code-block:: yaml
+   :caption: config.yaml
 
-Here is an example Appliance object. 
+   fabrics:
+      network1:
+         vlans:
+            4-10
+        connections:
+           ssh:
+              username: user
+              password: password!
 
-Appliances are defined by a hyphen separated MAC address. On switches with multiple MAC addresses, the MAC of the out of band management port should be used. Or, if no management port exists, the lowest number switch port.
+      distribution:
+         fabric: network1
+         interfaces:
+            1G:
+               1-22:
+                  untagged_vlan: 4
+                  tagged_vlans: 5-7
+               23-24:
+                  tagged_vlans: 4-10
 
-This file contains all hardware specific information.
+   appliances:
+      distsw1:
+         fabric: distribution
+         plugin_package: cumulus
+         connections:
+            ssh:
+               hostname: 10.5.5.33
 
-```yaml
-appliances:
-  sw1:
-    hostname: 10.5.5.33
-    role: spine1
-    plugin_package: cumulus
-  sw2:
-    hostname: 10.5.5.34
-    role: spine2
-    plugin_package: cumulus
-```
+The inheritance structure flows in this manner:
 
-## Usage
+Fabric -> Child Fabric*n -> appliances.
 
-Etherweaver uses a salt-like syntax:
+A node specified twice will take the value of the last object to specify it in the structure.
 
-```bash
-etherweaver 'sw1' role.apply --yaml=exampleconf.yaml
-```
+## Nodes
 
-This command will apply the role spine1 to any assigned hardware appliances.
 
+Nodes represent a dictionary structure that allow you to access, modify, or remove the current state
+of an appliance without writing any YAML. A node is represented by it's path in the dict (which is the same as the config.yaml)
+
+For instance, here are some valid nodes:
+
+- protocols.dns.nameservers
+- interfaces.1G.1
+- hostname
+
+Nodes have different commands depending on their type. For instance single value nodes (such as hostname) generally have
+three commands:
+
+- hostname.get
+- hostname.set
+- hostname.del
+
+List nodes will often have more command types:
+
+- protocols.ntp.client.servers.add: Adds a server or servers
+- protocols.ntp.client.servers.get: Gets a list of all servers
+- protocols.ntp.client.servers.set: Overwrites the server list with a new list
+- protocols.ntp.client.servers.del: If a value is specified, deletes the value, otherwise deletes all values
+
+Additionally, there are a few meta nodes such as 'state'. State is likely the one you will use the most, and it has one function:
+
+- state.apply: Applies the current config.yaml in an interactive manner
+
+In addition there are also two additional state nodes with the following commands:
+
+- cstate.get: Fetch current state of the appliance
+- dstate.get: Fetch desired state of the appliance (based on config.yaml)
+- dstate.apply: Non-interactively apply the desired state without confirmation
+
+
+
+## Commands
+
+Commands follow a simple syntax:
+
+netweaver 'role|*' node value --yaml=config.yaml
+
+The YAML state can be applied to every appliance in the infrastructure file by running the following:
+
+.. code-block:: bash
+
+   netweaver.py '*' state.apply --yaml=config.yaml
+   sw1: []
+   sw2: []
+
+The brackets will contain a list of any commands run in order to bring the switches in alignment with the current state.
+
+You can view the current state of all appliances in the environment using the following command:
+
+.. code-block:: bash
+
+   netweaver.py 'sw1' cstate.get --yaml=config.yaml
+   sw1:
+      hostname: spine1.net.testco.org
+      interfaces:
+        100G: {}
+        10G: {}
+        1G:
+          '1':
+            ip:
+              address: []
+            tagged_vlans: [2, 3, 4]
+            untagged_vlan: '7'
+       ...
+
+
+.. code-block:: bash
+
+    etherweaver.py '*' protocols.ntp.client.servers.get --yaml=config.yaml
+    sw1: [pool.ntp.org, 0.cumulusnetworks.pool.ntp.org, 1.cumulusnetworks.pool.ntp.org,
+    2.cumulusnetworks.pool.ntp.org]
+    sw2: [0.cumulusnetworks.pool.ntp.org, 1.cumulusnetworks.pool.ntp.org, 2.cumulusnetworks.pool.ntp.org,
+    pool.ntp.org]
+
+
+
+.. code-block:: bash
+
+   netweaver.py 'sw1' hostname.set 'spine2' --yaml=config.yaml
+    net add hostname spine2
+
+.. note::
+    Not all appliance plugins can implement all nodes due to hardware limitations, accessing any unsupported node will
+    result in a NotImplemented or NotSupported error.
+
+## Examples
+
+
+### A Simple Example
+
+
+Lets imagine that you are tasked with deploying a switch fabric for
+a small branch office, with two switches total. Based on the needs of the office,
+you determine that you need two 24 port switches, which are to be configured using the following rules:
+
+- VLANs for Employees, VOIP phones, servers, Public Wireless, and Management interfaces
+- Ports 1-20 on both switches will be for employee usage, and will need the Employee VLAN untagged and the VOIP vlan tagged for phone passthrough
+- Ports 20-22 on both switches are reserved for Wireless access points, and need to be untagged on the Management VLAN for AP administration, and tagged on Employee and Public
+- Port 24 will be the trunk between switches
+
+From the system you are running etherweaver from, copy your public ssh keys to the switches (For switches that cannot
+do this, you can use a username and password, but you still need to accept the public ssh key of the system on your machine
+to prevent man in the middle attacks.) Then you write an etherweaver state file, simple_example.yaml:
+
+.. literalinclude:: ExampleConfigs/simple_example.yaml
+   :language: yaml
+
+Then, run:
+
+.. literalinclude:: ExampleConfigs/serun1.txt
+
+
+Now your switches are configured correctly, subsequent runs won't do anything because the curent state and desired state match.
+
+To complicate matters, a developer now needs to have a development server at his desk. unfortunately, his port
+is right in the middle of our 10-20 range, at port 11 on dist1. Not to worry though, we can place a config statement at
+any lower inheritance level to override the port range.  All we need to do is add an interface definition for the port
+in question, and define profile to false in order to stop inheritance. Now our state file looks like this:
+
+.. literalinclude:: ExampleConfigs/simple_examplev2.yaml
+   :language: yaml
+
+And running the program gives us the following output:
+
+.. literalinclude:: ExampleConfigs/serun2.txt
+
+As you can see, etherweaver operated idempotently, only applying the changes from the desired state that
+didn't match the current state. This allows you to easily manage and monitor config drift from within your environment.
+
+### CLAG
+
+
+The cumulus switches we have been using as an example also support a feature known as Clustering Link Aggregation, or CLAG.
+
+This allows two independent switches to share link aggregation groups without a single point of failure, and without
+stacking. This is an excellent use case for fabric inheritance, as there are attributes that the switches share, as well
+as plenty that they don't. Here is an example CLAG configuration with etherweaver:
+
+.. literalinclude:: ExampleConfigs/clag_example.yaml
+   :language: yaml
+
+Applying this state file looks like this:
+
+.. literalinclude:: ExampleConfigs/clrun1.txt
+
+.. Note::
+   When testing state files in a virtual environment such as GNS3 or vagrant, the cumulus switches clag will not function unless
+   you add 'clagd-args --vm' to /etc/network/interfaces under the peerlink.4094 interface section on both switches.
+
+## License
+
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
