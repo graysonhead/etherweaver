@@ -51,14 +51,14 @@ An appliance represents a network operating system to be configured, and it inhe
     code-block:: yaml
     :caption: config.yaml
 
-   fabrics:
-     network1:
+    fabrics:
+      network1:
         vlans:
-         4-10
-       connections:
-          ssh:
-           username: user
-           password: password!
+          4-10
+        connections:
+            ssh:
+            username: user
+            password: password!
 
     distribution:
        fabric: network1
