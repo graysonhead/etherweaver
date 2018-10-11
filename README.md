@@ -9,20 +9,20 @@ Similar to Ansible and Salt, the goal of Etherweaver is to abstract the task of 
 
 ## Core Design Concepts
 
-*  ### Universal States for Different Platforms
+ * ### Universal States for Different Platforms
 
    A switch switches packets, and a router routes them. If they follow standards, they will perform this job identically. While the featureset may be disimilar between two platforms from different vendors, the way they implement protocols are similar, as is the end result. 
 
    The goal of Etherweaver is to allow the user to create a "universal" definition of their desired state (configuration), and disconnect the format of this configuration from the vendor-specific OS it is being applied to.
 
 
-*  ### Idempotent and Self-recovering
+ * ### Idempotent and Self-recovering
 
   To reduce the chance of Etherweaver causing momentary outages, it should always compare the current state with the desired state, and avoid making changes if they are equivelant.
   
   When possible, Etherweaver should use clever config file management and rollback functionality on network appliances to reduce the risk of a bad statement causing a permanent management disconnection.
 
-*  ### Agentless
+ * ### Agentless
 
   Closed source switching and routing platforms shouldn't be excluded from config management. Thus, Etherweaver is agentless by default. Each plugin will support a number of methods (ssh, telnet, RS232, etc.) to ensure that all networks can be maintained in an automated fashion.
 
@@ -86,33 +86,33 @@ Nodes represent a dictionary structure that allow you to access, modify, or remo
 
 For instance, here are some valid nodes:
 
-*  protocols.dns.nameservers
-*  interfaces.1G.1
-*  hostname
+ * protocols.dns.nameservers
+ * interfaces.1G.1
+ * hostname
 
 Nodes have different commands depending on their type. For instance single value nodes (such as hostname) generally have
 three commands:
 
-*  hostname.get
-*  hostname.set
-*  hostname.del
+ * hostname.get
+ * hostname.set
+ * hostname.del
 
 List nodes will often have more command types:
 
-*  protocols.ntp.client.servers.add: Adds a server or servers
-*  protocols.ntp.client.servers.get: Gets a list of all servers
-*  protocols.ntp.client.servers.set: Overwrites the server list with a new list
-*  protocols.ntp.client.servers.del: If a value is specified, deletes the value, otherwise deletes all values
+ * protocols.ntp.client.servers.add: Adds a server or servers
+ * protocols.ntp.client.servers.get: Gets a list of all servers
+ * protocols.ntp.client.servers.set: Overwrites the server list with a new list
+ * protocols.ntp.client.servers.del: If a value is specified, deletes the value, otherwise deletes all values
 
 Additionally, there are a few meta nodes such as 'state'. State is likely the one you will use the most, and it has one function:
 
-*  state.apply: Applies the current config.yaml in an interactive manner
+ * state.apply: Applies the current config.yaml in an interactive manner
 
 In addition there are also two additional state nodes with the following commands:
 
-*  cstate.get: Fetch current state of the appliance
-*  dstate.get: Fetch desired state of the appliance (based on config.yaml)
-*  dstate.apply: Non-interactively apply the desired state without confirmation
+ * cstate.get: Fetch current state of the appliance
+ * dstate.get: Fetch desired state of the appliance (based on config.yaml)
+ * dstate.apply: Non-interactively apply the desired state without confirmation
 
 ## Commands
 
@@ -176,10 +176,10 @@ Lets imagine that you are tasked with deploying a switch fabric for
 a small branch office, with two switches total. Based on the needs of the office,
 you determine that you need two 24 port switches, which are to be configured using the following rules:
 
-*  VLANs for Employees, VOIP phones, servers, Public Wireless, and Management interfaces
-*  Ports 1-20 on both switches will be for employee usage, and will need the Employee VLAN untagged and the VOIP vlan tagged for phone passthrough
-*  Ports 20-22 on both switches are reserved for Wireless access points, and need to be untagged on the Management VLAN for AP administration, and tagged on Employee and Public
-*  Port 24 will be the trunk between switches
+ * VLANs for Employees, VOIP phones, servers, Public Wireless, and Management interfaces
+ * Ports 1-20 on both switches will be for employee usage, and will need the Employee VLAN untagged and the VOIP vlan tagged for phone passthrough
+ * Ports 20-22 on both switches are reserved for Wireless access points, and need to be untagged on the Management VLAN for AP administration, and tagged on Employee and Public
+ * Port 24 will be the trunk between switches
 
 From the system you are running etherweaver from, copy your public ssh keys to the switches (For switches that cannot
 do this, you can use a username and password, but you still need to accept the public ssh key of the system on your machine
@@ -212,12 +212,9 @@ didn't match the current state. This allows you to easily manage and monitor con
 
 ### CLAG
 
-
 The cumulus switches we have been using as an example also support a feature known as Clustering Link Aggregation, or CLAG.
 
-This allows two independent switches to share link aggregation groups without a single point of failure, and without
-stacking. This is an excellent use case for fabric inheritance, as there are attributes that the switches share, as well
-as plenty that they don't. Here is an example CLAG configuration with etherweaver:
+This allows two independent switches to share link aggregation groups without a single point of failure, and without stacking. This is an excellent use case for fabric inheritance, as there are attributes that the switches share, as well as plenty that they don't. Here is an example CLAG configuration with etherweaver:
 
     literalinclude:: ExampleConfigs/clag_example.yaml
     :language: yaml
@@ -231,7 +228,6 @@ Applying this state file looks like this:
    you add 'clagd-args --vm' to /etc/network/interfaces under the peerlink.4094 interface section on both switches.
 
 ## License
-
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
