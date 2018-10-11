@@ -44,6 +44,7 @@ mock = {'roles': {
 		        'connections': {'ssh': {'hostname': '10.5.5.33', 'username': 'cumulus', 'password': 'CumulusLinux!'}},
 		        'interfaces': {'1G': {'2-5': {'untagged_vlan': 1, 'tagged_vlans': [1, '2-5']}}}}}}
 
+
 class TestPluginLoader(unittest.TestCase):
 
 	def test_plugin_loader(self):
@@ -70,23 +71,23 @@ class TestDstateInherit(unittest.TestCase):
 						'client': {'servers': [],
 						'timezone': None}}},
 						'interfaces': {'1G': {
-						1: {'delete': False, 'bond_slave': None, 'tagged_vlans': [3, 4], 'untagged_vlan': 2,
+						1: {'admin_down': False, 'delete': False, 'bond_slave': None, 'tagged_vlans': [3, 4], 'untagged_vlan': 2,
 						'ip': {'addresses': []}, 'stp': {'port_fast': False}, 'mtu': None},
-						2: {'delete': False, 'bond_slave': None, 'tagged_vlans': [3, 4], 'untagged_vlan': 2,
+						2: {'admin_down': False, 'delete': False, 'bond_slave': None, 'tagged_vlans': [3, 4], 'untagged_vlan': 2,
 						'ip': {'addresses': []}, 'stp': {'port_fast': False}, 'mtu': None},
-						3: {'delete': False, 'bond_slave': None, 'tagged_vlans': [3, 4], 'untagged_vlan': 2,
+						3: {'admin_down': False, 'delete': False, 'bond_slave': None, 'tagged_vlans': [3, 4], 'untagged_vlan': 2,
 						'ip': {'addresses': []}, 'stp': {'port_fast': False}, 'mtu': None},
-						4: {'delete': False, 'bond_slave': None, 'tagged_vlans': [3, 4], 'untagged_vlan': 2,
+						4: {'admin_down': False, 'delete': False, 'bond_slave': None, 'tagged_vlans': [3, 4], 'untagged_vlan': 2,
 						'ip': {'addresses': []}, 'stp': {'port_fast': False}, 'mtu': None},
-						5: {'delete': False, 'bond_slave': None, 'tagged_vlans': [1, 2, 3, 4, 5, 6],
+						5: {'admin_down': False, 'delete': False, 'bond_slave': None, 'tagged_vlans': [1, 2, 3, 4, 5, 6],
 						'untagged_vlan': None, 'ip': {'addresses': []}, 'stp': {'port_fast': False},
 						'mtu': None},
-						6: {'delete': False, 'bond_slave': None, 'tagged_vlans': [1, 2, 3, 4, 5, 6],
+						6: {'admin_down': False, 'delete': False, 'bond_slave': None, 'tagged_vlans': [1, 2, 3, 4, 5, 6],
 						'untagged_vlan': None, 'ip': {'addresses': []}, 'stp': {'port_fast': False},
 						'mtu': None}}, '10G': {}, '40G': {}, '100G': {}, 'mgmt': {}, 'bond': {}},
 						'plugin_package': 'cumulus', 'plugin_options': {'port_speed': '1G'},
 						'connections': {'ssh': {'hostname': '192.168.122.121', 'username': 'cumulus', 'port': 22}}}
-		cli = CLIApp(yaml='inheritancetest.yaml')
+		cli = CLIApp(yaml='./etherweaver/core_classes/test/inheritancetest.yaml')
 		cli._build_infrastructure_object()
 		cli.inf.appliances[0].build_dstate()
 		self.assertEqual(cli.inf.appliances[0].dstate, correct_dstate)
