@@ -211,7 +211,7 @@ any lower inheritance level to override the port range.  All we need to do is ad
 in question, and define profile to false in order to stop inheritance. Now our state file looks like this:
 
     literalinclude:: ExampleConfigs/simple_examplev2.yaml
-   :language: yaml
+    :language: yaml
 
 And running the program gives us the following output:
 
