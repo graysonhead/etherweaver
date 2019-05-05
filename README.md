@@ -1,5 +1,7 @@
 # Etherweaver
 
+# NOTICE: This repo is deprecated, please see https://github.com/graysonhead/runcible for the new version.
+
 [![Build Status](https://travis-ci.com/graysonhead/etherweaver.svg?branch=master)](https://travis-ci.com/graysonhead/etherweaver)
 [![Docs Status](https://readthedocs.org/projects/netweaver/badge/?version=latest)](https://netweaver.readthedocs.io/en/latest/#)
 
